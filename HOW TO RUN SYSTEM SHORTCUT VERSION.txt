@@ -1,5 +1,5 @@
 Run Script to run the System:
-Easy Method: For 1 time use Start-all.bat by typing that in the terminal
+Easy Method: For 1 time use Start-electron.bat by typing that in the terminal
 Please Make sure first to create a the .env in the root directory and paste the content of environmenta(.emv).txt
 
 Step 1: Clean/Reset Blockchain

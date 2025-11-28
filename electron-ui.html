@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSC Voting System - Electron Controller</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #333; min-height: 100vh; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .content { padding: 30px; display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px; }
+        .control-panel { background: #f8f9fa; padding: 25px; border-radius: 10px; border: 2px solid #e9ecef; }
+        .output-panel { background: #1e1e1e; color: #00ff00; border-radius: 10px; font-family: 'Courier New', monospace; height: 600px; display: flex; flex-direction: column; }
+        .terminal-tabs { display: flex; background: #2d2d2d; border-bottom: 1px solid #444; flex-wrap: wrap; }
+        .terminal-tab { padding: 12px 20px; background: #2d2d2d; color: #ccc; border: none; cursor: pointer; border-right: 1px solid #444; transition: all 0.3s ease; }
+        .terminal-tab:hover { background: #3d3d3d; }
+        .terminal-tab.active { background: #1e1e1e; color: #00ff00; border-bottom: 2px solid #00ff00; }
+        .terminal-content { flex: 1; padding: 15px; overflow-y: auto; display: none; }
+        .terminal-content.active { display: block; }
+        .terminal-controls { padding: 10px 15px; background: #2d2d2d; border-top: 1px solid #444; display: flex; gap: 10px; }
+        .step { margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px; border-left: 4px solid #3498db; }
+        .step h3 { color: #2c3e50; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .step-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-small { padding: 6px 12px; font-size: 0.9em; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .system-info { background: #e8f4fc; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 15px 0; }
+        .status { padding: 8px 15px; border-radius: 20px; font-size: 0.9em; font-weight: 600; }
+        .status-running { background: #d4edda; color: #155724; }
+        .status-stopped { background: #f8d7da; color: #721c24; }
+        .status-ready { background: #fff3cd; color: #856404; }
+        .output-line { margin-bottom: 5px; white-space: pre-wrap; word-break: break-all; line-height: 1.4; }
+        .output-line.system { color: #3498db; }
+        .output-line.blockchain-node1 { color: #f39c12; }
+        .output-line.blockchain-node2 { color: #e67e22; }
+        .output-line.backend { color: #2ecc71; }
+        .output-line.frontend { color: #9b59b6; }
+        .output-line.error { color: #e74c3c; }
+        .quick-start { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin-top: 20px; }
+        .icon { font-size: 1.2em; }
+        .process-indicators { display: flex; gap: 15px; margin-top: 10px; flex-wrap: wrap; }
+        .process-indicator { display: flex; align-items: center; gap: 5px; font-size: 0.9em; }
+        .indicator-dot { width: 10px; height: 10px; border-radius: 50%; background: #e74c3c; }
+        .indicator-dot.running { background: #2ecc71; animation: pulse 1.5s infinite; }
+        .ip-info { background: #e8f4fc; padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 0.9em; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 SSC Voting System Controller</h1>
+            <p>One-Click Blockchain Voting System Management</p>
+        </div>
+        
+        <div class="content">
+            <div class="control-panel">
+                <div class="system-info">
+                    <h3>🔍 System Information</h3>
+                    <div id="systemInfo">Detecting system information...</div>
+                    <div class="ip-info" id="ipInfo" style="display: none;">
+                        <strong>Current IP:</strong> <span id="currentIP"></span><br>
+                        <strong>Env IP:</strong> <span id="envIP"></span>
+                        <div style="margin-top: 10px;">
+                            <button class="btn btn-small btn-primary" onclick="refreshIP()">🔄 Refresh IP</button>
+                            <button class="btn btn-small btn-success" onclick="updateEnv()">📝 Update .env</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="process-indicators">
+                    <div class="process-indicator"><div class="indicator-dot" id="blockchainNode1Indicator"></div><span>Node 1 (8545)</span></div>
+                    <div class="process-indicator"><div class="indicator-dot" id="blockchainNode2Indicator"></div><span>Node 2 (8547)</span></div>
+                    <div class="process-indicator"><div class="indicator-dot" id="backendIndicator"></div><span>Backend</span></div>
+                    <div class="process-indicator"><div class="indicator-dot" id="frontendIndicator"></div><span>Frontend</span></div>
+                </div>
+                
+                <div class="quick-start">
+                    <h3>🚀 Quick Start</h3>
+                    <p>Run the entire system with one click</p>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="cleanBlockchain" checked>
+                        <label for="cleanBlockchain">Clean Blockchain (Start Fresh)</label>
+                    </div>
+                    <button class="btn btn-success" onclick="runAllSteps()" style="padding: 15px 30px; font-size: 1.1em;">🚀 RUN ENTIRE SYSTEM</button>
+                    <div style="margin-top: 10px;">
+                        <button class="btn btn-small btn-warning" onclick="clearAllTerminals()">Clear All Terminals</button>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <h3><span class="icon">📝</span> Step 1: Environment Setup</h3>
+                    <p>Update .env file with current IP address</p>
+                    <div class="step-controls">
+                        <button class="btn btn-primary" onclick="updateEnv()">Update .env File</button>
+                        <span id="envStatus" class="status status-ready">Ready</span>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <h3><span class="icon">🧹</span> Step 2: Clean Blockchain</h3>
+                    <p>Reset blockchain data (optional)</p>
+                    <div class="step-controls">
+                        <button class="btn btn-warning" onclick="cleanBlockchain()">Clean Blockchain</button>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <h3><span class="icon">⛓️</span> Step 3: Start Blockchain</h3>
+                    <p>Launch dual blockchain nodes</p>
+                    <div class="step-controls">
+                        <button class="btn btn-primary" onclick="startBlockchain()">Start Blockchain</button>
+                        <button class="btn btn-danger" onclick="stopBlockchain()" id="stopBlockchainBtn" disabled>Stop Blockchain</button>
+                        <span id="blockchainStatus" class="status status-stopped">Stopped</span>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <h3><span class="icon">📦</span> Step 4: Smart Contracts</h3>
+                    <p>Compile and deploy voting contracts</p>
+                    <div class="step-controls">
+                        <button class="btn btn-primary" onclick="compileContract()">Compile Contract</button>
+                        <button class="btn btn-success" onclick="deployContract()">Deploy Contract</button>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <h3><span class="icon">🔧</span> Step 5: Backend Server</h3>
+                    <p>Start the Node.js backend API</p>
+                    <div class="step-controls">
+                        <button class="btn btn-primary" onclick="startBackend()">Start Backend</button>
+                        <button class="btn btn-danger" onclick="stopBackend()" id="stopBackendBtn" disabled>Stop Backend</button>
+                        <span id="backendStatus" class="status status-stopped">Stopped</span>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <h3><span class="icon">🎨</span> Step 6: Frontend</h3>
+                    <p>Launch the voting interface</p>
+                    <div class="step-controls">
+                        <button class="btn btn-primary" onclick="startFrontend()">Start Frontend</button>
+                        <button class="btn btn-danger" onclick="stopFrontend()" id="stopFrontendBtn" disabled>Stop Frontend</button>
+                        <button class="btn btn-success" onclick="openFrontend()" id="openFrontendBtn" disabled>Open in Browser</button>
+                        <span id="frontendStatus" class="status status-stopped">Stopped</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="output-panel">
+                <div class="terminal-tabs">
+                    <button class="terminal-tab active" onclick="switchTerminalTab('combined')">Combined</button>
+                    <button class="terminal-tab" onclick="switchTerminalTab('system')">System</button>
+                    <button class="terminal-tab" onclick="switchTerminalTab('blockchain-node1')">Node 1 (8545)</button>
+                    <button class="terminal-tab" onclick="switchTerminalTab('blockchain-node2')">Node 2 (8547)</button>
+                    <button class="terminal-tab" onclick="switchTerminalTab('backend')">Backend</button>
+                    <button class="terminal-tab" onclick="switchTerminalTab('frontend')">Frontend</button>
+                </div>
+                
+                <div id="terminal-combined" class="terminal-content active"></div>
+                <div id="terminal-system" class="terminal-content"></div>
+                <div id="terminal-blockchain-node1" class="terminal-content"></div>
+                <div id="terminal-blockchain-node2" class="terminal-content"></div>
+                <div id="terminal-backend" class="terminal-content"></div>
+                <div id="terminal-frontend" class="terminal-content"></div>
+                
+                <div class="terminal-controls">
+                    <button class="btn btn-small btn-danger" onclick="clearCurrentTerminal()">Clear Current</button>
+                    <button class="btn btn-small btn-warning" onclick="clearAllTerminals()">Clear All</button>
+                    <span style="color: #ccc; margin-left: auto; font-size: 0.9em;">
+                        <span id="outputCount">0</span> lines
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="electron-ui.js"></script>
+</body>
+</html>

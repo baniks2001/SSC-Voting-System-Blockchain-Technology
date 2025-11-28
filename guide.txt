@@ -1,4 +1,5 @@
 SSC-Voting-with-Blockcchain
+You can start the system easy by opening the start-electron.bat
 
 Explained Guide: How to run and install SSC-Voting-System
 This guide will walk you through setting up a full-stack voting system that uses a React/Vue frontend,

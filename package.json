@@ -15,7 +15,17 @@
     "compile-contract": "node scripts/compile.js",
     "deploy-contract": "node scripts/deploy.js",
     "test-contract": "node scripts/test-contract.js",
-    "setup-contract": "npm run compile-contract && npm run deploy-contract"
+    "setup-contract": "npm run compile-contract && npm run deploy-contract",
+    
+
+     "electron": "electron electron-main.cjs",
+    "electron-dev": "electron electron-main.cjs --inspect",
+    "quick-start": "quick-start.bat",
+    "start-electron": "start-electron.bat",
+    "start-all": "npm run electron",
+    
+    "dev:network": "cd server && npm run dev:network",
+    "dev:local": "cd server && npm run dev"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.1",
@@ -47,6 +57,7 @@
     "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.20",
     "concurrently": "^8.2.2",
+    "electron": "^22.0.0",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.16",
