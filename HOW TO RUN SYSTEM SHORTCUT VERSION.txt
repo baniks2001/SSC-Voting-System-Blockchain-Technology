@@ -1,0 +1,34 @@
+Run Script to run the System:
+Easy Method: For 1 time use Start-all.bat by typing that in the terminal
+Please Make sure first to create a the .env in the root directory and paste the content of environmenta(.emv).txt
+
+Step 1: Clean/Reset Blockchain
+	node scripts/clean-reset.js (run first if want fresh/no data in the blockchain if you want the data exists last voting do not clean)
+
+Step 2: Run Blockchain Dual Node
+	npm run start-nodes    (this will run the dual blockchain node also wait for 20 - 30 seconds before step 3 to make sure blockchain 	node is running)
+	
+Step 3: Compile and Deploy
+	3.1 node scripts/compile.js		(this will compile the contract address and other more for the blockchain)
+	3.2 node scripts/deploy.js 		(this will deploy the compiled contract and etc.)
+
+Step 4. Setup .env for deployment
+	4.1 ipconfig		Trace your IP Address on connected wifi/hotspot
+	4.2 Change the 192.168.254.123 ip to your ip address then save
+	    CLIENT_URL=http://localhost:5173,http://192.168.254.123:5173
+	    ALLOWED_ORIGINS=http://localhost:5173,http://192.168.254.123:5173,http://localhost:3000,http:192.168.254.123:3000
+
+	    VITE_API_URL=http://192.168.254.123:5000
+
+Step 5: Run Backend
+	5.1 Run/start The Xampp Apache and the mysql (preferared to run this first before the step 1)
+	5.2 Cd server
+	5.3 npm run dev:network		(network)
+	    npm run dev 			(localhost)  
+
+Step 6: Run the Frontend
+	npm run dev -- --host   (network)
+	npm run dev 			(localhost)  
+
+	Open/Paste the http://192.168.254.123:5173 that you have setup ipaddress that you provided in the .env and open/paste it to your 	browser
+   

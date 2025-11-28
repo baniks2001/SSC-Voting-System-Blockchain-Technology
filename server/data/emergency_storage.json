@@ -1,0 +1,7 @@
+{
+  "iv": "enhanced_fallback",
+  "data": "eyJ2b3RlcyI6W10sIm1ldGFkYXRhIjp7ImNyZWF0ZWRBdCI6IjIwMjUtMTEtMjhUMDE6MTY6MzkuMjIzWiIsImxhc3RVcGRhdGVkIjoiMjAyNS0xMS0yOFQwMToxNjozOS4yMjNaIiwidG90YWxWb3RlcyI6MCwiZWxlY3Rpb25TdGF0ZSI6eyJzdGF0dXMiOiJub3Rfc3RhcnRlZCIsInN0YXJ0VGltZSI6bnVsbCwicGF1c2VUaW1lIjpudWxsLCJmaW5pc2hUaW1lIjpudWxsfSwiZGF0YUhhc2giOiJiYzg1Mjk3ZjE4NWFhNmM3MDYzMWRlZWNjZjFmMmFlOWJmMTYxNmM4MTRiMjU5MmQzZDAxMGRjMTUxNWFiOWU2IiwidmVyc2lvbiI6IjIuMCJ9fQ==",
+  "authTag": "3eda35dea77991dcf9eb6482919f91e752ece1bcf4ec97abb7bbe4439bacf0a6",
+  "timestamp": "2025-11-28T01:16:39.348Z",
+  "version": "2.0"
+}
