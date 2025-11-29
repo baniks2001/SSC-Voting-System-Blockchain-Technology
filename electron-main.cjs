@@ -26,8 +26,13 @@ function createWindow() {
             preload: path.join(__dirname, 'electron-preload.cjs')
         },
         icon: path.join(__dirname, 'public', 'favicon.ico'),
-        show: false
+        show: false,
+        titleBarStyle: 'default',
+        autoHideMenuBar: true
     });
+
+    // Remove menu completely
+    mainWindow.setMenu(null);
 
     mainWindow.loadFile('electron-ui.html').then(() => {
         console.log('UI loaded successfully');
@@ -85,6 +90,11 @@ function autoUpdateEnvFile(newIP) {
                 type: 'info',
                 data: `🔄 IP changed from ${currentEnvIP} to ${newIP}. Auto-updated .env file.`,
                 category: 'system'
+            });
+            // Send status update for UI indicators
+            mainWindow.webContents.send('process-status', {
+                process: 'env',
+                status: 'updated'
             });
         }
     }
@@ -299,6 +309,12 @@ ipcMain.handle('update-env', async function (event, ipAddress) {
         const success = updateEnvFile(ipAddress);
         if (success) {
             addTerminalOutput('system', 'Updated .env file with new IP: ' + ipAddress, 'info');
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'env',
+                    status: 'updated'
+                });
+            }
         }
         return { success: success, updated: true, ip: ipAddress };
     }
@@ -325,6 +341,14 @@ ipcMain.handle('start-blockchain', async function () {
         });
         
         processes.blockchainNode1 = node1Process;
+        
+        // Send status update
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'blockchain-node1',
+                status: 'running'
+            });
+        }
         
         node1Process.stdout.on('data', function (data) {
             if (mainWindow) {
@@ -356,6 +380,14 @@ ipcMain.handle('start-blockchain', async function () {
         });
         
         processes.blockchainNode2 = node2Process;
+        
+        // Send status update
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'blockchain-node2',
+                status: 'running'
+            });
+        }
         
         node2Process.stdout.on('data', function (data) {
             if (mainWindow) {
@@ -395,11 +427,23 @@ ipcMain.handle('stop-blockchain', async function () {
         if (processes.blockchainNode1) {
             processes.blockchainNode1.kill();
             processes.blockchainNode1 = null;
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'blockchain-node1',
+                    status: 'stopped'
+                });
+            }
         }
         
         if (processes.blockchainNode2) {
             processes.blockchainNode2.kill();
             processes.blockchainNode2 = null;
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'blockchain-node2',
+                    status: 'stopped'
+                });
+            }
         }
         
         spawn('taskkill', ['/f', '/im', 'geth.exe'], { shell: true });
@@ -438,6 +482,14 @@ ipcMain.handle('start-backend', async function () {
         
         processes.backend = backendProcess;
         
+        // Send status update
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'backend',
+                status: 'running'
+            });
+        }
+        
         backendProcess.stdout.on('data', function (data) {
             if (mainWindow) {
                 mainWindow.webContents.send('command-output', { 
@@ -475,6 +527,12 @@ ipcMain.handle('stop-backend', async function () {
         if (processes.backend) {
             processes.backend.kill();
             processes.backend = null;
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'backend',
+                    status: 'stopped'
+                });
+            }
         }
         
         spawn('taskkill', ['/f', '/im', 'node.exe'], { shell: true });
@@ -493,6 +551,14 @@ ipcMain.handle('start-frontend', async function (event, ipAddress) {
         });
         
         processes.frontend = frontendProcess;
+        
+        // Send status update
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'frontend',
+                status: 'running'
+            });
+        }
         
         frontendProcess.stdout.on('data', function (data) {
             if (mainWindow) {
@@ -531,6 +597,12 @@ ipcMain.handle('stop-frontend', async function () {
         if (processes.frontend) {
             processes.frontend.kill();
             processes.frontend = null;
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'frontend',
+                    status: 'stopped'
+                });
+            }
         }
         
         spawn('taskkill', ['/f', '/im', 'node.exe'], { shell: true });
@@ -555,6 +627,12 @@ ipcMain.handle('run-all-steps', async function (event, options) {
         if (currentEnvIP !== ipAddress) {
             updateEnvFile(ipAddress);
             addTerminalOutput('system', 'Updated .env with new IP: ' + ipAddress, 'info');
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'env',
+                    status: 'updated'
+                });
+            }
         }
         
         if (options.cleanBlockchain) {
@@ -570,6 +648,13 @@ ipcMain.handle('run-all-steps', async function (event, options) {
             detached: true
         });
         processes.blockchainNode1 = node1Process;
+        
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'blockchain-node1',
+                status: 'running'
+            });
+        }
         
         node1Process.stdout.on('data', (data) => {
             if (mainWindow) {
@@ -600,6 +685,13 @@ ipcMain.handle('run-all-steps', async function (event, options) {
             detached: true
         });
         processes.blockchainNode2 = node2Process;
+        
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'blockchain-node2',
+                status: 'running'
+            });
+        }
         
         node2Process.stdout.on('data', (data) => {
             if (mainWindow) {
@@ -633,6 +725,13 @@ ipcMain.handle('run-all-steps', async function (event, options) {
         });
         processes.backend = backendProcess;
         
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'backend',
+                status: 'running'
+            });
+        }
+        
         backendProcess.stdout.on('data', (data) => {
             if (mainWindow) {
                 mainWindow.webContents.send('command-output', { 
@@ -659,6 +758,13 @@ ipcMain.handle('run-all-steps', async function (event, options) {
             shell: true 
         });
         processes.frontend = frontendProcess;
+        
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'frontend',
+                status: 'running'
+            });
+        }
         
         frontendProcess.stdout.on('data', (data) => {
             if (mainWindow) {

@@ -17,5 +17,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   runAllSteps: (options) => ipcRenderer.invoke('run-all-steps', options),
   onCommandOutput: (callback) => ipcRenderer.on('command-output', (event, data) => callback(data)),
   onIPChanged: (callback) => ipcRenderer.on('ip-changed', (event, data) => callback(data)),
-  onIPRefreshed: (callback) => ipcRenderer.on('ip-refreshed', (event, data) => callback(data))
+  onIPRefreshed: (callback) => ipcRenderer.on('ip-refreshed', (event, data) => callback(data)),
+  onProcessStatus: (callback) => ipcRenderer.on('process-status', (event, data) => callback(data))
 });

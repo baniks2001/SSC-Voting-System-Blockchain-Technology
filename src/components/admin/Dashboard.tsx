@@ -69,6 +69,7 @@ export const Dashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState('all');
   const [copiedElectionId, setCopiedElectionId] = useState<number | null>(null);
+  const [auditLogsExportType, setAuditLogsExportType] = useState<ExportType>('json');
 
   const { pollStatus, updatePollStatus, loading: pollStatusLoading } = usePoll();
   const { user, logout } = useAuth();
@@ -182,27 +183,9 @@ export const Dashboard: React.FC = () => {
 
   // FIXED: Calculate turnout rate based on number of voters who have voted
   const calculateTurnoutRate = useCallback((totalVoters: number, hasVotedCount: number) => {
-    console.log('📊 Turnout calculation inputs:', {
-      totalVoters,
-      hasVotedCount
-    });
-
-    if (totalVoters <= 0) {
-      console.log('❌ No total voters, returning 0');
-      return 0;
-    }
-
+    if (totalVoters <= 0) return 0;
     const turnout = (hasVotedCount / totalVoters) * 100;
-    const roundedTurnout = Math.min(Math.round(turnout), 100);
-
-    console.log('✅ Calculated turnout:', {
-      votersWhoVoted: hasVotedCount,
-      totalVoters: totalVoters,
-      percentage: turnout.toFixed(2),
-      rounded: roundedTurnout
-    });
-
-    return roundedTurnout;
+    return Math.min(Math.round(turnout), 100);
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -223,7 +206,7 @@ export const Dashboard: React.FC = () => {
           }
           throw error;
         }),
-        api.get('/voters') // Fallback: fetch voters to count has_voted
+        api.get('/voters')
       ]);
 
       if (!isMounted.current) return;
@@ -244,16 +227,7 @@ export const Dashboard: React.FC = () => {
         const resultsData = resultsResponse.value;
 
         if (resultsData && resultsData.success) {
-          // Get total votes from the blockchain/emergency storage response
           totalVotesCount = resultsData.totalVotes || 0;
-
-          console.log('📊 Vote results from blockchain/emergency:', {
-            totalVotes: totalVotesCount,
-            source: resultsData.source,
-            emergencyMode: resultsData.emergencyMode,
-            hasCandidates: !!resultsData.candidates,
-            candidatesCount: resultsData.candidates?.length
-          });
 
           // Process candidate vote counts
           if (resultsData.candidates && Array.isArray(resultsData.candidates)) {
@@ -266,7 +240,6 @@ export const Dashboard: React.FC = () => {
 
           // If no candidates array, try to extract from resultsByPosition
           if (Object.keys(candidateVoteCounts).length === 0 && resultsData.resultsByPosition) {
-            console.log('🔍 Extracting votes from resultsByPosition...');
             Object.values(resultsData.resultsByPosition).forEach((positionCandidates: any) => {
               if (Array.isArray(positionCandidates)) {
                 positionCandidates.forEach((candidate: any) => {
@@ -280,7 +253,6 @@ export const Dashboard: React.FC = () => {
 
           // If still no votes, try to calculate from raw vote data
           if (Object.keys(candidateVoteCounts).length === 0 && resultsData.voteData && Array.isArray(resultsData.voteData)) {
-            console.log('🔍 Calculating votes from raw vote data...');
             resultsData.voteData.forEach((vote: any) => {
               if (vote.votes && Array.isArray(vote.votes)) {
                 vote.votes.forEach((v: any) => {
@@ -291,15 +263,8 @@ export const Dashboard: React.FC = () => {
                 });
               }
             });
-            // Recalculate total votes from raw data
             totalVotesCount = Object.values(candidateVoteCounts).reduce((sum, count) => sum + count, 0);
           }
-
-          console.log(`✅ Final vote processing:`, {
-            totalVotes: totalVotesCount,
-            candidatesWithVotes: Object.keys(candidateVoteCounts).length,
-            source: resultsData.source
-          });
         }
       }
 
@@ -318,14 +283,10 @@ export const Dashboard: React.FC = () => {
       if (dashboardResponse.status === 'fulfilled') {
         let hasVotedCount = dashboardResponse.value.hasVotedCount;
 
-        // If hasVotedCount is not provided, calculate it from voters data
         if (hasVotedCount === undefined && votersResponse.status === 'fulfilled') {
           const voters = votersResponse.value;
           hasVotedCount = voters.filter((voter: any) => voter.has_voted).length;
-          console.log('🔄 Calculated hasVotedCount from voters data:', hasVotedCount);
         } else if (hasVotedCount === undefined) {
-          // If we can't get voters data, use totalVotes as fallback (less accurate)
-          console.log('⚠️ Using totalVotes as fallback for hasVotedCount');
           hasVotedCount = dashboardResponse.value.totalVotes || 0;
         }
 
@@ -334,15 +295,6 @@ export const Dashboard: React.FC = () => {
           hasVotedCount: hasVotedCount || 0,
           totalVotes: totalVotesCount > 0 ? totalVotesCount : dashboardResponse.value.totalVotes
         };
-
-        console.log('📊 FINAL Stats for turnout calculation:', {
-          hasVotedCount: finalStats.hasVotedCount,
-          totalVoters: finalStats.totalVoters,
-          calculatedTurnout: calculateTurnoutRate(
-            finalStats.totalVoters,
-            finalStats.hasVotedCount
-          )
-        });
 
         setStats(finalStats);
       }
@@ -464,30 +416,63 @@ export const Dashboard: React.FC = () => {
     URL.revokeObjectURL(url);
   }, []);
 
-  // Fixed individual election export with Excel support
+  // Fixed JSON export function - properly format the JSON file
+  const generateJsonFile = useCallback(async (electionData: any, id: number) => {
+    const { election, results } = electionData;
+
+    // Create properly structured JSON data
+    const exportData = {
+      election: {
+        id: election.id,
+        election_name: election.election_name,
+        election_date: election.election_date,
+        academic_year: election.academic_year,
+        finished_at: election.finished_at,
+        total_candidates: election.total_candidates,
+        total_votes: election.total_votes,
+        election_hash: election.election_hash,
+        created_at: election.created_at
+      },
+      results: {
+        resultsByPosition: results.resultsByPosition || {},
+        statistics: results.statistics || {
+          totalCandidates: election.total_candidates,
+          totalVotes: election.total_votes,
+          positions: Object.keys(results.resultsByPosition || {}).length
+        },
+        export_timestamp: new Date().toISOString(),
+        export_format: 'json',
+        version: '1.0'
+      }
+    };
+
+    // Validate JSON structure before creating blob
+    try {
+      JSON.stringify(exportData);
+    } catch (error) {
+      console.error('Invalid JSON structure:', error);
+      throw new Error('Failed to create valid JSON data');
+    }
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: 'application/json;charset=utf-8'
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `election-${id}-results.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  // Fixed DOCX generation function
   const generateProperDocx = useCallback(async (content: string, filename: string) => {
     try {
-      // Create a proper Word document structure
-      const docContent = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<?mso-application progid="Word.Document"?>
-<w:wordDocument 
-  xmlns:w="http://schemas.microsoft.com/office/word/2003/wordml"
-  xmlns:v="urn:schemas-microsoft-com:vml"
-  xmlns:w10="urn:schemas-microsoft-com:office:word"
-  xmlns:sl="http://schemas.microsoft.com/schemaLibrary/2003/core"
-  xmlns:aml="http://schemas.microsoft.com/aml/2001/core"
-  xmlns:wx="http://schemas.microsoft.com/office/word/2003/auxHint"
-  xmlns:o="urn:schemas-microsoft-com:office:office"
-  xmlns:dt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882">
-  <w:body>
-    <w:p>
-      <w:r>
-        <w:t>${content.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '</w:t></w:r></w:p><w:p><w:r><w:t>')}</w:t>
-      </w:r>
-    </w:p>
-  </w:body>
-</w:wordDocument>`;
-
+      // Create a simple text-based document that Word can open
+      const docContent = `Election Results Export\n\n${content}`;
+      
       const blob = new Blob([docContent], {
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       });
@@ -495,7 +480,9 @@ export const Dashboard: React.FC = () => {
       await downloadBlob(blob, filename);
     } catch (error) {
       console.error('DOCX generation error:', error);
-      throw error;
+      // Fallback to text file
+      const blob = new Blob([content], { type: 'text/plain' });
+      await downloadBlob(blob, filename.replace('.docx', '.txt'));
     }
   }, []);
 
@@ -511,68 +498,49 @@ export const Dashboard: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Fixed individual election export function
+  // Fixed individual election export function with proper JSON format
   const exportElection = useCallback(async (id: number, exportType: ExportType = 'json') => {
     try {
       setExporting(true);
 
+      const electionDetails = await api.get(`/poll/elections/${id}`);
+      if (!electionDetails.success) {
+        throw new Error('Failed to fetch election data');
+      }
+
       if (exportType === 'xlsx') {
-        // Generate proper Excel-compatible CSV for individual election
-        const electionDetails = await api.get(`/poll/elections/${id}`);
-        if (electionDetails.success) {
-          await generateExcelFile(electionDetails, id);
-        } else {
-          throw new Error('Failed to fetch election data');
-        }
+        await generateExcelFile(electionDetails, id);
       } else if (exportType === 'docs') {
-        // Generate proper DOCX file
-        const electionDetails = await api.get(`/poll/elections/${id}`);
-        if (electionDetails.success) {
-          const { election, results } = electionDetails;
+        const { election, results } = electionDetails;
 
-          let docContent = `ELECTION RESULTS - ${election.election_name}\n\n`;
-          docContent += `Election Name: ${election.election_name}\n`;
-          docContent += `Election Date: ${new Date(election.election_date).toLocaleDateString()}\n`;
-          docContent += `Academic Year: ${election.academic_year}\n`;
-          docContent += `Total Candidates: ${election.total_candidates}\n`;
-          docContent += `Total Votes: ${election.total_votes}\n\n`;
+        let docContent = `ELECTION RESULTS - ${election.election_name}\n\n`;
+        docContent += `Election Name: ${election.election_name}\n`;
+        docContent += `Election Date: ${new Date(election.election_date).toLocaleDateString()}\n`;
+        docContent += `Academic Year: ${election.academic_year}\n`;
+        docContent += `Total Candidates: ${election.total_candidates}\n`;
+        docContent += `Total Votes: ${election.total_votes}\n\n`;
 
-          if (results.resultsByPosition) {
-            Object.entries(results.resultsByPosition).forEach(([position, candidates]: [string, any]) => {
-              docContent += `${position.toUpperCase()}\n`;
-              docContent += 'Rank | Candidate Name | Party | Votes | Percentage\n';
-              docContent += '-----|----------------|-------|-------|-----------\n';
+        if (results.resultsByPosition) {
+          Object.entries(results.resultsByPosition).forEach(([position, candidates]: [string, any]) => {
+            docContent += `${position.toUpperCase()}\n`;
+            docContent += 'Rank | Candidate Name | Party | Votes | Percentage\n';
+            docContent += '-----|----------------|-------|-------|-----------\n';
 
-              const sortedCandidates = candidates.sort((a: any, b: any) => b.vote_count - a.vote_count);
-              const totalPositionVotes = sortedCandidates.reduce((sum: number, candidate: any) => sum + candidate.vote_count, 0);
+            const sortedCandidates = candidates.sort((a: any, b: any) => b.vote_count - a.vote_count);
+            const totalPositionVotes = sortedCandidates.reduce((sum: number, candidate: any) => sum + candidate.vote_count, 0);
 
-              sortedCandidates.forEach((candidate: any, index: number) => {
-                const percentage = totalPositionVotes > 0 ? ((candidate.vote_count / totalPositionVotes) * 100).toFixed(2) : '0.00';
-                docContent += `${index + 1} | ${candidate.candidate_name} | ${candidate.party} | ${candidate.vote_count} | ${percentage}%\n`;
-              });
-              docContent += '\n';
+            sortedCandidates.forEach((candidate: any, index: number) => {
+              const percentage = totalPositionVotes > 0 ? ((candidate.vote_count / totalPositionVotes) * 100).toFixed(2) : '0.00';
+              docContent += `${index + 1} | ${candidate.candidate_name} | ${candidate.party} | ${candidate.vote_count} | ${percentage}%\n`;
             });
-          }
-
-          await generateProperDocx(docContent, `election-${id}-results.docx`);
+            docContent += '\n';
+          });
         }
+
+        await generateProperDocx(docContent, `election-${id}-results.docx`);
       } else {
-        // JSON export - use existing method
-        const token = localStorage.getItem('token');
-        const response = await fetch(`/api/poll/elections/export/${id}?exportType=${exportType}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Export failed: ${response.statusText}`);
-        }
-
-        const blob = await response.blob();
-        await downloadBlob(blob, `election-${id}.${exportType}`);
+        // JSON export - use the fixed JSON generator
+        await generateJsonFile(electionDetails, id);
       }
 
       alert(`Election exported successfully as ${exportType.toUpperCase()}`);
@@ -582,7 +550,7 @@ export const Dashboard: React.FC = () => {
     } finally {
       setExporting(false);
     }
-  }, []);
+  }, [generateExcelFile, generateJsonFile, generateProperDocx]);
 
   // Fixed election history export function
   const exportElectionHistory = useCallback(async (exportType: ExportType = 'json') => {
@@ -593,7 +561,7 @@ export const Dashboard: React.FC = () => {
       if (exportType === 'xlsx') {
         // Create CSV content with proper Excel formatting for election history
         const headers = ['ID', 'Election Name', 'Election Date', 'Academic Year', 'Finished At', 'Total Candidates', 'Total Votes', 'Election Hash'];
-        const csvContent = '\uFEFF' + [ // BOM for UTF-8 Excel compatibility
+        const csvContent = '\uFEFF' + [
           headers.join(','),
           ...filteredElectionHistory.map(election => [
             `"${election.id}"`,
@@ -633,11 +601,23 @@ export const Dashboard: React.FC = () => {
 
         await generateProperDocx(docContent, `election-history-${new Date().toISOString().split('T')[0]}.docx`);
       } else {
-        // JSON export
+        // JSON export - fixed structure
         const exportData = {
           exportDate: new Date().toISOString(),
           totalRecords: filteredElectionHistory.length,
-          electionHistory: filteredElectionHistory
+          exportFormat: 'json',
+          version: '1.0',
+          electionHistory: filteredElectionHistory.map(election => ({
+            id: election.id,
+            election_name: election.election_name,
+            election_date: election.election_date,
+            academic_year: election.academic_year,
+            finished_at: election.finished_at,
+            total_candidates: election.total_candidates,
+            total_votes: election.total_votes,
+            election_hash: election.election_hash,
+            created_at: election.created_at
+          }))
         };
 
         const blob = new Blob([JSON.stringify(exportData, null, 2)], {
@@ -653,10 +633,9 @@ export const Dashboard: React.FC = () => {
     } finally {
       setExporting(false);
     }
-  }, [electionHistory, filteredElectionHistory]);
+  }, [electionHistory, filteredElectionHistory, generateProperDocx]);
 
-
-  // Enhanced audit logs export with Excel support
+  // Enhanced audit logs export with dropdown connection
   const exportAuditLogs = useCallback(async (exportType: ExportType = 'json') => {
     if (!stats?.auditLogs.length) return;
 
@@ -668,7 +647,7 @@ export const Dashboard: React.FC = () => {
       if (exportType === 'xlsx') {
         // Create proper CSV format for Excel with better formatting
         const headers = ['Timestamp', 'Action', 'User Type', 'User ID', 'Admin Name', 'Details', 'IP Address'];
-        const csvContent = '\uFEFF' + [ // BOM for UTF-8 Excel compatibility
+        const csvContent = '\uFEFF' + [
           headers.join(','),
           ...stats.auditLogs.map(log => [
             `"${new Date(log.created_at).toLocaleString()}"`,
@@ -685,10 +664,35 @@ export const Dashboard: React.FC = () => {
           type: 'text/csv;charset=utf-8;'
         });
         filename = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
+      } else if (exportType === 'docs') {
+        // Generate DOCX for audit logs
+        let docContent = `AUDIT LOGS EXPORT\n`;
+        docContent += `Generated on: ${new Date().toLocaleString()}\n`;
+        docContent += `Total Records: ${stats.auditLogs.length}\n\n`;
+        docContent += '='.repeat(50) + '\n\n';
+
+        stats.auditLogs.forEach((log, index) => {
+          docContent += `LOG #${index + 1}\n`;
+          docContent += `Action: ${log.action}\n`;
+          docContent += `Timestamp: ${new Date(log.created_at).toLocaleString()}\n`;
+          docContent += `User Type: ${log.user_type}\n`;
+          docContent += `User ID: ${log.user_id || 'N/A'}\n`;
+          docContent += `Admin Name: ${log.admin_name || 'N/A'}\n`;
+          docContent += `Details: ${log.details || 'N/A'}\n`;
+          docContent += `IP Address: ${log.ip_address || 'N/A'}\n`;
+          docContent += '-'.repeat(40) + '\n\n';
+        });
+
+        const textBlob = new Blob([docContent], { type: 'text/plain' });
+        blob = textBlob;
+        filename = `audit-logs-${new Date().toISOString().split('T')[0]}.txt`;
       } else {
+        // JSON export
         const exportData = {
           exportDate: new Date().toISOString(),
           totalRecords: stats.auditLogs.length,
+          exportFormat: 'json',
+          version: '1.0',
           auditLogs: stats.auditLogs
         };
         blob = new Blob([JSON.stringify(exportData, null, 2)], {
@@ -745,13 +749,6 @@ export const Dashboard: React.FC = () => {
 • Total Votes: ${electionDetails.total_votes}
 • Election Hash: ${electionDetails.election_hash || 'Not available'}
 
-🌐 DATA SOURCE:
-• Primary Source: ${results.blockchainData?.source || 'Blockchain/Simulation'}
-• Blockchain Connected: ${results.blockchainData?.connected ? '✅ Yes' : '❌ No'}
-• Simulation Mode: ${results.blockchainData?.simulationMode ? '✅ Active' : '❌ Inactive'}
-• Failover Active: ${results.blockchainData?.failoverActive ? '✅ Yes' : '❌ No'}
-• Simulation Votes: ${results.blockchainData?.simulationVoteCount || 0}
-
 🏆 ELECTION RESULTS BY POSITION:
 
 ${candidateResultsText || 'No results data available'}
@@ -764,15 +761,8 @@ ${candidateResultsText || 'No results data available'}
 🔒 DATA INTEGRITY & SECURITY:
 • Hash Verified: ${electionDetails.election_hash ? '✅' : '❌ Not available'}
 • Data Encryption: ✅ Securely encrypted in database
-• Blockchain Backup: ${results.blockchainData?.connected ? '✅ Active' : '❌ Offline'}
 • Timestamp: ${new Date().toISOString()}
 • Export ID: ${electionDetails.id}
-
-💡 NOTES:
-• Results are sorted by vote count within each position
-• 🏆 indicates the winning candidate in each position
-• Data sourced from blockchain/simulation for maximum integrity
-• Original data is stored encrypted with SHA-256 hashing
 
 ---
 Generated by Secure Voting System
@@ -812,60 +802,35 @@ Exported on: ${new Date().toLocaleString()}`.trim();
   // Super admin authentication function
   const authenticateSuperAdmin = useCallback(async (password: string) => {
     try {
-      console.log('🔐 Attempting super admin authentication...');
-
-      // Use the API endpoint to authenticate super admin
       const response = await api.post('/auth/super-admin/verify', {
         password: password
       });
 
-      console.log('🔐 Authentication response:', {
-        success: response.success,
-        isSuperAdmin: response.isSuperAdmin
-      });
-
       if (response.success && response.isSuperAdmin) {
-        console.log('✅ Super admin authentication successful');
         return true;
       }
-
-      console.log('❌ Super admin authentication failed');
       return false;
     } catch (error: any) {
-      console.error('❌ Super admin authentication failed:', {
-        error: error.message,
-        status: error.status,
-        response: error.response?.data
-      });
-
+      console.error('Super admin authentication failed:', error);
       return false;
     }
   }, []);
 
-  // Blockchain reset function - FIXED: Better error handling for connection issues
+  // Blockchain reset function
   const resetBlockchain = useCallback(async () => {
     try {
-      console.log('🔄 Initiating blockchain reset...');
-
       const response = await api.post('/blockchain/reset');
 
       if (response.success) {
-        console.log('✅ Blockchain reset successful:', response);
         return true;
       } else {
-        console.error('❌ Blockchain reset failed:', response.error);
         return false;
       }
     } catch (error: any) {
-      console.error('❌ Blockchain reset error:', error);
-
-      // Check if it's a connection error vs. reset failure
       if (error.message?.includes('network') || error.message?.includes('connection') || error.message?.includes('Failed to fetch')) {
-        console.warn('⚠️ Blockchain may be offline, but election data was saved');
-        return false; // Don't fail the entire process for network issues
+        return false;
       }
-
-      throw error; // Re-throw other errors
+      throw error;
     }
   }, []);
 
@@ -904,14 +869,10 @@ Exported on: ${new Date().toLocaleString()}`.trim();
         // Auto-export JSON automatically after finishing election
         setTimeout(async () => {
           try {
-            // Refresh election history to get the latest election
             const electionsResponse = await api.get('/poll/elections');
             if (electionsResponse.success && electionsResponse.elections.length > 0) {
               const latestElection = electionsResponse.elections[0];
-
-              // Auto-export as JSON
               await exportElection(latestElection.id, 'json');
-
               alert('Election finished and JSON file exported successfully!');
             }
           } catch (exportError) {
@@ -941,14 +902,11 @@ Exported on: ${new Date().toLocaleString()}`.trim();
     }
   }, [updatePollStatus, fetchData, finishPollData, fetchElectionHistory, exportElection]);
 
-  // Simplified handlePollControl - directly show password modal for finish
   const handlePollControl = useCallback(async (action: PollStatus) => {
     if (action === 'finished') {
-      // Check if we have election data first
       if (!finishPollData.electionName || !finishPollData.electionDate || !finishPollData.academicYear) {
         setShowFinishPollForm(true);
       } else {
-        // If we already have election data, go straight to password verification
         setShowPasswordModal(true);
       }
       return;
@@ -956,20 +914,16 @@ Exported on: ${new Date().toLocaleString()}`.trim();
     await performPollControl(action);
   }, [performPollControl, finishPollData]);
 
-  // Updated handleFinishPollSubmit
   const handleFinishPollSubmit = useCallback(async () => {
     if (!finishPollData.electionName || !finishPollData.electionDate || !finishPollData.academicYear) {
       alert('Please fill in all required fields');
       return;
     }
 
-    // Close finish form and show password modal
     setShowFinishPollForm(false);
     setShowPasswordModal(true);
   }, [finishPollData]);
 
-
-  // New function to handle the complete finish sequence
   const handleFinishSequence = useCallback(async () => {
     if (!superAdminPassword) {
       setPasswordError('Password is required');
@@ -978,7 +932,6 @@ Exported on: ${new Date().toLocaleString()}`.trim();
 
     setPollLoading(true);
     try {
-      // Step 1: Authenticate super admin
       const isAuthenticated = await authenticateSuperAdmin(superAdminPassword);
       if (!isAuthenticated) {
         setPasswordError('Invalid super admin password');
@@ -986,30 +939,15 @@ Exported on: ${new Date().toLocaleString()}`.trim();
         return;
       }
 
-      console.log('✅ Super admin authenticated, starting finish sequence...');
-
-      // Step 2: Save data to Election_data table and finish poll
       await performPollControl('finished');
 
-      // Step 3: Export data (auto-export is already handled in performPollControl)
-      console.log('✅ Election data saved and exported');
-
-      // Step 4: Reset blockchain
-      console.log('🔄 Starting blockchain reset...');
       const resetSuccess = await resetBlockchain();
 
-      if (!resetSuccess) {
-        console.warn('Blockchain reset failed, but election was finished successfully');
-        // Continue with the process even if blockchain reset fails
-      }
-
-      // Close modals and reset state
       setShowPasswordModal(false);
       setShowFinishPollForm(false);
       setSuperAdminPassword('');
       setPasswordError('');
 
-      // Show success message with details
       const successMessage = `Election finished successfully! ${resetSuccess
         ? 'Blockchain has been reset for the next election.'
         : 'Election finished but blockchain reset may need manual attention.'
@@ -1017,7 +955,6 @@ Exported on: ${new Date().toLocaleString()}`.trim();
 
       alert(successMessage);
 
-      // Refresh data to show updated state
       await fetchData();
       if (isSuperAdmin) {
         await fetchElectionHistory();
@@ -1025,20 +962,16 @@ Exported on: ${new Date().toLocaleString()}`.trim();
 
     } catch (error: any) {
       console.error('Finish sequence failed:', error);
-
-      // More detailed error message
       let errorMessage = `Failed to complete finish sequence: ${error.message}`;
       if (error.message.includes('blockchain') || error.message.includes('reset') || error.message.includes('Failed to fetch')) {
         errorMessage += '\n\nElection data was saved successfully, but blockchain reset failed. You may need to manually reset the blockchain.';
       }
-
       alert(errorMessage);
     } finally {
       setPollLoading(false);
     }
   }, [superAdminPassword, performPollControl, resetBlockchain, fetchData, fetchElectionHistory, isSuperAdmin]);
 
-  // Load election history when component mounts and user is super admin
   useEffect(() => {
     if (isSuperAdmin) {
       fetchElectionHistory();
@@ -1300,7 +1233,6 @@ Exported on: ${new Date().toLocaleString()}`.trim();
                   <p className="text-gray-600 mt-1">View and manage past election records</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  {/* Bulk Export Button */}
                   {filteredElectionHistory.length > 0 && (
                     <div className="relative group">
                       <select
@@ -1331,7 +1263,6 @@ Exported on: ${new Date().toLocaleString()}`.trim();
                 </div>
               </div>
 
-              {/* Search and Filter Controls */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1 relative">
                   <Search className="w-4 h-4 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -1445,6 +1376,7 @@ Exported on: ${new Date().toLocaleString()}`.trim();
                               title="Export election data"
                             >
                               <option value="">Export</option>
+                              <option value="json">JSON Format</option>
                               <option value="xlsx">Excel Format</option>
                               <option value="docs">Word Document</option>
                             </select>
@@ -1497,7 +1429,6 @@ Exported on: ${new Date().toLocaleString()}`.trim();
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {/* Election Information */}
                   <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
                     <h4 className="text-lg font-bold text-gray-900 mb-4">Election Information</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1540,7 +1471,6 @@ Exported on: ${new Date().toLocaleString()}`.trim();
                     )}
                   </div>
 
-                  {/* Results by Position */}
                   {selectedElection.results?.resultsByPosition && (
                     <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
                       <h4 className="text-lg font-bold text-gray-900 mb-4">Election Results by Position</h4>
@@ -1577,7 +1507,6 @@ Exported on: ${new Date().toLocaleString()}`.trim();
                     </div>
                   )}
 
-                  {/* Statistics */}
                   {selectedElection.results?.statistics && (
                     <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
                       <h4 className="text-lg font-bold text-gray-900 mb-4">Election Statistics</h4>
@@ -1598,7 +1527,6 @@ Exported on: ${new Date().toLocaleString()}`.trim();
                     </div>
                   )}
 
-                  {/* Action Buttons */}
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
                       onClick={() => copyElectionData(selectedElection.election)}
@@ -1802,7 +1730,7 @@ Exported on: ${new Date().toLocaleString()}`.trim();
           />
         </div>
 
-        {/* Enhanced Audit Logs */}
+        {/* Enhanced Audit Logs with Connected Dropdown */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
@@ -1811,16 +1739,17 @@ Exported on: ${new Date().toLocaleString()}`.trim();
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
               <select
-                onChange={(e) => exportAuditLogs(e.target.value as ExportType)}
+                value={auditLogsExportType}
+                onChange={(e) => setAuditLogsExportType(e.target.value as ExportType)}
                 disabled={exporting || !stats?.auditLogs?.length}
                 className="px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 transition-all w-full sm:w-auto"
               >
-                <option value="">Select Format</option>
                 <option value="json">JSON Format</option>
                 <option value="xlsx">Excel Format</option>
+                <option value="docs">Word Document</option>
               </select>
               <button
-                onClick={() => exportAuditLogs('json')}
+                onClick={() => exportAuditLogs(auditLogsExportType)}
                 disabled={exporting || !stats?.auditLogs?.length}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-transparent text-sm font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg w-full sm:w-auto"
               >

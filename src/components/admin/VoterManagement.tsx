@@ -112,6 +112,23 @@ export const VoterManagement: React.FC = () => {
     isActive: true
   });
 
+  // Auto-generate password when all required fields are filled in add mode
+  useEffect(() => {
+    if (!editingVoter && showModal) {
+      // Check if all required fields are filled
+      const { studentId, fullName, course, yearLevel, section } = formData;
+      const allFieldsFilled = studentId && fullName && course && yearLevel && section;
+      
+      if (allFieldsFilled) {
+        const generatedPassword = generatePasswordForStudent(studentId, fullName, yearLevel, section);
+        setFormData(prev => ({ ...prev, password: generatedPassword }));
+      } else {
+        // Clear password if any required field is empty
+        setFormData(prev => ({ ...prev, password: '' }));
+      }
+    }
+  }, [formData.studentId, formData.fullName, formData.course, formData.yearLevel, formData.section, editingVoter, showModal]);
+
   useEffect(() => {
     fetchVoters();
     fetchCourses();
@@ -537,7 +554,7 @@ export const VoterManagement: React.FC = () => {
           processed.push({
             studentId: '',
             fullName: '',
-            course: '',
+            course: '', // Leave course blank
             yearLevel: 1,
             section: '',
             password: '',
@@ -552,7 +569,7 @@ export const VoterManagement: React.FC = () => {
           processed.push({
             studentId,
             fullName: '',
-            course: '',
+            course: '', // Leave course blank
             yearLevel: 1,
             section: '',
             password: '',
@@ -562,14 +579,15 @@ export const VoterManagement: React.FC = () => {
           });
           continue;
         }
-        const course = extractCourse(row);
+        // Course will be left blank and selected via dropdown in review step
+        const course = '';
         const yearLevel = extractYearLevel(row);
         const section = extractSection(row);
         if (existingStudentIds.has(studentId.toLowerCase())) {
           processed.push({
             studentId,
             fullName,
-            course,
+            course, // Leave course blank
             yearLevel,
             section,
             password: '',
@@ -583,7 +601,7 @@ export const VoterManagement: React.FC = () => {
         processed.push({
           studentId,
           fullName,
-          course,
+          course, // Leave course blank
           yearLevel,
           section,
           password,
@@ -594,7 +612,7 @@ export const VoterManagement: React.FC = () => {
         processed.push({
           studentId: '',
           fullName: '',
-          course: '',
+          course: '', // Leave course blank
           yearLevel: 1,
           section: '',
           password: '',
@@ -605,31 +623,6 @@ export const VoterManagement: React.FC = () => {
       }
     }
     return processed;
-  };
-
-  const extractCourse = (row: any): string => {
-    if (!row || typeof row !== 'object') {
-      return '';
-    }
-
-    const coursePatterns = ['course', 'program', 'degree', 'major'];
-
-    for (const key of Object.keys(row)) {
-      const lowerKey = key.toLowerCase();
-      if (coursePatterns.some(pattern => lowerKey.includes(pattern))) {
-        const value = row[key]?.toString().trim();
-        if (value && value !== 'undefined') {
-          const matchedCourse = courses.find(course =>
-            course && course.name && course.code &&
-            (course.name.toLowerCase() === value.toLowerCase() ||
-              course.code.toLowerCase() === value.toLowerCase())
-          );
-          return matchedCourse ? matchedCourse.name : value;
-        }
-      }
-    }
-
-    return '';
   };
 
   const extractYearLevel = (row: any): number => {
@@ -766,6 +759,15 @@ export const VoterManagement: React.FC = () => {
     try {
       setImporting(true);
       const studentsToImport = importedStudents.filter(s => s.status === 'new');
+      
+      // Check if all new students have a course selected
+      const studentsWithoutCourse = studentsToImport.filter(s => !s.course);
+      if (studentsWithoutCourse.length > 0) {
+        showToast('error', `Please select a course for ${studentsWithoutCourse.length} student(s)`);
+        setImporting(false);
+        return;
+      }
+
       let successCount = 0;
       let errorCount = 0;
       for (const student of studentsToImport) {
@@ -1975,7 +1977,7 @@ export const VoterManagement: React.FC = () => {
                 <Key className="w-4 h-4 inline mr-2" />
                 Password {editingVoter && '(leave blank to keep current)'}
               </label>
-              {(!editingVoter || canEditAllFields) && (
+              {editingVoter && ( // Only show auto-generate button in edit mode
                 <button
                   type="button"
                   onClick={generatePassword}
@@ -1994,10 +1996,11 @@ export const VoterManagement: React.FC = () => {
               required={!editingVoter}
               minLength={6}
               placeholder={canEditPasswordOnly ? "Enter new password" : ""}
+              readOnly={!editingVoter} // Read-only in add mode, editable in edit mode
             />
-            {formData.password && (!editingVoter || canEditAllFields) && (
+            {formData.password && (
               <p className="text-xs text-gray-500 mt-1">
-                Generated password: <span className="font-mono">{formData.password}</span>
+                {editingVoter ? 'Current password:' : 'Auto-generated password:'} <span className="font-mono">{formData.password}</span>
               </p>
             )}
             {canEditPasswordOnly && editingVoter && (
@@ -2008,6 +2011,11 @@ export const VoterManagement: React.FC = () => {
             {canEditAllFields && editingVoter && (
               <p className="text-xs text-gray-500 mt-1">
                 All voter data can be edited since voting is finished
+              </p>
+            )}
+            {!editingVoter && (
+              <p className="text-xs text-gray-500 mt-1">
+                Password will be auto-generated when all fields are filled
               </p>
             )}
           </div>
@@ -2409,7 +2417,8 @@ export const VoterManagement: React.FC = () => {
                   <div>
                     <p className="text-sm text-blue-800 font-medium">Import Instructions</p>
                     <p className="text-xs text-blue-700 mt-1">
-                      Upload an Excel, CSV, or Word file containing student data. The system will automatically detect columns for Student ID, Name, Course, Year Level, and Section.
+                      Upload an Excel, CSV, or Word file containing student data. The system will automatically detect columns for Student ID, Name, Year Level, and Section.
+                      <strong> Course will be left blank and must be selected for each voter in the next step.</strong>
                     </p>
                   </div>
                 </div>
@@ -2444,7 +2453,8 @@ export const VoterManagement: React.FC = () => {
                   <div>
                     <p className="text-sm text-yellow-800 font-medium">Review Import Data</p>
                     <p className="text-xs text-yellow-700 mt-1">
-                      Please review the imported data before proceeding. New records will be created, duplicates will be skipped.
+                      Please review the imported data and select a course for each voter before proceeding. 
+                      New records will be created, duplicates will be skipped.
                     </p>
                   </div>
                 </div>
@@ -2487,7 +2497,24 @@ export const VoterManagement: React.FC = () => {
                         </td>
                         <td className="px-3 py-2">{student.studentId}</td>
                         <td className="px-3 py-2">{student.fullName}</td>
-                        <td className="px-3 py-2">{student.course}</td>
+                        <td className="px-3 py-2">
+                          {student.status === 'new' ? (
+                            <select
+                              value={student.course}
+                              onChange={(e) => updateImportedStudent(index, { course: e.target.value })}
+                              className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            >
+                              <option value="">Select course</option>
+                              {courses.map(course => (
+                                <option key={course.id} value={course.name}>
+                                  {course.name} ({course.code})
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-gray-500">N/A</span>
+                          )}
+                        </td>
                         <td className="px-3 py-2">{student.yearLevel}</td>
                         <td className="px-3 py-2">{student.section}</td>
                       </tr>
@@ -2512,6 +2539,15 @@ export const VoterManagement: React.FC = () => {
                   </span>
                 </div>
               </div>
+
+              {/* Course selection validation warning */}
+              {importedStudents.filter(s => s.status === 'new' && !s.course).length > 0 && (
+                <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
+                  <p className="text-sm text-red-800 font-medium">
+                    Please select a course for all new voters ({importedStudents.filter(s => s.status === 'new' && !s.course).length} remaining)
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -2565,7 +2601,7 @@ export const VoterManagement: React.FC = () => {
               <button
                 onClick={handleImportSubmit}
                 className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center"
-                disabled={importing}
+                disabled={importing || importedStudents.filter(s => s.status === 'new' && !s.course).length > 0}
               >
                 {importing ? (
                   <>

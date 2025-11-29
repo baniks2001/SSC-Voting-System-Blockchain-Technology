@@ -5,6 +5,7 @@ let currentTerminalTab = 'combined';
 document.addEventListener('DOMContentLoaded', async () => {
     await loadSystemInfo();
     setupOutputListener();
+    setupStatusListener();
 });
 
 async function loadSystemInfo() {
@@ -43,6 +44,12 @@ function setupOutputListener() {
     window.electronAPI.onCommandOutput((data) => {
         addOutput(data.data, data.category, data.type);
         updateProcessIndicators(data.category, data.type);
+    });
+}
+
+function setupStatusListener() {
+    window.electronAPI.onProcessStatus((data) => {
+        updateProcessIndicatorDirect(data.process, data.status);
     });
 }
 
@@ -116,11 +123,34 @@ function updateProcessIndicators(category, type) {
     
     if (indicator && type === 'stdout') {
         indicator.classList.add('running');
-        setTimeout(() => {
-            if (indicator.classList.contains('running')) {
-                indicator.classList.remove('running');
-            }
-        }, 5000);
+    }
+}
+
+function updateProcessIndicatorDirect(process, status) {
+    let indicator;
+    
+    if (process === 'blockchain-node1') {
+        indicator = document.getElementById('blockchainNode1Indicator');
+    } else if (process === 'blockchain-node2') {
+        indicator = document.getElementById('blockchainNode2Indicator');
+    } else if (process === 'backend') {
+        indicator = document.getElementById('backendIndicator');
+    } else if (process === 'frontend') {
+        indicator = document.getElementById('frontendIndicator');
+    } else if (process === 'env') {
+        // Update env status
+        document.getElementById('envStatus').textContent = 'Up to date';
+        document.getElementById('envStatus').className = 'status status-running';
+        document.getElementById('envIP').textContent = currentIP;
+        return;
+    }
+    
+    if (indicator) {
+        if (status === 'running') {
+            indicator.classList.add('running');
+        } else if (status === 'stopped') {
+            indicator.classList.remove('running');
+        }
     }
 }
 
@@ -139,13 +169,37 @@ async function updateEnv() {
             } else {
                 document.getElementById('envStatus').textContent = 'Up to date';
                 document.getElementById('envStatus').className = 'status status-running';
-                addOutput('IP address unchanged, no update needed', 'system', 'info');
+                addOutput('IP address unchanged (' + result.ip + '), no update needed', 'system', 'info');
             }
         } else {
             addOutput('Error updating .env file', 'system', 'error');
         }
     } catch (error) {
         addOutput('Error updating .env: ' + error.message, 'system', 'error');
+    }
+}
+
+async function refreshIP() {
+    try {
+        const result = await window.electronAPI.refreshIP();
+        currentIP = result.ipAddress;
+        currentEnvIP = result.currentEnvIP;
+        
+        document.getElementById('currentIP').textContent = currentIP;
+        document.getElementById('envIP').textContent = currentEnvIP;
+        
+        // Update env status based on IP comparison
+        if (currentEnvIP === currentIP) {
+            document.getElementById('envStatus').textContent = 'Up to date';
+            document.getElementById('envStatus').className = 'status status-running';
+        } else {
+            document.getElementById('envStatus').textContent = 'Needs update';
+            document.getElementById('envStatus').className = 'status status-stopped';
+        }
+        
+        addOutput('IP refreshed: ' + currentIP, 'system', 'info');
+    } catch (error) {
+        addOutput('Error refreshing IP: ' + error.message, 'system', 'error');
     }
 }
 
