@@ -9,7 +9,6 @@ import {
   X,
   LogOut,
   Eye,
-  Shield,
   ChevronDown,
   
 } from 'lucide-react';

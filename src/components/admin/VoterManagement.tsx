@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Edit, Trash2, Search, Download, User, GraduationCap, Hash, Key, RefreshCw, CheckSquare, Square, AlertCircle, ChevronDown, Check, Filter, MoreVertical, CheckCircle, XCircle, Upload, FileText, Table, Plus, X, BookOpen, UserX, UserCheck } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Search, Download, User, GraduationCap, Hash, Key, RefreshCw, CheckSquare, Square, AlertCircle, ChevronDown, Check, Filter, MoreVertical, CheckCircle, XCircle, Upload, Plus, X, BookOpen, UserX, UserCheck } from 'lucide-react';
 import { Voter } from '../../types';
 import { api } from '../../utils/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -70,7 +70,6 @@ export const VoterManagement: React.FC = () => {
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   const [studentSearch, setStudentSearch] = useState('');
   const [showStudentSelection, setShowStudentSelection] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [showMobileActions, setShowMobileActions] = useState<number | null>(null);
   const [importedStudents, setImportedStudents] = useState<ImportedStudent[]>([]);
   const [importStep, setImportStep] = useState<'upload' | 'review' | 'complete'>('upload');
@@ -340,7 +339,7 @@ export const VoterManagement: React.FC = () => {
         showToast('success', `Successfully reset voting status for ${selectedStudents.length} voter(s)`);
         setSelectedStudents([]);
       } else {
-        await api.patch('/voters/reset-all-votes');
+        await api.patch('/voters/reset-all-votes', {});
         showToast('success', 'Successfully reset voting status for all voters');
       }
 
@@ -450,6 +449,21 @@ export const VoterManagement: React.FC = () => {
     }
   };
 
+  const readFileContent = (file: File): Promise<ArrayBuffer> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result instanceof ArrayBuffer) {
+          resolve(e.target.result);
+        } else {
+          reject(new Error('Failed to read file as ArrayBuffer'));
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
   const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -473,7 +487,8 @@ export const VoterManagement: React.FC = () => {
       } else if (file.type.includes('word')) {
         parsedData = await parseWordFile(fileContent, file);
       } else if (file.type === 'text/csv') {
-        parsedData = await parseCSVFile(fileContent);
+        const text = new TextDecoder().decode(fileContent);
+        parsedData = await parseCSVFile(text);
       }
       const processedStudents = await processImportedData(parsedData);
       setImportedStudents(processedStudents);
@@ -486,16 +501,7 @@ export const VoterManagement: React.FC = () => {
     }
   };
 
-  const readFileContent = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target?.result as string);
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
-  const parseExcelFile = async (fileContent: string, _file: File): Promise<any[]> => {
+  const parseExcelFile = async (fileContent: ArrayBuffer, _file: File): Promise<any[]> => {
     try {
       const XLSX = await import('xlsx');
       const workbook = XLSX.read(fileContent, { type: 'array' });
@@ -506,7 +512,7 @@ export const VoterManagement: React.FC = () => {
     }
   };
 
-  const parseWordFile = async (fileContent: string, _file: File): Promise<any[]> => {
+  const parseWordFile = async (fileContent: ArrayBuffer, _file: File): Promise<any[]> => {
     try {
       const mammoth = await import('mammoth');
       const result = await mammoth.extractRawText({ arrayBuffer: fileContent });
@@ -547,6 +553,7 @@ export const VoterManagement: React.FC = () => {
   const processImportedData = async (data: any[]): Promise<ImportedStudent[]> => {
     const processed: ImportedStudent[] = [];
     const existingStudentIds = new Set(voters.map(v => v.student_id.toLowerCase()));
+    
     for (const row of data) {
       try {
         const studentId = extractStudentId(row);
@@ -554,7 +561,7 @@ export const VoterManagement: React.FC = () => {
           processed.push({
             studentId: '',
             fullName: '',
-            course: '', // Leave course blank
+            course: '', // Course will be left blank for manual selection
             yearLevel: 1,
             section: '',
             password: '',
@@ -564,12 +571,13 @@ export const VoterManagement: React.FC = () => {
           });
           continue;
         }
+        
         const fullName = extractFullName(row);
         if (!fullName) {
           processed.push({
             studentId,
             fullName: '',
-            course: '', // Leave course blank
+            course: '', // Course will be left blank for manual selection
             yearLevel: 1,
             section: '',
             password: '',
@@ -579,15 +587,17 @@ export const VoterManagement: React.FC = () => {
           });
           continue;
         }
+        
         // Course will be left blank and selected via dropdown in review step
         const course = '';
         const yearLevel = extractYearLevel(row);
         const section = extractSection(row);
+        
         if (existingStudentIds.has(studentId.toLowerCase())) {
           processed.push({
             studentId,
             fullName,
-            course, // Leave course blank
+            course, // Course will be left blank for manual selection
             yearLevel,
             section,
             password: '',
@@ -597,11 +607,12 @@ export const VoterManagement: React.FC = () => {
           });
           continue;
         }
+        
         const password = generatePasswordForStudent(studentId, fullName, yearLevel, section);
         processed.push({
           studentId,
           fullName,
-          course, // Leave course blank
+          course, // Course will be left blank for manual selection
           yearLevel,
           section,
           password,
@@ -609,15 +620,16 @@ export const VoterManagement: React.FC = () => {
           originalData: row
         });
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         processed.push({
           studentId: '',
           fullName: '',
-          course: '', // Leave course blank
+          course: '', // Course will be left blank for manual selection
           yearLevel: 1,
           section: '',
           password: '',
           status: 'error',
-          error: `Processing error: ${error.message}`,
+          error: `Processing error: ${errorMessage}`,
           originalData: row
         });
       }
@@ -651,6 +663,8 @@ export const VoterManagement: React.FC = () => {
     }
     return '';
   };
+
+  // REMOVED: extractCourse function since we don't want to extract course from file
 
   const isLikelyStudentId = (value: string): boolean => {
     if (!value) return false;
@@ -2418,7 +2432,7 @@ export const VoterManagement: React.FC = () => {
                     <p className="text-sm text-blue-800 font-medium">Import Instructions</p>
                     <p className="text-xs text-blue-700 mt-1">
                       Upload an Excel, CSV, or Word file containing student data. The system will automatically detect columns for Student ID, Name, Year Level, and Section.
-                      <strong> Course will be left blank and must be selected for each voter in the next step.</strong>
+                      <strong> Course will be left blank and must be selected for each voter in the next step using the dropdown menu.</strong>
                     </p>
                   </div>
                 </div>
@@ -2453,7 +2467,7 @@ export const VoterManagement: React.FC = () => {
                   <div>
                     <p className="text-sm text-yellow-800 font-medium">Review Import Data</p>
                     <p className="text-xs text-yellow-700 mt-1">
-                      Please review the imported data and select a course for each voter before proceeding. 
+                      Please review the imported data and select a course for each voter using the dropdown menu before proceeding. 
                       New records will be created, duplicates will be skipped.
                     </p>
                   </div>

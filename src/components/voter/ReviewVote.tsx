@@ -79,6 +79,8 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
           setHashedBallotId(newHashedBallotId);
         }
       } catch (error) {
+        // Type-safe error handling
+        console.error('Failed to generate secure ballot ID:', error);
         const timestamp = Date.now().toString(36);
         const fallbackRandom1 = Math.random().toString(36).substring(2, 15);
         const fallbackRandom2 = Math.random().toString(36).substring(2, 15);
@@ -153,17 +155,21 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
       } else {
         throw new Error(`Invalid response structure: ${JSON.stringify(result)}`);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       let errorMessage = 'Failed to submit vote to blockchain';
 
-      if (err.response) {
-        errorMessage = err.response.data?.message ||
-          err.response.data?.error ||
-          `Server error: ${err.response.status}`;
-      } else if (err.request) {
+      // Type-safe error handling
+      if (err && typeof err === 'object' && 'response' in err) {
+        const errorWithResponse = err as { response?: { data?: { message?: string; error?: string }; status?: number } };
+        errorMessage = errorWithResponse.response?.data?.message ||
+          errorWithResponse.response?.data?.error ||
+          `Server error: ${errorWithResponse.response?.status}`;
+      } else if (err && typeof err === 'object' && 'request' in err) {
         errorMessage = 'No response from server. Please check your connection.';
-      } else {
-        errorMessage = err.message || errorMessage;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
       }
 
       throw new Error(errorMessage);
@@ -185,8 +191,10 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
       }
 
       return markVotedResponse;
-    } catch (error) {
-      throw new Error('Failed to update your voting status. Please try again.');
+    } catch (error: unknown) {
+      // Type-safe error handling
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update your voting status. Please try again.';
+      throw new Error(errorMessage);
     }
   };
 
@@ -231,9 +239,11 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
 
       onVoteCast(receipt);
 
-    } catch (error) {
+    } catch (error: unknown) {
+      // Type-safe error handling
+      const errorMessage = error instanceof Error ? error.message : 'Error submitting your vote. Please try again.';
       setSubmissionStatus('error');
-      setSubmissionError(error.message || 'Error submitting your vote. Please try again.');
+      setSubmissionError(errorMessage);
       setIsSubmitting(false);
     }
   };

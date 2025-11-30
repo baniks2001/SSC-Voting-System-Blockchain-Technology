@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Edit, Trash2, Search, User, Award, Layers, MoreVertical, Filter, ChevronDown, Check, Users } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Search, User, Award, Layers, MoreVertical, Filter, Check, Users } from 'lucide-react';
 import { Candidate, Position, Voter } from '../../types';
 import { api } from '../../utils/api';
 import { positionApi } from '../../utils/positionApi';
@@ -71,7 +71,12 @@ export const CandidateManagement: React.FC = () => {
   const fetchPositions = async () => {
     try {
       const response = await positionApi.getPositions();
-      setPositions(response);
+      // Ensure maxVotes is properly set and is a number
+      const positionsWithValidMaxVotes = response.map((position: Position) => ({
+        ...position,
+        maxVotes: position.maxVotes && !isNaN(Number(position.maxVotes)) ? Number(position.maxVotes) : 1
+      }));
+      setPositions(positionsWithValidMaxVotes);
     } catch (error: any) {
       showToast('error', 'Failed to fetch positions');
     }
@@ -152,20 +157,21 @@ export const CandidateManagement: React.FC = () => {
   const handlePositionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Ensure maxVotes is a valid number
+      const maxVotes = Math.max(1, Math.min(20, Number(positionFormData.maxVotes) || 1));
+      
+      const positionData = {
+        name: positionFormData.name,
+        maxVotes: maxVotes,
+        order: positionFormData.order,
+        is_active: positionFormData.is_active
+      };
+
       if (editingPosition) {
-        await positionApi.updatePosition(editingPosition.id, {
-          name: positionFormData.name,
-          maxVotes: positionFormData.maxVotes,
-          order: positionFormData.order,
-          is_active: positionFormData.is_active
-        });
+        await positionApi.updatePosition(editingPosition.id, positionData);
         showToast('success', 'Position updated successfully');
       } else {
-        await positionApi.createPosition({
-          name: positionFormData.name,
-          maxVotes: positionFormData.maxVotes,
-          order: positionFormData.order
-        });
+        await positionApi.createPosition(positionData);
         showToast('success', 'Position created successfully');
       }
       setShowPositionModal(false);
@@ -192,9 +198,9 @@ export const CandidateManagement: React.FC = () => {
     setEditingPosition(position);
     setPositionFormData({
       name: position.name,
-      maxVotes: position.maxVotes,
-      order: position.order,
-      is_active: position.is_active
+      maxVotes: position.maxVotes || 1,
+      order: position.order || 0,
+      is_active: position.is_active ?? true
     });
     setShowPositionModal(true);
   };
@@ -428,13 +434,13 @@ export const CandidateManagement: React.FC = () => {
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{position.name}</h3>
                     <span className="text-xs sm:text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex-shrink-0 ml-2 border border-blue-200">
-                      Limit: {position.maxVotes}
+                      Limit: {position.maxVotes || 1}
                     </span>
                   </div>
                   <div className="text-xs sm:text-sm text-gray-600 mb-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <span>Display Order:</span>
-                      <span className="font-medium">{position.order}</span>
+                      <span className="font-medium">{position.order || 0}</span>
                     </div>
                     <div className={`flex items-center justify-between text-xs ${position.is_active ? 'text-green-600' : 'text-red-600'}`}>
                       <span>Status:</span>
@@ -812,7 +818,7 @@ export const CandidateManagement: React.FC = () => {
               required
             />
             <p className="text-sm text-gray-600 mt-1">
-              Number of candidates a voter can select for this position
+              Number of candidates a voter can select for this position (Current: {positionFormData.maxVotes})
             </p>
           </div>
 

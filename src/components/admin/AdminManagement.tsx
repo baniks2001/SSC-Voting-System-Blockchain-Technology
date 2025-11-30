@@ -21,7 +21,7 @@ export const AdminManagement: React.FC = () => {
     email: '',
     password: '',
     fullName: '',
-    role: 'admin' as 'admin' | 'auditor' | 'poll_monitor'
+    role: 'admin' as 'admin' | 'auditor' | 'poll_monitor' | 'super_admin' // Add super_admin here
   });
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export const AdminManagement: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this admin?')) return;
-    
+
     try {
       await api.delete(`/admin/admins/${id}`);
       showToast('success', 'Admin deleted successfully');
@@ -247,20 +247,18 @@ export const AdminManagement: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        admin.is_active 
-                          ? 'bg-green-100 text-green-800 border border-green-200' 
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${admin.is_active
+                          ? 'bg-green-100 text-green-800 border border-green-200'
                           : 'bg-red-100 text-red-800 border border-red-200'
-                      }`}>
+                        }`}>
                         {admin.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        canControlPoll(admin) 
-                          ? 'bg-green-100 text-green-800 border border-green-200' 
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${canControlPoll(admin)
+                          ? 'bg-green-100 text-green-800 border border-green-200'
                           : 'bg-gray-100 text-gray-800 border border-gray-200'
-                      }`}>
+                        }`}>
                         {canControlPoll(admin) ? 'Can Control Poll' : 'View Only'}
                       </span>
                     </td>
@@ -356,26 +354,24 @@ export const AdminManagement: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="space-y-2">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(admin.role)}`}>
                         {admin.role.replace('_', ' ').toUpperCase()}
                       </span>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        admin.is_active 
-                          ? 'bg-green-100 text-green-800 border border-green-200' 
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${admin.is_active
+                          ? 'bg-green-100 text-green-800 border border-green-200'
                           : 'bg-red-100 text-red-800 border border-red-200'
-                      }`}>
+                        }`}>
                         {admin.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                     <div className="space-y-2">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        canControlPoll(admin) 
-                          ? 'bg-green-100 text-green-800 border border-green-200' 
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${canControlPoll(admin)
+                          ? 'bg-green-100 text-green-800 border border-green-200'
                           : 'bg-gray-100 text-gray-800 border border-gray-200'
-                      }`}>
+                        }`}>
                         {canControlPoll(admin) ? 'Can Control Poll' : 'View Only'}
                       </span>
                       <div className="text-xs text-gray-600 text-right">
@@ -526,11 +522,10 @@ export const AdminManagement: React.FC = () => {
               <div className="space-y-2">
                 <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">Status</label>
                 <p>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    viewingAdmin.is_active 
-                      ? 'bg-green-100 text-green-800 border border-green-200' 
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${viewingAdmin.is_active
+                      ? 'bg-green-100 text-green-800 border border-green-200'
                       : 'bg-red-100 text-red-800 border border-red-200'
-                  }`}>
+                    }`}>
                     {viewingAdmin.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </p>
@@ -538,11 +533,10 @@ export const AdminManagement: React.FC = () => {
               <div className="space-y-2">
                 <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">Poll Access</label>
                 <p>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    canControlPoll(viewingAdmin) 
-                      ? 'bg-green-100 text-green-800 border border-green-200' 
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${canControlPoll(viewingAdmin)
+                      ? 'bg-green-100 text-green-800 border border-green-200'
                       : 'bg-gray-100 text-gray-800 border border-gray-200'
-                  }`}>
+                    }`}>
                     {canControlPoll(viewingAdmin) ? 'Can Control Poll' : 'View Only'}
                   </span>
                 </p>

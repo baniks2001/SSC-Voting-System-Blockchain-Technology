@@ -53,7 +53,6 @@ interface NodeStatus {
   lastSync: string | null;
 }
 
-// UPDATED: Fixed BlockchainStatus interface with currentNode property
 interface BlockchainStatus {
   isConnected: boolean;
   emergencyMode: boolean;
@@ -86,9 +85,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [nodeStatus, setNodeStatus] = useState<NodeStatus[]>([]);
   const [currentNode] = useState<string>('node1');
-  const [nodeHealth, setNodeHealth] = useState<{ [key: string]: boolean }>({});
   const [blockchainStatus, setBlockchainStatus] = useState<BlockchainStatus | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { showToast } = useToast();
@@ -118,13 +115,6 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
         };
 
         setBlockchainStatus(updatedBlockchainStatus);
-
-        const healthStatus: { [key: string]: boolean } = {};
-        filteredNodes.forEach((node: any) => {
-          healthStatus[node.name] = node.connected;
-        });
-        setNodeHealth(healthStatus);
-        setNodeStatus(filteredNodes);
 
         console.log('✅ Robust blockchain status:', {
           connected: updatedBlockchainStatus.isConnected,
@@ -193,9 +183,12 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
         positionsData = [];
       }
 
+      // FIXED: Added null checks for display_order
       const sortedPositions = positionsData.sort((a: Position, b: Position) => {
-        if (a.display_order !== b.display_order) {
-          return a.display_order - b.display_order;
+        const orderA = a.display_order ?? 0;
+        const orderB = b.display_order ?? 0;
+        if (orderA !== orderB) {
+          return orderA - orderB;
         }
         return a.name.localeCompare(b.name);
       });
@@ -662,9 +655,9 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
   );
 
   // Modern candidate card - mobile optimized
-  const CandidateCard = ({ candidate, index, totalVotes, isLeading }: {
+  // FIXED: Removed unused index parameter
+  const CandidateCard = ({ candidate, totalVotes, isLeading }: {
     candidate: Candidate,
-    index: number,
     totalVotes: number,
     isLeading: boolean
   }) => {
@@ -870,13 +863,13 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
 
                 {/* Responsive candidate grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 lg:gap-4">
-                  {sortedCandidates.map((candidate, index) => {
-                    const isLeading = index === 0 && (candidate.vote_count || 0) > 0;
+                  {/* FIXED: Removed unused index parameter */}
+                  {sortedCandidates.map((candidate) => {
+                    const isLeading = candidate.id === leadingCandidate?.id && (candidate.vote_count || 0) > 0;
                     return (
                       <CandidateCard
                         key={candidate.id}
                         candidate={candidate}
-                        index={index}
                         totalVotes={totalVotes}
                         isLeading={isLeading}
                       />

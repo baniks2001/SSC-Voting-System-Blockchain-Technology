@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PollProvider, usePoll } from './contexts/PollContext';
 import { LoginForm } from './components/auth/LoginForm';
-import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { Toast, useToast } from './components/common/Toast';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { Dashboard } from './components/admin/Dashboard';
@@ -22,6 +21,8 @@ function AppContent() {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard');
   const [appInitialized, setAppInitialized] = useState(false);
+  const [minLoadingTimePassed, setMinLoadingTimePassed] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -30,33 +31,108 @@ function AppContent() {
     }
   }, []);
 
-  // Track when both auth and poll have finished initial loading
+  // Progress animation from 1% to 100% over 3 seconds
   useEffect(() => {
-    if (!authLoading && !pollLoading) {
+    const duration = 3000; // 3 seconds
+    const startTime = Date.now();
+    const startProgress = 1;
+    
+    const updateProgress = () => {
+      const currentTime = Date.now();
+      const elapsed = currentTime - startTime;
+      const newProgress = Math.min(startProgress + (elapsed / duration) * 99, 100);
+      
+      setProgress(newProgress);
+      
+      if (newProgress < 100) {
+        requestAnimationFrame(updateProgress);
+      }
+    };
+    
+    requestAnimationFrame(updateProgress);
+  }, []);
+
+  // Set minimum loading time of 3 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinLoadingTimePassed(true);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Enhanced loading state management with minimum 3-second loading
+  useEffect(() => {
+    // Only set initialized to true when both auth and poll have finished loading AND minimum time has passed
+    if (!authLoading && !pollLoading && minLoadingTimePassed && !appInitialized) {
       setAppInitialized(true);
     }
-  }, [authLoading, pollLoading]);
+  }, [authLoading, pollLoading, minLoadingTimePassed, appInitialized]);
 
   const handleLogout = () => {
     logout();
-    showToast('Logged out successfully', 'success');
+    showToast('success', 'Logged out successfully');
   };
 
-  const handleVoteCast = (receipt: any) => {
-    showToast('Vote successfully recorded on blockchain!', 'success');
+  const handleVoteCast = () => {
+    showToast('success', 'Vote successfully recorded on blockchain!');
   };
 
-  // Show loading spinner while initializing
+  // Show loading spinner while initializing - single source of truth
   if (!appInitialized) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <img 
-            src="/logo.png" 
-            alt="App Logo" 
-            className="w-20 h-20 mx-auto mb-4 animate-pulse"
-          />
-          <LoadingSpinner />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6">
+        <div className="text-center max-w-md w-full">
+          {/* Logo with pulse animation only */}
+          <div className="relative mx-auto mb-4 sm:mb-6">
+            <img 
+              src="/logo.png" 
+              alt="VoteChain Logo" 
+              className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto animate-pulse"
+            />
+          </div>
+
+          {/* System Title and Subtext */}
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2 sm:mb-3">
+              SSC Voting System
+            </h1>
+            <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-1">
+              Secure Blockchain Voting Platform
+            </p>
+            <p className="text-xs sm:text-sm text-gray-500">
+              Developed by Servando S. Tio III
+            </p>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mb-6 sm:mb-8">
+            <div className="flex justify-between text-xs text-gray-600 mb-2">
+              <span>System Initialization</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3 overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-blue-500 to-purple-600 h-full rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {progress < 5 && "Loading core modules..."}
+              {progress >= 10 && progress < 20 && "Establishing secure connection..."}
+              {progress >= 20 && progress < 40 && "Initializing blockchain interface..."}
+              {progress >= 40 && "Finalizing startup..."}
+            </p>
+          </div>
+
+          {/* Finalizing message */}
+          {(!authLoading && !pollLoading) && (
+            <div className="mt-6 p-3 bg-green-50 rounded-lg border border-green-200">
+              <p className="text-green-700 text-sm font-medium animate-pulse">
+                ✓ All systems ready - Launching application...
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -92,22 +168,22 @@ function AppContent() {
   // Voter has already voted
   if (user?.hasVoted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6">
-        <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-6 sm:p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-2xl bg-green-500/10 flex items-center justify-center">
-            <svg className="w-8 h-8 sm:w-10 sm:h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl border border-white/20 p-6 sm:p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto mb-4 sm:mb-6 rounded-2xl bg-green-500/10 flex items-center justify-center">
+            <svg className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-3">
-             Voter Has Already Cast a Ballot
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-3 sm:mb-4">
+            Vote Successfully Cast
           </h2>
-          <p className="text-gray-600 text-base sm:text-lg mb-6 leading-relaxed">
-            Thank you for participating in the election.
+          <p className="text-gray-600 text-base sm:text-lg md:text-xl mb-4 sm:mb-6 leading-relaxed">
+            Thank you for participating in the election. Your vote has been securely recorded on the blockchain.
           </p>
           <button
             onClick={handleLogout}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 sm:py-4 px-6 rounded-xl font-semibold hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 text-base sm:text-lg"
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 sm:py-4 px-6 rounded-xl font-semibold hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 text-base sm:text-lg shadow-lg"
           >
             Log Out
           </button>
@@ -119,29 +195,40 @@ function AppContent() {
   // Check if voting is allowed
   if (!isLoginEnabled) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-blue-50">
-        <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 max-w-md w-full text-center overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl border border-white/20 max-w-md w-full text-center overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-600"></div>
-          
+
           <div className="p-6 sm:p-8">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-              <svg className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto mb-4 sm:mb-6 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+              <svg className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+
+            {/* System Title in Header */}
+            <div className="mb-4 sm:mb-6">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                SSC Voting System
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-2">
+                Secure Blockchain Voting • Developed by Servando S. Tio III
+              </p>
+            </div>
+
+            <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
               Voting Status
-            </h1>
+            </h2>
             <p className="text-xs sm:text-sm text-gray-600 mt-2">
-              Real-time API Status: Connected
+              Real-time Blockchain Status: Connected
             </p>
           </div>
-          
+
           <div className="p-4 sm:p-6">
             {pollStatus === 'paused' && (
-              <div className="bg-yellow-500/10 border border-yellow-200 text-yellow-800 px-4 sm:px-6 py-5 sm:py-6 rounded-xl mb-4 backdrop-blur-sm">
+              <div className="bg-yellow-500/10 border border-yellow-200 text-yellow-800 px-4 sm:px-6 py-5 sm:py-6 rounded-xl mb-4 sm:mb-6 backdrop-blur-sm">
                 <div className="flex items-center justify-center space-x-3 sm:space-x-4">
-                  <svg className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div className="text-left">
@@ -156,9 +243,9 @@ function AppContent() {
             )}
 
             {pollStatus === 'finished' && (
-              <div className="bg-green-500/10 border border-green-200 text-green-800 px-4 sm:px-6 py-5 sm:py-6 rounded-xl mb-4 backdrop-blur-sm">
+              <div className="bg-green-500/10 border border-green-200 text-green-800 px-4 sm:px-6 py-5 sm:py-6 rounded-xl mb-4 sm:mb-6 backdrop-blur-sm">
                 <div className="flex items-center justify-center space-x-3 sm:space-x-4">
-                  <svg className="w-8 h-8 sm:w-10 sm:h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8 sm:w-10 sm:h-10 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div className="text-left">
@@ -173,9 +260,9 @@ function AppContent() {
             )}
 
             {pollStatus === 'not_started' && (
-              <div className="bg-gray-500/10 border border-gray-200 text-gray-800 px-4 sm:px-6 py-5 sm:py-6 rounded-xl mb-4 backdrop-blur-sm">
+              <div className="bg-gray-500/10 border border-gray-200 text-gray-800 px-4 sm:px-6 py-5 sm:py-6 rounded-xl mb-4 sm:mb-6 backdrop-blur-sm">
                 <div className="flex items-center justify-center space-x-3 sm:space-x-4">
-                  <svg className="w-8 h-8 sm:w-10 sm:h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8 sm:w-10 sm:h-10 text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div className="text-left">
@@ -192,7 +279,7 @@ function AppContent() {
             <div className="mt-6 pt-6 border-t border-gray-200/50">
               <button
                 onClick={handleLogout}
-                className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-3 sm:py-4 px-6 rounded-xl font-semibold hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 text-base sm:text-lg"
+                className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-3 sm:py-4 px-6 rounded-xl font-semibold hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 text-base sm:text-lg shadow-md"
               >
                 Logout
               </button>
@@ -205,7 +292,7 @@ function AppContent() {
 
   // Main voting interface
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 sm:py-8 px-4 sm:px-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 sm:py-6 lg:py-8 px-4 sm:px-6 lg:px-8">
       <CastVote
         onVoteCast={handleVoteCast}
         onLogout={handleLogout}

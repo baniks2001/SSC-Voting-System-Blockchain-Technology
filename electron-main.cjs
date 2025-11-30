@@ -9,7 +9,9 @@ let processes = {
     blockchainNode1: null,
     blockchainNode2: null,
     backend: null,
-    frontend: null
+    frontend: null,
+    apache: null,
+    mysql: null
 };
 let currentIP = 'localhost';
 let ipCheckInterval = null;
@@ -329,6 +331,108 @@ ipcMain.handle('clean-blockchain', async function () {
     }
 });
 
+ipcMain.handle('start-blockchain-node1', async function () {
+    try {
+        const blockchainDir = path.join(__dirname, 'blockchain');
+        
+        addTerminalOutput('system', 'Starting Blockchain Node 1 (port 8545)...', 'info');
+        const node1Process = spawn('start-node1.bat', [], {
+            cwd: blockchainDir,
+            shell: true
+        });
+        
+        processes.blockchainNode1 = node1Process;
+        
+        // Send status update
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'blockchain-node1',
+                status: 'running'
+            });
+        }
+        
+        node1Process.stdout.on('data', function (data) {
+            if (mainWindow) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'stdout',
+                    data: data.toString(),
+                    category: 'blockchain-node1'
+                });
+            }
+        });
+        
+        node1Process.stderr.on('data', function (data) {
+            if (mainWindow) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'stderr',
+                    data: data.toString(),
+                    category: 'blockchain-node1'
+                });
+            }
+        });
+
+        addTerminalOutput('system', 'Waiting for blockchain node 1 to start (15 seconds)...', 'info');
+        await new Promise(resolve => setTimeout(resolve, 15000));
+        
+        addTerminalOutput('system', 'Blockchain node 1 should be running now', 'info');
+        return { success: true };
+        
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('start-blockchain-node2', async function () {
+    try {
+        const blockchainDir = path.join(__dirname, 'blockchain');
+        
+        addTerminalOutput('system', 'Starting Blockchain Node 2 (port 8547)...', 'info');
+        const node2Process = spawn('start-node2.bat', [], {
+            cwd: blockchainDir,
+            shell: true
+        });
+        
+        processes.blockchainNode2 = node2Process;
+        
+        // Send status update
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'blockchain-node2',
+                status: 'running'
+            });
+        }
+        
+        node2Process.stdout.on('data', function (data) {
+            if (mainWindow) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'stdout',
+                    data: data.toString(),
+                    category: 'blockchain-node2'
+                });
+            }
+        });
+        
+        node2Process.stderr.on('data', function (data) {
+            if (mainWindow) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'stderr',
+                    data: data.toString(),
+                    category: 'blockchain-node2'
+                });
+            }
+        });
+
+        addTerminalOutput('system', 'Waiting for blockchain node 2 to start (15 seconds)...', 'info');
+        await new Promise(resolve => setTimeout(resolve, 15000));
+        
+        addTerminalOutput('system', 'Blockchain node 2 should be running now', 'info');
+        return { success: true };
+        
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
 ipcMain.handle('start-blockchain', async function () {
     try {
         const blockchainDir = path.join(__dirname, 'blockchain');
@@ -336,8 +440,7 @@ ipcMain.handle('start-blockchain', async function () {
         addTerminalOutput('system', 'Starting Blockchain Node 1 (port 8545)...', 'info');
         const node1Process = spawn('start-node1.bat', [], {
             cwd: blockchainDir,
-            shell: true,
-            detached: true
+            shell: true
         });
         
         processes.blockchainNode1 = node1Process;
@@ -375,8 +478,7 @@ ipcMain.handle('start-blockchain', async function () {
         addTerminalOutput('system', 'Starting Blockchain Node 2 (port 8547)...', 'info');
         const node2Process = spawn('start-node2.bat', [], {
             cwd: blockchainDir,
-            shell: true,
-            detached: true
+            shell: true
         });
         
         processes.blockchainNode2 = node2Process;
@@ -420,9 +522,97 @@ ipcMain.handle('start-blockchain', async function () {
     }
 });
 
-ipcMain.handle('stop-blockchain', async function () {
+ipcMain.handle('stop-blockchain-node1', async function () {
     try {
-        addTerminalOutput('system', 'Stopping blockchain nodes...', 'info');
+        addTerminalOutput('system', 'Stopping blockchain node 1...', 'info');
+        
+        if (processes.blockchainNode1) {
+            processes.blockchainNode1.kill();
+            processes.blockchainNode1 = null;
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'blockchain-node1',
+                    status: 'stopped'
+                });
+            }
+        }
+        
+        // Kill geth processes for node1 specifically (port 8545)
+        try {
+            exec('netstat -ano | findstr :8545', (error, stdout) => {
+                if (stdout) {
+                    const lines = stdout.split('\n');
+                    lines.forEach(line => {
+                        const match = line.match(/LISTENING\s+(\d+)/);
+                        if (match) {
+                            const pid = match[1];
+                            exec(`taskkill /pid ${pid} /f`, (err) => {
+                                if (!err) {
+                                    console.log(`Killed process ${pid} for node 1`);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        } catch (e) {
+            console.log('Error killing node1 processes:', e);
+        }
+        
+        addTerminalOutput('system', 'Blockchain node 1 stopped', 'info');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('stop-blockchain-node2', async function () {
+    try {
+        addTerminalOutput('system', 'Stopping blockchain node 2...', 'info');
+        
+        if (processes.blockchainNode2) {
+            processes.blockchainNode2.kill();
+            processes.blockchainNode2 = null;
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'blockchain-node2',
+                    status: 'stopped'
+                });
+            }
+        }
+        
+        // Kill geth processes for node2 specifically (port 8547)
+        try {
+            exec('netstat -ano | findstr :8547', (error, stdout) => {
+                if (stdout) {
+                    const lines = stdout.split('\n');
+                    lines.forEach(line => {
+                        const match = line.match(/LISTENING\s+(\d+)/);
+                        if (match) {
+                            const pid = match[1];
+                            exec(`taskkill /pid ${pid} /f`, (err) => {
+                                if (!err) {
+                                    console.log(`Killed process ${pid} for node 2`);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        } catch (e) {
+            console.log('Error killing node2 processes:', e);
+        }
+        
+        addTerminalOutput('system', 'Blockchain node 2 stopped', 'info');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('stop-blockchain-all', async function () {
+    try {
+        addTerminalOutput('system', 'Stopping all blockchain nodes...', 'info');
         
         if (processes.blockchainNode1) {
             processes.blockchainNode1.kill();
@@ -446,9 +636,18 @@ ipcMain.handle('stop-blockchain', async function () {
             }
         }
         
-        spawn('taskkill', ['/f', '/im', 'geth.exe'], { shell: true });
+        // Kill all geth processes
+        try {
+            exec('taskkill /f /im geth.exe', (error) => {
+                if (!error) {
+                    console.log('Killed all geth processes');
+                }
+            });
+        } catch (e) {
+            console.log('Error killing geth processes:', e);
+        }
         
-        addTerminalOutput('system', 'Blockchain nodes stopped', 'info');
+        addTerminalOutput('system', 'All blockchain nodes stopped', 'info');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -477,7 +676,7 @@ ipcMain.handle('start-backend', async function () {
     try {
         const backendProcess = spawn('npm', ['run', 'dev:network'], { 
             shell: true, 
-            cwd: path.join(__dirname, 'server') 
+            cwd: path.join(__dirname, 'server')
         });
         
         processes.backend = backendProcess;
@@ -510,6 +709,22 @@ ipcMain.handle('start-backend', async function () {
             }
         });
         
+        backendProcess.on('close', function (code) {
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'backend',
+                    status: 'stopped'
+                });
+                if (code !== 0) {
+                    mainWindow.webContents.send('command-output', {
+                        type: 'error',
+                        data: `Backend process exited with code ${code}`,
+                        category: 'backend'
+                    });
+                }
+            }
+        });
+        
         await new Promise(function (resolve) { 
             setTimeout(resolve, 10000); 
         });
@@ -535,7 +750,27 @@ ipcMain.handle('stop-backend', async function () {
             }
         }
         
-        spawn('taskkill', ['/f', '/im', 'node.exe'], { shell: true });
+        // Kill node processes running on backend port (5000)
+        try {
+            exec('netstat -ano | findstr :5000', (error, stdout) => {
+                if (stdout) {
+                    const lines = stdout.split('\n');
+                    lines.forEach(line => {
+                        const match = line.match(/LISTENING\s+(\d+)/);
+                        if (match) {
+                            const pid = match[1];
+                            exec(`taskkill /pid ${pid} /f`, (err) => {
+                                if (!err) {
+                                    console.log(`Killed backend process ${pid} on port 5000`);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        } catch (e) {
+            console.log('Error killing backend port processes:', e);
+        }
         
         addTerminalOutput('system', 'Backend server stopped', 'info');
         return { success: true };
@@ -547,7 +782,7 @@ ipcMain.handle('stop-backend', async function () {
 ipcMain.handle('start-frontend', async function (event, ipAddress) {
     try {
         const frontendProcess = spawn('npm', ['run', 'dev', '--', '--host'], { 
-            shell: true 
+            shell: true
         });
         
         processes.frontend = frontendProcess;
@@ -580,6 +815,22 @@ ipcMain.handle('start-frontend', async function (event, ipAddress) {
             }
         });
         
+        frontendProcess.on('close', function (code) {
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'frontend',
+                    status: 'stopped'
+                });
+                if (code !== 0) {
+                    mainWindow.webContents.send('command-output', {
+                        type: 'error',
+                        data: `Frontend process exited with code ${code}`,
+                        category: 'frontend'
+                    });
+                }
+            }
+        });
+        
         await new Promise(function (resolve) { 
             setTimeout(resolve, 10000); 
         });
@@ -605,9 +856,276 @@ ipcMain.handle('stop-frontend', async function () {
             }
         }
         
-        spawn('taskkill', ['/f', '/im', 'node.exe'], { shell: true });
+        // Kill node processes running on frontend port (5173)
+        try {
+            exec('netstat -ano | findstr :5173', (error, stdout) => {
+                if (stdout) {
+                    const lines = stdout.split('\n');
+                    lines.forEach(line => {
+                        const match = line.match(/LISTENING\s+(\d+)/);
+                        if (match) {
+                            const pid = match[1];
+                            exec(`taskkill /pid ${pid} /f`, (err) => {
+                                if (!err) {
+                                    console.log(`Killed frontend process ${pid} on port 5173`);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        } catch (e) {
+            console.log('Error killing frontend port processes:', e);
+        }
         
         addTerminalOutput('system', 'Frontend server stopped', 'info');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+// XAMPP Control Handlers
+ipcMain.handle('start-apache', async function () {
+    try {
+        addTerminalOutput('system', 'Starting Apache...', 'info');
+        
+        // Try common XAMPP paths
+        const possiblePaths = [
+            'C:\\xampp\\apache\\bin\\httpd.exe',
+            'C:\\xampp\\apache_start.bat',
+            'C:\\xampp\\xampp_start.exe'
+        ];
+        
+        let apacheProcess = null;
+        for (const path of possiblePaths) {
+            if (fs.existsSync(path)) {
+                apacheProcess = spawn(path, [], { shell: true });
+                processes.apache = apacheProcess;
+                break;
+            }
+        }
+        
+        if (!apacheProcess) {
+            // If no specific path found, try to start Apache service
+            apacheProcess = spawn('sc', ['start', 'Apache2.4'], { shell: true });
+            processes.apache = apacheProcess;
+        }
+        
+        // Send status update
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'apache',
+                status: 'running'
+            });
+        }
+        
+        apacheProcess.stdout.on('data', function (data) {
+            if (mainWindow) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'stdout',
+                    data: data.toString(),
+                    category: 'apache'
+                });
+            }
+        });
+        
+        apacheProcess.stderr.on('data', function (data) {
+            if (mainWindow) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'stderr',
+                    data: data.toString(),
+                    category: 'apache'
+                });
+            }
+        });
+        
+        apacheProcess.on('close', function (code) {
+            if (mainWindow && code !== 0) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'apache',
+                    status: 'stopped'
+                });
+            }
+        });
+        
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        addTerminalOutput('system', 'Apache started', 'info');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('stop-apache', async function () {
+    try {
+        addTerminalOutput('system', 'Stopping Apache...', 'info');
+        
+        if (processes.apache) {
+            processes.apache.kill();
+            processes.apache = null;
+        }
+        
+        // Stop Apache service
+        spawn('sc', ['stop', 'Apache2.4'], { shell: true });
+        
+        // Kill Apache processes
+        exec('taskkill /f /im httpd.exe', (error) => {
+            if (!error) {
+                console.log('Killed Apache processes');
+            }
+        });
+        
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'apache',
+                status: 'stopped'
+            });
+        }
+        
+        addTerminalOutput('system', 'Apache stopped', 'info');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('start-mysql', async function () {
+    try {
+        addTerminalOutput('system', 'Starting MySQL...', 'info');
+        
+        // Try common XAMPP paths
+        const possiblePaths = [
+            'C:\\xampp\\mysql_start.bat',
+            'C:\\xampp\\mysql\\bin\\mysqld.exe',
+            'C:\\xampp\\xampp_start.exe'
+        ];
+        
+        let mysqlProcess = null;
+        for (const path of possiblePaths) {
+            if (fs.existsSync(path)) {
+                mysqlProcess = spawn(path, [], { shell: true });
+                processes.mysql = mysqlProcess;
+                break;
+            }
+        }
+        
+        if (!mysqlProcess) {
+            // If no specific path found, try to start MySQL service
+            mysqlProcess = spawn('sc', ['start', 'MySQL'], { shell: true });
+            processes.mysql = mysqlProcess;
+        }
+        
+        // Send status update
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'mysql',
+                status: 'running'
+            });
+        }
+        
+        mysqlProcess.stdout.on('data', function (data) {
+            if (mainWindow) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'stdout',
+                    data: data.toString(),
+                    category: 'mysql'
+                });
+            }
+        });
+        
+        mysqlProcess.stderr.on('data', function (data) {
+            if (mainWindow) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'stderr',
+                    data: data.toString(),
+                    category: 'mysql'
+                });
+            }
+        });
+        
+        mysqlProcess.on('close', function (code) {
+            if (mainWindow && code !== 0) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'mysql',
+                    status: 'stopped'
+                });
+            }
+        });
+        
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        addTerminalOutput('system', 'MySQL started', 'info');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('stop-mysql', async function () {
+    try {
+        addTerminalOutput('system', 'Stopping MySQL...', 'info');
+        
+        if (processes.mysql) {
+            processes.mysql.kill();
+            processes.mysql = null;
+        }
+        
+        // Stop MySQL service
+        spawn('sc', ['stop', 'MySQL'], { shell: true });
+        
+        // Kill MySQL processes
+        exec('taskkill /f /im mysqld.exe', (error) => {
+            if (!error) {
+                console.log('Killed MySQL processes');
+            }
+        });
+        
+        if (mainWindow) {
+            mainWindow.webContents.send('process-status', {
+                process: 'mysql',
+                status: 'stopped'
+            });
+        }
+        
+        addTerminalOutput('system', 'MySQL stopped', 'info');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('open-phpmyadmin', async function () {
+    try {
+        const url = 'http://localhost/phpmyadmin';
+        await shell.openExternal(url);
+        addTerminalOutput('system', 'Opening phpMyAdmin in browser: ' + url, 'info');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('open-xampp-control', async function () {
+    try {
+        // Try to open XAMPP Control Panel
+        const possiblePaths = [
+            'C:\\xampp\\xampp-control.exe',
+            'C:\\xampp\\xampp-control.exe'
+        ];
+        
+        for (const path of possiblePaths) {
+            if (fs.existsSync(path)) {
+                spawn(path, [], { shell: true });
+                addTerminalOutput('system', 'Opening XAMPP Control Panel', 'info');
+                return { success: true };
+            }
+        }
+        
+        // If control panel not found, open XAMPP directory
+        shell.openPath('C:\\xampp');
+        addTerminalOutput('system', 'Opening XAMPP directory', 'info');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -644,8 +1162,7 @@ ipcMain.handle('run-all-steps', async function (event, options) {
         addTerminalOutput('system', 'Starting Blockchain Node 1 (port 8545)...', 'info');
         const node1Process = spawn('start-node1.bat', [], {
             cwd: blockchainDir,
-            shell: true,
-            detached: true
+            shell: true
         });
         processes.blockchainNode1 = node1Process;
         
@@ -681,8 +1198,7 @@ ipcMain.handle('run-all-steps', async function (event, options) {
         addTerminalOutput('system', 'Starting Blockchain Node 2 (port 8547)...', 'info');
         const node2Process = spawn('start-node2.bat', [], {
             cwd: blockchainDir,
-            shell: true,
-            detached: true
+            shell: true
         });
         processes.blockchainNode2 = node2Process;
         
@@ -721,7 +1237,7 @@ ipcMain.handle('run-all-steps', async function (event, options) {
         
         const backendProcess = spawn('npm', ['run', 'dev:network'], { 
             shell: true, 
-            cwd: path.join(__dirname, 'server') 
+            cwd: path.join(__dirname, 'server')
         });
         processes.backend = backendProcess;
         
@@ -752,10 +1268,19 @@ ipcMain.handle('run-all-steps', async function (event, options) {
             }
         });
         
+        backendProcess.on('close', (code) => {
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'backend',
+                    status: 'stopped'
+                });
+            }
+        });
+        
         await new Promise(resolve => setTimeout(resolve, 10000));
         
         const frontendProcess = spawn('npm', ['run', 'dev', '--', '--host'], { 
-            shell: true 
+            shell: true
         });
         processes.frontend = frontendProcess;
         
@@ -782,6 +1307,15 @@ ipcMain.handle('run-all-steps', async function (event, options) {
                     type: 'stderr', 
                     data: data.toString(), 
                     category: 'frontend' 
+                });
+            }
+        });
+        
+        frontendProcess.on('close', (code) => {
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'frontend',
+                    status: 'stopped'
                 });
             }
         });

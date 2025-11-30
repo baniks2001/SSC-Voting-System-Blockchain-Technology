@@ -8,7 +8,7 @@ import { ReviewVote } from './ReviewVote';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface CastVoteProps {
-  onVoteCast: (receipt: any) => void;
+  onVoteCast: () => void;
   onLogout: () => void;
 }
 
@@ -17,7 +17,7 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
   const [positions, setPositions] = useState<Position[]>([]);
   const [selectedVotes, setSelectedVotes] = useState<{ [position: string]: number[] }>({});
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -75,9 +75,25 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
 
       setCandidates(candidatesResponse);
 
-      const sortedPositions = positionsResponse.sort((a: Position, b: Position) => {
-        if (a.display_order !== b.display_order) {
-          return a.display_order - b.display_order;
+      // FIXED: Properly handle maxVotes from backend (it returns max_votes)
+      const positionsWithValidMaxVotes = positionsResponse.map((position: any) => {
+        // Use max_votes from backend response, fallback to maxVotes, then default to 1
+        const maxVotesValue = position.max_votes ?? position.maxVotes ?? 1;
+        return {
+          ...position,
+          maxVotes: !isNaN(Number(maxVotesValue)) ? Number(maxVotesValue) : 1,
+          // Ensure display_order is properly handled too
+          display_order: position.display_order ?? position.order ?? 0
+        };
+      });
+
+      const sortedPositions = positionsWithValidMaxVotes.sort((a: Position, b: Position) => {
+        // Handle undefined display_order values
+        const aOrder = a.display_order ?? 0;
+        const bOrder = b.display_order ?? 0;
+        
+        if (aOrder !== bOrder) {
+          return aOrder - bOrder;
         }
         return a.name.localeCompare(b.name);
       });
@@ -140,7 +156,8 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
 
     const exceededPositions = positions.filter(position => {
       const selectedForPosition = selectedVotes[position.name] || [];
-      return selectedForPosition.length > position.max_votes;
+      const maxVotes = position.maxVotes || 1;
+      return selectedForPosition.length > maxVotes;
     });
 
     if (exceededPositions.length > 0) {
@@ -174,7 +191,7 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
 
   const getMaxVotesForPosition = (positionName: string) => {
     const position = positions.find(p => p.name === positionName);
-    return position?.max_votes || 1;
+    return (position?.maxVotes && !isNaN(Number(position.maxVotes))) ? Number(position.maxVotes) : 1;
   };
 
   const isCandidateSelected = (position: string, candidateId: number) => {
@@ -246,7 +263,7 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
   }
 
   const totalSelected = Object.values(selectedVotes).reduce((sum, votes) => sum + votes.length, 0);
-  const totalPossible = positions.reduce((sum, position) => sum + position.max_votes, 0);
+  const totalPossible = positions.reduce((sum, position) => sum + (position.maxVotes || 1), 0);
   const allPositionsCompleted = positions.every(position => {
     const selected = selectedVotes[position.name] || [];
     return selected.length > 0;

@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users, Vote, UserCheck, Activity, Download, Play, Pause, StopCircle,
   RefreshCw, AlertCircle, X, Save, Calendar, History, Trash2, Eye, Search,
-  Copy, FileText, Shield, TrendingUp, BarChart3, Clock, CheckCircle2
+  Copy, FileText, Shield,BarChart3, Clock
 } from 'lucide-react';
-import { DashboardStats, AuditLog, PollSettings } from '../../types';
+import { DashboardStats, AuditLog } from '../../types';
 import { api } from '../../utils/api';
 import { usePoll, PollStatus } from '../../contexts/PollContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -56,7 +56,6 @@ export const Dashboard: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [totalVotes, setTotalVotes] = useState<number>(0);
-  const [pollSettings, setPollSettings] = useState<PollSettings | null>(null);
   const [finishPollData, setFinishPollData] = useState<FinishPollFormData>({
     electionName: '',
     electionDate: '',
@@ -195,10 +194,9 @@ export const Dashboard: React.FC = () => {
       setRefreshing(true);
       setAuthError(false);
 
-      const [candidatesResponse, resultsResponse, settingsResponse, dashboardResponse, votersResponse] = await Promise.allSettled([
+      const [candidatesResponse, resultsResponse, dashboardResponse, votersResponse] = await Promise.allSettled([
         api.get('/candidates'),
         api.get('/voting/results'),
-        api.get('/poll/status'),
         api.get('/admin/dashboard').catch(error => {
           if (error.message.includes('401') || error.message.includes('Unauthorized')) {
             setAuthError(true);
@@ -276,10 +274,6 @@ export const Dashboard: React.FC = () => {
       })));
 
       // Process other responses
-      if (settingsResponse.status === 'fulfilled') {
-        setPollSettings(settingsResponse.value);
-      }
-
       if (dashboardResponse.status === 'fulfilled') {
         let hasVotedCount = dashboardResponse.value.hasVotedCount;
 
@@ -816,10 +810,11 @@ Exported on: ${new Date().toLocaleString()}`.trim();
     }
   }, []);
 
-  // Blockchain reset function
+  // FIXED: Blockchain reset function - added empty data parameter
   const resetBlockchain = useCallback(async () => {
     try {
-      const response = await api.post('/blockchain/reset');
+      // FIXED: Added empty object as second parameter
+      const response = await api.post('/blockchain/reset', {});
 
       if (response.success) {
         return true;
@@ -859,7 +854,8 @@ Exported on: ${new Date().toLocaleString()}`.trim();
           throw new Error(`Unknown action: ${action}`);
       }
 
-      const response = await api.post(endpoint, payload);
+      // FIXED: Removed unused response variable
+      await api.post(endpoint, payload);
       await updatePollStatus(action);
       await fetchData();
 
