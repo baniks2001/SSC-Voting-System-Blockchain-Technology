@@ -1141,6 +1141,20 @@ ipcMain.handle('run-all-steps', async function (event, options) {
     currentIP = ipAddress;
     
     try {
+        // Start XAMPP services first
+        addTerminalOutput('system', 'Starting XAMPP services first...', 'info');
+        
+        // Start Apache
+        await startApacheService();
+        addTerminalOutput('system', 'Apache started, waiting 5 seconds...', 'info');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        // Start MySQL
+        await startMysqlService();
+        addTerminalOutput('system', 'MySQL started, waiting 5 seconds...', 'info');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        // Continue with the rest of the deployment process
         const currentEnvIP = getCurrentEnvIP();
         if (currentEnvIP !== ipAddress) {
             updateEnvFile(ipAddress);
@@ -1327,6 +1341,149 @@ ipcMain.handle('run-all-steps', async function (event, options) {
         return { success: false, error: error.message };
     }
 });
+
+// Helper functions for XAMPP services
+async function startApacheService() {
+    return new Promise((resolve, reject) => {
+        try {
+            addTerminalOutput('system', 'Starting Apache service...', 'info');
+            
+            const possiblePaths = [
+                'C:\\xampp\\apache\\bin\\httpd.exe',
+                'C:\\xampp\\apache_start.bat',
+                'C:\\xampp\\xampp_start.exe'
+            ];
+            
+            let apacheProcess = null;
+            for (const path of possiblePaths) {
+                if (fs.existsSync(path)) {
+                    apacheProcess = spawn(path, [], { shell: true });
+                    processes.apache = apacheProcess;
+                    break;
+                }
+            }
+            
+            if (!apacheProcess) {
+                apacheProcess = spawn('sc', ['start', 'Apache2.4'], { shell: true });
+                processes.apache = apacheProcess;
+            }
+            
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'apache',
+                    status: 'running'
+                });
+            }
+            
+            apacheProcess.stdout.on('data', function (data) {
+                if (mainWindow) {
+                    mainWindow.webContents.send('command-output', {
+                        type: 'stdout',
+                        data: data.toString(),
+                        category: 'apache'
+                    });
+                }
+            });
+            
+            apacheProcess.stderr.on('data', function (data) {
+                if (mainWindow) {
+                    mainWindow.webContents.send('command-output', {
+                        type: 'stderr',
+                        data: data.toString(),
+                        category: 'apache'
+                    });
+                }
+            });
+            
+            apacheProcess.on('close', function (code) {
+                if (code === 0) {
+                    resolve();
+                } else {
+                    reject(new Error(`Apache process exited with code ${code}`));
+                }
+            });
+            
+            // Also resolve after timeout even if process doesn't close
+            setTimeout(() => {
+                resolve();
+            }, 5000);
+            
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+async function startMysqlService() {
+    return new Promise((resolve, reject) => {
+        try {
+            addTerminalOutput('system', 'Starting MySQL service...', 'info');
+            
+            const possiblePaths = [
+                'C:\\xampp\\mysql_start.bat',
+                'C:\\xampp\\mysql\\bin\\mysqld.exe',
+                'C:\\xampp\\xampp_start.exe'
+            ];
+            
+            let mysqlProcess = null;
+            for (const path of possiblePaths) {
+                if (fs.existsSync(path)) {
+                    mysqlProcess = spawn(path, [], { shell: true });
+                    processes.mysql = mysqlProcess;
+                    break;
+                }
+            }
+            
+            if (!mysqlProcess) {
+                mysqlProcess = spawn('sc', ['start', 'MySQL'], { shell: true });
+                processes.mysql = mysqlProcess;
+            }
+            
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'mysql',
+                    status: 'running'
+                });
+            }
+            
+            mysqlProcess.stdout.on('data', function (data) {
+                if (mainWindow) {
+                    mainWindow.webContents.send('command-output', {
+                        type: 'stdout',
+                        data: data.toString(),
+                        category: 'mysql'
+                    });
+                }
+            });
+            
+            mysqlProcess.stderr.on('data', function (data) {
+                if (mainWindow) {
+                    mainWindow.webContents.send('command-output', {
+                        type: 'stderr',
+                        data: data.toString(),
+                        category: 'mysql'
+                    });
+                }
+            });
+            
+            mysqlProcess.on('close', function (code) {
+                if (code === 0) {
+                    resolve();
+                } else {
+                    reject(new Error(`MySQL process exited with code ${code}`));
+                }
+            });
+            
+            // Also resolve after timeout even if process doesn't close
+            setTimeout(() => {
+                resolve();
+            }, 5000);
+            
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
 
 function addTerminalOutput(category, message, type) {
     if (mainWindow) {

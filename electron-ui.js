@@ -1,6 +1,6 @@
 let currentIP = '';
 let currentEnvIP = '';
-let currentTerminalTab = 'combined';
+let currentTerminalTab = 'system';
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadSystemInfo();
@@ -16,10 +16,9 @@ async function loadSystemInfo() {
         
         document.getElementById('systemInfo').innerHTML = 
             `<strong>IP Address:</strong> ${systemInfo.ipAddress}<br>` +
-            `<strong>Platform:</strong> ${system.platform} | <strong>Architecture:</strong> ${systemInfo.arch}`;
+            `<strong>Platform:</strong> ${systemInfo.platform} | <strong>Architecture:</strong> ${systemInfo.arch}`;
         
         // Show IP comparison
-        document.getElementById('ipInfo').style.display = 'block';
         document.getElementById('currentIP').textContent = currentIP;
         document.getElementById('envIP').textContent = currentEnvIP;
         
@@ -56,12 +55,6 @@ function addOutput(message, category, type = 'stdout') {
     const timestamp = new Date().toLocaleTimeString();
     const outputData = { message: message, category: category, type: type, timestamp: timestamp };
 
-    // Add to combined terminal
-    const combinedLine = document.createElement('div');
-    combinedLine.className = `output-line ${outputData.category} ${outputData.type === 'error' ? 'error' : (outputData.type === 'info' ? 'info' : '')}`;
-    combinedLine.textContent = `[${outputData.timestamp}] ${outputData.message}`;
-    document.getElementById('terminal-combined').appendChild(combinedLine);
-
     // Add to specific category terminal
     const specificLine = document.createElement('div');
     specificLine.className = `output-line ${outputData.category} ${outputData.type === 'error' ? 'error' : (outputData.type === 'info' ? 'info' : '')}`;
@@ -72,17 +65,21 @@ function addOutput(message, category, type = 'stdout') {
         document.getElementById(terminalId).appendChild(specificLine);
     }
 
-    // Scroll all terminals to bottom
-    document.querySelectorAll('.terminal-content').forEach(terminal => {
-        terminal.scrollTop = terminal.scrollHeight;
-    });
+    // Scroll current terminal to bottom
+    const currentTerminal = document.getElementById(`terminal-${currentTerminalTab}`);
+    if (currentTerminal) {
+        currentTerminal.scrollTop = currentTerminal.scrollHeight;
+    }
     
     updateOutputCount();
 }
 
 function updateOutputCount() {
-    const lines = document.getElementById(`terminal-${currentTerminalTab}`).children.length;
-    document.getElementById('outputCount').textContent = lines;
+    const terminal = document.getElementById(`terminal-${currentTerminalTab}`);
+    if (terminal) {
+        const lines = terminal.children.length;
+        document.getElementById('outputCount').textContent = lines;
+    }
 }
 
 function switchTerminalTab(tabName) {
@@ -97,8 +94,11 @@ function switchTerminalTab(tabName) {
 }
 
 function clearCurrentTerminal() {
-    document.getElementById(`terminal-${currentTerminalTab}`).innerHTML = '';
-    updateOutputCount();
+    const currentTerminal = document.getElementById(`terminal-${currentTerminalTab}`);
+    if (currentTerminal) {
+        currentTerminal.innerHTML = '';
+        updateOutputCount();
+    }
 }
 
 function clearAllTerminals() {
@@ -480,6 +480,14 @@ async function runAllSteps() {
     try {
         addOutput('Starting complete system deployment...', 'system', 'info');
         
+        // Start XAMPP services first
+        addOutput('Starting XAMPP services first...', 'system', 'info');
+        await window.electronAPI.startApache();
+        await window.electronAPI.startMysql();
+        addOutput('XAMPP services started, waiting 10 seconds...', 'system', 'info');
+        await new Promise(resolve => setTimeout(resolve, 10000));
+        
+        // Continue with the rest of the deployment
         const result = await window.electronAPI.runAllSteps({ cleanBlockchain: cleanBlockchain });
         
         if (result.success) {

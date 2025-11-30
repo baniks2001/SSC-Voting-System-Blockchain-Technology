@@ -22,7 +22,6 @@ function AppContent() {
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard');
   const [appInitialized, setAppInitialized] = useState(false);
   const [minLoadingTimePassed, setMinLoadingTimePassed] = useState(false);
-  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -31,28 +30,7 @@ function AppContent() {
     }
   }, []);
 
-  // Progress animation from 1% to 100% over 3 seconds
-  useEffect(() => {
-    const duration = 3000; // 3 seconds
-    const startTime = Date.now();
-    const startProgress = 1;
-    
-    const updateProgress = () => {
-      const currentTime = Date.now();
-      const elapsed = currentTime - startTime;
-      const newProgress = Math.min(startProgress + (elapsed / duration) * 99, 100);
-      
-      setProgress(newProgress);
-      
-      if (newProgress < 100) {
-        requestAnimationFrame(updateProgress);
-      }
-    };
-    
-    requestAnimationFrame(updateProgress);
-  }, []);
-
-  // Set minimum loading time of 3 seconds
+  // Set minimum loading time of 2 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
       setMinLoadingTimePassed(true);
@@ -61,7 +39,7 @@ function AppContent() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Enhanced loading state management with minimum 3-second loading
+  // Enhanced loading state management with minimum 2-second loading
   useEffect(() => {
     // Only set initialized to true when both auth and poll have finished loading AND minimum time has passed
     if (!authLoading && !pollLoading && minLoadingTimePassed && !appInitialized) {
@@ -78,61 +56,32 @@ function AppContent() {
     showToast('success', 'Vote successfully recorded on blockchain!');
   };
 
-  // Show loading spinner while initializing - single source of truth
+  // Show loading spinner while initializing
   if (!appInitialized) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6">
         <div className="text-center max-w-md w-full">
-          {/* Logo with pulse animation only */}
-          <div className="relative mx-auto mb-4 sm:mb-6">
+          {/* Logo with pulse animation */}
+          <div className="relative mx-auto mb-6 sm:mb-8">
             <img 
               src="/logo.png" 
               alt="VoteChain Logo" 
-              className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto animate-pulse"
+              className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 mx-auto animate-pulse"
             />
           </div>
 
           {/* System Title and Subtext */}
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2 sm:mb-3">
+          <div className="mb-4">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3 sm:mb-4">
               SSC Voting System
             </h1>
-            <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-1">
-              Secure Blockchain Voting Platform
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-2">
+              with Blockchain Technology
             </p>
-            <p className="text-xs sm:text-sm text-gray-500">
-              Developed by Servando S. Tio III
-            </p>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="mb-6 sm:mb-8">
-            <div className="flex justify-between text-xs text-gray-600 mb-2">
-              <span>System Initialization</span>
-              <span>{Math.round(progress)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-blue-500 to-purple-600 h-full rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              {progress < 5 && "Loading core modules..."}
-              {progress >= 10 && progress < 20 && "Establishing secure connection..."}
-              {progress >= 20 && progress < 40 && "Initializing blockchain interface..."}
-              {progress >= 40 && "Finalizing startup..."}
+            <p className="text-sm sm:text-base text-gray-500">
+              Developed by: Servando S. Tio III
             </p>
           </div>
-
-          {/* Finalizing message */}
-          {(!authLoading && !pollLoading) && (
-            <div className="mt-6 p-3 bg-green-50 rounded-lg border border-green-200">
-              <p className="text-green-700 text-sm font-medium animate-pulse">
-                ✓ All systems ready - Launching application...
-              </p>
-            </div>
-          )}
         </div>
       </div>
     );
