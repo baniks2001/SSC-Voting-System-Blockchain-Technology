@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { User, ArrowLeft, ShieldCheck, Hash, CheckCircle, XCircle, Loader, Smartphone, Monitor, AlertTriangle } from 'lucide-react';
 import { Candidate, Position } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
@@ -34,6 +34,41 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
   const [submissionError, setSubmissionError] = useState<string>('');
   const [blockchainReceipt, setBlockchainReceipt] = useState<any>(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+
+
+  useEffect(() => {
+    const checkVoterStatusOnReload = async () => {
+      if (submissionStatus === 'success' && user?.studentId) {
+        try {
+          const response = await api.get(`/voting/check-voter-status/${user.studentId}`);
+          console.log('Voter status on reload:', response);
+          
+        } catch (error) {
+          console.error('Error checking voter status on reload:', error);
+        }
+      }
+    };
+
+    checkVoterStatusOnReload();
+  }, [submissionStatus, user]);
+
+  useEffect(() => {
+    const checkInitialVoterStatus = async () => {
+      if (!user?.studentId) return;
+      
+      try {
+        const response = await api.get(`/voting/check-voter-status/${user.studentId}`);
+        
+        if (response.hasVoted || response.status === 'voted') {
+          console.log('User has already voted on page load');
+        }
+      } catch (error) {
+        console.error('Error checking initial voter status:', error);
+      }
+    };
+
+    checkInitialVoterStatus();
+  }, [user]);
 
   const generateSecureRandom = (length: number): string => {
     const array = new Uint8Array(length);
