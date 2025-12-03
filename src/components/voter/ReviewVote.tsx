@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { User, ArrowLeft, ShieldCheck, Hash, CheckCircle, XCircle, Loader, Smartphone, Monitor, AlertTriangle } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { User, ArrowLeft, ShieldCheck, Hash, CheckCircle, XCircle, Loader, Smartphone, Monitor, AlertTriangle, Clock } from 'lucide-react';
 import { Candidate, Position } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -34,41 +34,73 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
   const [submissionError, setSubmissionError] = useState<string>('');
   const [blockchainReceipt, setBlockchainReceipt] = useState<any>(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showAlreadyVotedModal, setShowAlreadyVotedModal] = useState(false);
+  const [logoutCountdown, setLogoutCountdown] = useState<number>(30);
+  
+  // Use refs to track state without triggering re-renders
+  const hasVotedRef = useRef(false);
+  const submissionInProgressRef = useRef(false);
+  const logoutTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-
+  // Cleanup timers on unmount
   useEffect(() => {
-    const checkVoterStatusOnReload = async () => {
-      if (submissionStatus === 'success' && user?.studentId) {
-        try {
-          const response = await api.get(`/voting/check-voter-status/${user.studentId}`);
-          console.log('Voter status on reload:', response);
-          
-        } catch (error) {
-          console.error('Error checking voter status on reload:', error);
-        }
+    return () => {
+      if (logoutTimerRef.current) {
+        clearTimeout(logoutTimerRef.current);
+      }
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
       }
     };
+  }, []);
 
-    checkVoterStatusOnReload();
-  }, [submissionStatus, user]);
-
+  // Auto-logout after 30 seconds when success state is shown
   useEffect(() => {
-    const checkInitialVoterStatus = async () => {
-      if (!user?.studentId) return;
+    if (submissionStatus === 'success') {
+      // Start countdown
+      setLogoutCountdown(30);
       
-      try {
-        const response = await api.get(`/voting/check-voter-status/${user.studentId}`);
-        
-        if (response.hasVoted || response.status === 'voted') {
-          console.log('User has already voted on page load');
+      // Start countdown interval for UI
+      countdownIntervalRef.current = setInterval(() => {
+        setLogoutCountdown((prev) => {
+          if (prev <= 1) {
+            if (countdownIntervalRef.current) {
+              clearInterval(countdownIntervalRef.current);
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      // Set logout timer
+      logoutTimerRef.current = setTimeout(() => {
+        console.log('Auto-logout after 30 seconds');
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
         }
-      } catch (error) {
-        console.error('Error checking initial voter status:', error);
-      }
-    };
+        onLogout();
+      }, 30000); // 30 seconds
 
-    checkInitialVoterStatus();
-  }, [user]);
+      return () => {
+        if (logoutTimerRef.current) {
+          clearTimeout(logoutTimerRef.current);
+        }
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+        }
+      };
+    } else {
+      // Clear timers if not in success state
+      if (logoutTimerRef.current) {
+        clearTimeout(logoutTimerRef.current);
+      }
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+    }
+  }, [submissionStatus, onLogout]);
 
   const generateSecureRandom = (length: number): string => {
     const array = new Uint8Array(length);
@@ -114,7 +146,6 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
           setHashedBallotId(newHashedBallotId);
         }
       } catch (error) {
-        // Type-safe error handling
         console.error('Failed to generate secure ballot ID:', error);
         const timestamp = Date.now().toString(36);
         const fallbackRandom1 = Math.random().toString(36).substring(2, 15);
@@ -161,6 +192,20 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
     });
   };
 
+  // STEP 1: Check voter status for duplicate vote prevention
+  const checkVoterStatus = async (): Promise<boolean> => {
+    if (!user?.studentId) return false;
+    
+    try {
+      // Use the voters endpoint to check if user has already voted
+      const response = await api.get(`/voters/status/${user.studentId}`);
+      return response.has_voted || response.status === 'voted';
+    } catch (error) {
+      console.error('Error checking voter status:', error);
+      return false;
+    }
+  };
+
   const submitVoteToBlockchain = async (votes: any[]) => {
     try {
       const voteData = {
@@ -193,7 +238,6 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
     } catch (err: unknown) {
       let errorMessage = 'Failed to submit vote to blockchain';
 
-      // Type-safe error handling
       if (err && typeof err === 'object' && 'response' in err) {
         const errorWithResponse = err as { response?: { data?: { message?: string; error?: string }; status?: number } };
         errorMessage = errorWithResponse.response?.data?.message ||
@@ -227,7 +271,6 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
 
       return markVotedResponse;
     } catch (error: unknown) {
-      // Type-safe error handling
       const errorMessage = error instanceof Error ? error.message : 'Failed to update your voting status. Please try again.';
       throw new Error(errorMessage);
     }
@@ -235,6 +278,12 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
 
   const handleSubmitVote = async () => {
     try {
+      // Prevent duplicate submissions
+      if (submissionInProgressRef.current) {
+        console.log('Submission already in progress');
+        return;
+      }
+
       if (!hashedBallotId || !ballotId) {
         throw new Error('Secure ballot IDs not properly generated');
       }
@@ -243,12 +292,27 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
         throw new Error('Invalid ballot ID format');
       }
 
+      // Set submission state
+      submissionInProgressRef.current = true;
       setIsSubmitting(true);
       setSubmissionStatus('submitting');
       setSubmissionError('');
       setShowConfirmationModal(false);
 
-      // Prepare votes for submission - include all selected candidates
+      // STEP 1: Check voter status for duplicate vote prevention
+      const hasVoted = await checkVoterStatus();
+      if (hasVoted || hasVotedRef.current) {
+        console.log('User has already voted, stopping submission');
+        hasVotedRef.current = true;
+        setSubmissionStatus('error');
+        setSubmissionError('You have already voted. Each voter can only vote once.');
+        setIsSubmitting(false);
+        submissionInProgressRef.current = false;
+        setShowAlreadyVotedModal(true);
+        return;
+      }
+
+      // STEP 2: Prepare votes for blockchain submission
       const votes = Object.entries(selectedVotes).flatMap(([position, candidateIds]) => {
         return candidateIds.map(candidateId => {
           const candidate = candidates.find(c => c.id === candidateId);
@@ -262,24 +326,29 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
         });
       });
 
-      // Submit to blockchain FIRST
+      // STEP 2: Submit to blockchain
       const receipt = await submitVoteToBlockchain(votes);
 
-      // Only mark as voted AFTER successful blockchain submission
+      // STEP 2: Mark voter as voted only after successful blockchain submission
       await markVoterAsVoted();
+      
+      // Update ref to prevent duplicate votes
+      hasVotedRef.current = true;
 
       setBlockchainReceipt(receipt);
       setSubmissionStatus('success');
       setIsSubmitting(false);
+      submissionInProgressRef.current = false;
 
+      // STEP 3: Show transaction receipt via callback (no additional API calls)
       onVoteCast(receipt);
 
     } catch (error: unknown) {
-      // Type-safe error handling
       const errorMessage = error instanceof Error ? error.message : 'Error submitting your vote. Please try again.';
       setSubmissionStatus('error');
       setSubmissionError(errorMessage);
       setIsSubmitting(false);
+      submissionInProgressRef.current = false;
     }
   };
 
@@ -294,6 +363,22 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
   const handleRetry = () => {
     setSubmissionStatus('idle');
     setSubmissionError('');
+  };
+
+  const handleAlreadyVotedAction = () => {
+    setShowAlreadyVotedModal(false);
+    onLogout(); // Navigate to login
+  };
+
+  // Manual logout with timer cleanup
+  const handleManualLogout = () => {
+    if (logoutTimerRef.current) {
+      clearTimeout(logoutTimerRef.current);
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+    }
+    onLogout();
   };
 
   const formatBallotId = (id: string) => {
@@ -392,6 +477,42 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
     </div>
   );
 
+  // Already Voted Modal
+  const AlreadyVotedModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full">
+        <div className="text-center">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+            <XCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
+          </div>
+
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3">
+            Already Voted
+          </h2>
+
+          <div className="bg-red-50 rounded-xl p-4 mb-6 text-left">
+            <p className="text-sm text-gray-700 mb-3">
+              <strong>You have already cast your vote.</strong>
+            </p>
+            <p className="text-xs text-gray-600">
+              Each voter is allowed to vote only once. Your vote has already been recorded on the blockchain and cannot be changed.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={handleAlreadyVotedAction}
+              className="w-full sm:w-auto bg-blue-800 hover:bg-blue-900 text-white py-3 px-6 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center space-x-2"
+            >
+              <User className="w-4 h-4" />
+              <span>Return to Login</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   // Show submission status message box
   if (submissionStatus === 'submitting' || submissionStatus === 'success' || submissionStatus === 'error') {
     return (
@@ -423,9 +544,23 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
               <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">
                 Vote Submitted Successfully!
               </h2>
-              <p className="text-gray-600 text-sm sm:text-base mb-6">
+              <p className="text-gray-600 text-sm sm:text-base mb-2">
                 Your vote has been securely recorded on the blockchain.
               </p>
+              
+              {/* Auto-logout countdown */}
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center justify-center space-x-2 text-yellow-700">
+                  <Clock className="w-4 h-4 animate-pulse" />
+                  <span className="text-sm font-medium">
+                    Auto-logout in: <span className="font-bold">{logoutCountdown}</span> seconds
+                  </span>
+                </div>
+                <p className="text-xs text-yellow-600 mt-1">
+                  You will be automatically logged out for security.
+                </p>
+              </div>
+              
               {blockchainReceipt && (
                 <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left">
                   <p className="text-sm font-medium text-gray-700 mb-2">Transaction Details:</p>
@@ -445,10 +580,11 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
                 </div>
               )}
               <button
-                onClick={onLogout}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                onClick={handleManualLogout}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors text-sm sm:text-base flex items-center justify-center space-x-2"
               >
-                Log Out
+                <User className="w-4 h-4" />
+                <span>Log Out Now</span>
               </button>
             </>
           )}
@@ -502,6 +638,7 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
   return (
     <div className="min-h-screen bg-white py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
       {showConfirmationModal && <ConfirmationModal />}
+      {showAlreadyVotedModal && <AlreadyVotedModal />}
 
       <div className="max-w-7xl mx-auto">
         {/* Header */}

@@ -21,52 +21,16 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
   const [showReview, setShowReview] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [hasVoted, setHasVoted] = useState<boolean>(false);
   const { showToast } = useToast();
-  const { user } = useAuth();
+  useAuth();
 
   useEffect(() => {
-    checkVoterStatus();
     fetchData();
-    
-    // Set up interval to check voter status every 5 seconds
-    const interval = setInterval(() => {
-      checkVoterStatus();
-    }, 5000);
-    
-    return () => clearInterval(interval);
   }, []);
-
-  const checkVoterStatus = async () => {
-    try {
-      if (!user?.studentId) return;
-      
-      const response = await api.get(`/voters/status/${user.studentId}`);
-      
-      if (response.has_voted) {
-        setHasVoted(true);
-        showToast('warning', 'You have already voted. Redirecting...');
-        // Redirect to receipt page or show message
-        setTimeout(() => {
-          onLogout();
-        }, 3000);
-        return true;
-      }
-      setHasVoted(false);
-      return false;
-    } catch (error) {
-      console.error('Error checking voter status:', error);
-      return false;
-    }
-  };
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      
-      // Check voter status first
-      const alreadyVoted = await checkVoterStatus();
-      if (alreadyVoted) return;
 
       const [candidatesResponse, positionsResponse] = await Promise.all([
         api.get('/candidates'),
@@ -107,11 +71,6 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
   };
 
   const handleCandidateSelect = (position: string, candidateId: number, maxVotes: number) => {
-    if (hasVoted) {
-      showToast('error', 'You have already voted and cannot make changes');
-      return;
-    }
-
     setSelectedVotes(prev => {
       const currentSelected = prev[position] || [];
 
@@ -135,10 +94,6 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
   };
 
   const handleReviewVote = async () => {
-    // Check voter status before proceeding
-    const alreadyVoted = await checkVoterStatus();
-    if (alreadyVoted) return;
-
     const hasAllRequiredSelections = positions.every(position => {
       const selectedForPosition = selectedVotes[position.name] || [];
       return selectedForPosition.length > 0;
@@ -216,27 +171,6 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
       return { status: 'full', message: 'Limit reached' };
     }
   };
-
-  // Show already voted message
-  if (hasVoted) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8 text-center max-w-md w-full">
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">You Have Already Voted</h2>
-          <p className="text-gray-600 mb-6">
-            Thank you for participating in the election. Your vote has been recorded and cannot be changed.
-          </p>
-          <button
-            onClick={onLogout}
-            className="w-full bg-blue-800 hover:bg-blue-900 text-white py-3 px-4 rounded-lg font-semibold transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (

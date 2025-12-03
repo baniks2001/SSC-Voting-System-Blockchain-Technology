@@ -66,7 +66,7 @@ function AppContent() {
             <img 
               src="/logo.png" 
               alt="VoteChain Logo" 
-              className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 mx-auto animate-pulse"
+              className="w-40 h-40 sm:w-28 sm:h-28 md:w-30 md:h-30 mx-auto animate-pulse"
             />
           </div>
 
@@ -75,10 +75,10 @@ function AppContent() {
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3 sm:mb-4">
               SSC Voting System
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-2">
-              with Blockchain Technology
+            <p className="text-base sm:text-lg md:text-s text-black-600 mb-2">
+              with Geth-Ethereum Blockchain Technology
             </p>
-            <p className="text-sm sm:text-base text-gray-500">
+            <p className="text-sm sm:text-base text-gray-400">
               Developed by: Servando S. Tio III
             </p>
           </div>
@@ -125,7 +125,7 @@ function AppContent() {
             </svg>
           </div>
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-3 sm:mb-4">
-            Vote Successfully Cast
+            You Already Casted Your Vote
           </h2>
           <p className="text-gray-600 text-base sm:text-lg md:text-xl mb-4 sm:mb-6 leading-relaxed">
             Thank you for participating in the election. Your vote has been securely recorded on the blockchain.
@@ -218,7 +218,7 @@ function AppContent() {
                     <p className="font-semibold text-base sm:text-lg">Voting Not Started</p>
                     <p className="text-sm sm:text-base mt-1">Please wait for voting to begin</p>
                     <p className="text-xs sm:text-sm mt-2 text-gray-700">
-                      Admin will start voting soon
+                      Admin will start voting soon!
                     </p>
                   </div>
                 </div>
