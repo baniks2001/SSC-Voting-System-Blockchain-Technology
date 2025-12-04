@@ -1,4 +1,4 @@
-// utils/api.ts - FIXED VERSION WITH PATCH METHOD
+// utils/api.ts - ENHANCED VERSION WITH TOAST NOTIFICATIONS
 
 // ✅ UPDATED: Use environment variable with fallback
 const API_BASE_URL = import.meta.env.VITE_API_URL ? 
@@ -22,7 +22,39 @@ interface RequestConfig {
   timeout?: number;
   retryCount?: number;
   skipAuth?: boolean;
+  showLoading?: boolean;
+  successMessage?: string;
+  errorMessage?: string;
 }
+
+// Toast manager for API notifications
+class ToastManager {
+  private static instance: ToastManager;
+  private toastCallback: ((type: 'success' | 'error' | 'warning' | 'info', message: string) => void) | null = null;
+
+  private constructor() {}
+
+  static getInstance(): ToastManager {
+    if (!ToastManager.instance) {
+      ToastManager.instance = new ToastManager();
+    }
+    return ToastManager.instance;
+  }
+
+  setCallback(callback: (type: 'success' | 'error' | 'warning' | 'info', message: string) => void) {
+    this.toastCallback = callback;
+  }
+
+  showToast(type: 'success' | 'error' | 'warning' | 'info', message: string) {
+    if (this.toastCallback) {
+      this.toastCallback(type, message);
+    } else {
+      console.log(`Toast [${type}]: ${message}`);
+    }
+  }
+}
+
+export const toastManager = ToastManager.getInstance();
 
 class ApiClient {
   private baseUrl: string;
@@ -34,10 +66,11 @@ class ApiClient {
   private readonly minRequestInterval = 200;
   private retryCounts = new Map<string, number>();
   private readonly maxRetries = 2;
-  private readonly defaultTimeout = 10000; // 10 seconds
+  private readonly defaultTimeout = 10000;
+  private pendingRequests = new Set<string>();
   
   constructor(baseUrl: string) {
-    this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
+    this.baseUrl = baseUrl.replace(/\/$/, '');
   }
 
   private createApiError(message: string, status?: number, code?: string, originalError?: unknown): ApiError {
@@ -49,48 +82,19 @@ class ApiClient {
   }
 
   private getAuthHeaders(skipAuth = false): Record<string, string> {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔐 API Client - Auth headers preparation:', { skipAuth });
-    }
-
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 
-    // ✅ FIX: Only add token if NOT skipping auth AND token exists
     if (!skipAuth) {
       try {
         const token = localStorage.getItem('token');
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔐 API Client - Token check:', {
-            hasToken: !!token,
-            tokenLength: token?.length,
-            tokenPreview: token ? `${token.substring(0, 10)}...` : 'none'
-          });
-        }
-
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
-          if (process.env.NODE_ENV === 'development') {
-            console.log('✅ Token added to Authorization header');
-          }
-        } else {
-          console.warn('⚠️ No token found in localStorage for API request');
         }
       } catch (error) {
-        console.error('❌ Error accessing localStorage:', error);
-        // Continue without token rather than failing completely
+        console.error('Error accessing localStorage:', error);
       }
-    } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔐 Skipping auth for this request (login/register)');
-      }
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      headers['X-Development-Mode'] = 'true';
-      headers['X-Client-Type'] = 'browser';
     }
 
     return headers;
@@ -107,7 +111,6 @@ class ApiClient {
         if (queueItem) {
           this.activeRequests++;
           
-          // Rate limiting
           const now = Date.now();
           const timeSinceLastRequest = now - this.lastRequestTime;
           if (timeSinceLastRequest < this.minRequestInterval) {
@@ -123,7 +126,6 @@ class ApiClient {
             .catch(queueItem.reject)
             .finally(() => {
               this.activeRequests--;
-              // Process next items in queue
               setTimeout(() => this.processQueue(), 0);
             });
         }
@@ -138,13 +140,15 @@ class ApiClient {
     endpoint: string, 
     config: RequestConfig = {}
   ): Promise<T> {
+    const requestId = `${Date.now()}-${Math.random()}`;
+    
     return new Promise((resolve, reject) => {
       this.requestQueue.push({
         requestFn: async () => {
           try {
             return await this.executeRequestWithRetry(requestFn, endpoint, config);
           } catch (error) {
-            throw error; // Re-throw to be caught by the promise chain
+            throw error;
           }
         },
         resolve,
@@ -169,7 +173,7 @@ class ApiClient {
       try {
         if (attempt > 0) {
           const backoffDelay = Math.pow(2, attempt) * 1000;
-          console.warn(`🔄 Retry attempt ${attempt}/${maxRetries} for ${endpoint} after ${backoffDelay}ms`);
+          console.warn(`Retry attempt ${attempt}/${maxRetries} for ${endpoint} after ${backoffDelay}ms`);
           await new Promise(resolve => setTimeout(resolve, backoffDelay));
         }
 
@@ -177,13 +181,10 @@ class ApiClient {
       } catch (error) {
         lastError = error as ApiError;
         
-        // Only retry on specific errors
         const shouldRetry = this.shouldRetryRequest(error, attempt, maxRetries);
         if (!shouldRetry) {
           break;
         }
-        
-        console.warn(`Retrying ${endpoint} (attempt ${attempt + 1}/${maxRetries + 1})`);
       }
     }
 
@@ -195,7 +196,6 @@ class ApiClient {
 
     const errorMessage = error instanceof Error ? error.message : String(error);
     
-    // Retry on network-related errors
     const retryableErrors = [
       'network',
       'timeout',
@@ -238,27 +238,21 @@ class ApiClient {
     }
   }
 
-  private async handleResponse(response: Response, endpoint: string): Promise<any> {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📨 API Response ${response.status}: ${endpoint}`);
-    }
-
+  private async handleResponse(response: Response, endpoint: string, config: RequestConfig): Promise<any> {
     let responseData;
     
     try {
-      // Handle empty responses
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         responseData = await response.json();
       } else if (response.status === 204) {
-        // No content
         return null;
       } else {
         const text = await response.text();
         responseData = text || null;
       }
     } catch (parseError) {
-      console.error('❌ Failed to parse response:', parseError);
+      console.error('Failed to parse response:', parseError);
       throw this.createApiError(
         `Failed to parse response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
         response.status,
@@ -268,13 +262,17 @@ class ApiClient {
     }
 
     if (!response.ok) {
-      // ✅ FIX: Preserve the original server error message
       const serverMessage = responseData?.error || responseData?.message || response.statusText;
       
-      // Handle specific HTTP status codes with server messages
+      // Show error toast if configured
+      if (config.errorMessage) {
+        toastManager.showToast('error', config.errorMessage);
+      } else {
+        toastManager.showToast('error', serverMessage || `Request failed: ${response.status}`);
+      }
+
       switch (response.status) {
         case 401:
-          // Use server message if available, otherwise fallback
           const authMessage = serverMessage || 'Authentication required. Please log in again.';
           throw this.createApiError(
             authMessage,
@@ -310,15 +308,6 @@ class ApiClient {
             'SERVER_ERROR',
             responseData
           );
-        case 502:
-        case 503:
-        case 504:
-          throw this.createApiError(
-            serverMessage || 'Service temporarily unavailable. Please try again later.',
-            response.status,
-            'SERVICE_UNAVAILABLE',
-            responseData
-          );
         default:
           throw this.createApiError(
             serverMessage || `HTTP ${response.status}: ${response.statusText}`,
@@ -327,6 +316,18 @@ class ApiClient {
             responseData
           );
       }
+    }
+
+    // Show success toast if configured
+    if (config.successMessage) {
+      toastManager.showToast('success', config.successMessage);
+    } else if (response.status >= 200 && response.status < 300) {
+      // Auto success message for common operations
+      const method = endpoint.includes('get') ? 'fetched' : 
+                    endpoint.includes('post') ? 'created' :
+                    endpoint.includes('put') || endpoint.includes('patch') ? 'updated' :
+                    endpoint.includes('delete') ? 'deleted' : 'processed';
+      toastManager.showToast('success', `Operation completed successfully`);
     }
 
     // Handle success response format
@@ -344,9 +345,7 @@ class ApiClient {
       const headers = this.getAuthHeaders(config.skipAuth);
       const url = `${this.baseUrl}${endpoint}`;
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔍 GET ${endpoint}`, { headers, url, skipAuth: config.skipAuth });
-      }
+      toastManager.showToast('info', `Fetching ${endpoint.replace('/', '')}...`);
       
       const response = await this.fetchWithTimeout(url, {
         method: 'GET',
@@ -354,7 +353,7 @@ class ApiClient {
         timeout: config.timeout,
       });
       
-      return this.handleResponse(response, endpoint);
+      return this.handleResponse(response, endpoint, config);
     }, endpoint, config);
   }
 
@@ -363,14 +362,7 @@ class ApiClient {
       const headers = this.getAuthHeaders(config.skipAuth);
       const url = `${this.baseUrl}${endpoint}`;
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`📝 POST ${endpoint}`, { 
-          headers, 
-          data: data ? '***' : 'null', 
-          url, 
-          skipAuth: config.skipAuth 
-        });
-      }
+      toastManager.showToast('info', `Creating ${endpoint.replace('/', '')}...`);
       
       const response = await this.fetchWithTimeout(url, {
         method: 'POST',
@@ -379,7 +371,7 @@ class ApiClient {
         timeout: config.timeout,
       });
       
-      return this.handleResponse(response, endpoint);
+      return this.handleResponse(response, endpoint, config);
     }, endpoint, config);
   }
 
@@ -388,6 +380,8 @@ class ApiClient {
       const headers = this.getAuthHeaders(config.skipAuth);
       const url = `${this.baseUrl}${endpoint}`;
       
+      toastManager.showToast('info', `Updating ${endpoint.replace('/', '')}...`);
+      
       const response = await this.fetchWithTimeout(url, {
         method: 'PUT',
         headers,
@@ -395,24 +389,16 @@ class ApiClient {
         timeout: config.timeout,
       });
       
-      return this.handleResponse(response, endpoint);
+      return this.handleResponse(response, endpoint, config);
     }, endpoint, config);
   }
 
-  // ✅ ADDED: PATCH method for status updates
   async patch(endpoint: string, data: any, config: RequestConfig = {}) {
     return this.queuedRequest(async () => {
       const headers = this.getAuthHeaders(config.skipAuth);
       const url = `${this.baseUrl}${endpoint}`;
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔧 PATCH ${endpoint}`, { 
-          headers, 
-          data: data ? '***' : 'null', 
-          url, 
-          skipAuth: config.skipAuth 
-        });
-      }
+      toastManager.showToast('info', `Updating ${endpoint.replace('/', '')}...`);
       
       const response = await this.fetchWithTimeout(url, {
         method: 'PATCH',
@@ -421,7 +407,7 @@ class ApiClient {
         timeout: config.timeout,
       });
       
-      return this.handleResponse(response, endpoint);
+      return this.handleResponse(response, endpoint, config);
     }, endpoint, config);
   }
 
@@ -430,13 +416,15 @@ class ApiClient {
       const headers = this.getAuthHeaders(config.skipAuth);
       const url = `${this.baseUrl}${endpoint}`;
       
+      toastManager.showToast('info', `Deleting ${endpoint.replace('/', '')}...`);
+      
       const response = await this.fetchWithTimeout(url, {
         method: 'DELETE',
         headers,
         timeout: config.timeout,
       });
       
-      return this.handleResponse(response, endpoint);
+      return this.handleResponse(response, endpoint, config);
     }, endpoint, config);
   }
 
@@ -475,7 +463,6 @@ class ApiClient {
         });
       }
       
-      // Small delay between batch requests
       if (index < requests.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 50));
       }
@@ -495,7 +482,6 @@ class ApiClient {
   }
 
   clearQueue() {
-    // Reject all pending requests
     this.requestQueue.forEach(item => {
       item.reject(this.createApiError('Request cancelled due to queue clearance'));
     });
@@ -506,7 +492,6 @@ class ApiClient {
     this.retryCounts.clear();
   }
 
-  // Health check method
   async healthCheck(): Promise<boolean> {
     try {
       await this.get('/health', { timeout: 5000, skipAuth: true });
@@ -519,49 +504,6 @@ class ApiClient {
 
 // Create and export API instance
 export const api = new ApiClient(API_BASE_URL);
-
-// Development mode enhancements
-if (process.env.NODE_ENV === 'development') {
-  let requestCount = 0;
-  
-  // Wrap methods for better logging
-  const wrapWithLogging = <T extends any[]>(
-    originalMethod: (...args: T) => Promise<any>,
-    methodName: string
-  ) => {
-    return async function(...args: T) {
-      requestCount++;
-      const start = performance.now();
-      const endpoint = args[0] as string;
-      
-      try {
-        const result = await originalMethod.apply(api, args);
-        const duration = performance.now() - start;
-        console.log(`✅ API ${methodName.toUpperCase()} ${endpoint} completed in ${duration.toFixed(2)}ms (Request #${requestCount})`);
-        return result;
-      } catch (error) {
-        const duration = performance.now() - start;
-        console.error(`❌ API ${methodName.toUpperCase()} ${endpoint} failed after ${duration.toFixed(2)}ms:`, error);
-        throw error;
-      }
-    };
-  };
-
-  // Apply logging to all methods
-  api.get = wrapWithLogging(api.get.bind(api), 'get');
-  api.post = wrapWithLogging(api.post.bind(api), 'post');
-  api.put = wrapWithLogging(api.put.bind(api), 'put');
-  api.patch = wrapWithLogging(api.patch.bind(api), 'patch');
-  api.delete = wrapWithLogging(api.delete.bind(api), 'delete');
-
-  // Periodic queue monitoring
-  setInterval(() => {
-    const stats = api.getQueueStats();
-    if (stats.queueSize > 0 || stats.activeRequests > 0) {
-      console.log(`📊 API Queue Stats: ${stats.queueSize} waiting, ${stats.activeRequests} active, processing: ${stats.isProcessing}`);
-    }
-  }, 30000); // Reduced frequency to 30 seconds
-}
 
 // Export types for external use
 export type { ApiError, RequestConfig };

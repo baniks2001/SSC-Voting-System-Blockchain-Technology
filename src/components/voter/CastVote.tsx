@@ -47,7 +47,9 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
           ...position,
           maxVotes: !isNaN(Number(maxVotesValue)) ? Number(maxVotesValue) : 1,
           // Ensure display_order is properly handled too
-          display_order: position.display_order ?? position.order ?? 0
+          display_order: position.display_order ?? position.order ?? 0,
+          // Add optional field to allow empty votes
+          isOptional: position.is_optional ?? position.isOptional ?? false
         };
       });
 
@@ -94,21 +96,9 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
   };
 
   const handleReviewVote = async () => {
-    const hasAllRequiredSelections = positions.every(position => {
-      const selectedForPosition = selectedVotes[position.name] || [];
-      return selectedForPosition.length > 0;
-    });
-
-    if (!hasAllRequiredSelections) {
-      const incompletePositions = positions.filter(position => {
-        const selectedForPosition = selectedVotes[position.name] || [];
-        return selectedForPosition.length === 0;
-      }).map(p => p.name);
-
-      showToast('warning', `Please select at least one candidate for: ${incompletePositions.join(', ')}`);
-      return;
-    }
-
+    // REMOVED: No longer check if all required positions are selected
+    // Voters can now leave positions empty if they want
+    
     const exceededPositions = positions.filter(position => {
       const selectedForPosition = selectedVotes[position.name] || [];
       const maxVotes = position.maxVotes || 1;
@@ -164,13 +154,24 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
     const maxVotes = getMaxVotesForPosition(positionName);
 
     if (selectedCount === 0) {
-      return { status: 'empty', message: 'No selection' };
+      return { status: 'empty', message: 'No selection (optional)' };
     } else if (selectedCount < maxVotes) {
       return { status: 'partial', message: `${maxVotes - selectedCount} more can be selected` };
     } else {
       return { status: 'full', message: 'Limit reached' };
     }
   };
+
+  // Calculate positions with votes
+  const getPositionsWithVotes = () => {
+    return positions.filter(position => {
+      const selected = selectedVotes[position.name] || [];
+      return selected.length > 0;
+    });
+  };
+
+  const positionsWithVotes = getPositionsWithVotes().length;
+  const totalPositions = positions.length;
 
   if (loading) {
     return (
@@ -198,10 +199,9 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
 
   const totalSelected = Object.values(selectedVotes).reduce((sum, votes) => sum + votes.length, 0);
   const totalPossible = positions.reduce((sum, position) => sum + (position.maxVotes || 1), 0);
-  const allPositionsCompleted = positions.every(position => {
-    const selected = selectedVotes[position.name] || [];
-    return selected.length > 0;
-  });
+  
+  // All positions are optional now, so review is always enabled
+  const canReviewVote = true;
 
   return (
     <div className="min-h-screen bg-white py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
@@ -235,15 +235,20 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
               <div className="space-y-3">
                 <div className="text-center">
                   <p className="text-sm text-gray-600">
-                    {allPositionsCompleted ? (
-                      <span className="text-green-600 font-medium flex items-center justify-center">
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Ready to submit
-                      </span>
-                    ) : (
+                    {positionsWithVotes === 0 ? (
                       <span className="text-orange-600 font-medium flex items-center justify-center">
                         <AlertCircle className="w-4 h-4 mr-1" />
-                        Complete all positions
+                        No positions selected
+                      </span>
+                    ) : positionsWithVotes === totalPositions ? (
+                      <span className="text-green-600 font-medium flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        All positions selected
+                      </span>
+                    ) : (
+                      <span className="text-blue-600 font-medium flex items-center justify-center">
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        {positionsWithVotes} of {totalPositions} positions selected
                       </span>
                     )}
                   </p>
@@ -251,7 +256,7 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
                 <button
                   onClick={handleReviewVote}
                   className="w-full flex items-center justify-center space-x-2 bg-blue-800 hover:bg-blue-900 text-white py-3 px-4 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  disabled={!allPositionsCompleted}
+                  disabled={!canReviewVote}
                 >
                   <span>Review Vote</span>
                   <ArrowRight className="w-4 h-4" />
@@ -271,7 +276,7 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Cast Your Vote</h1>
-                  <p className="text-gray-600">Select candidates for each position</p>
+                  <p className="text-gray-600">Select candidates for each position (optional)</p>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
@@ -304,15 +309,20 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
                   </p>
                 </div>
                 <p className="text-sm text-gray-600 mb-4">
-                  {allPositionsCompleted ? (
-                    <span className="text-green-600 font-medium flex items-center justify-center">
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      Ready to submit
-                    </span>
-                  ) : (
+                  {positionsWithVotes === 0 ? (
                     <span className="text-orange-600 font-medium flex items-center justify-center">
                       <AlertCircle className="w-4 h-4 mr-1" />
-                      Complete all positions
+                      No positions selected
+                    </span>
+                  ) : positionsWithVotes === totalPositions ? (
+                    <span className="text-green-600 font-medium flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      All positions selected
+                    </span>
+                  ) : (
+                    <span className="text-blue-600 font-medium flex items-center justify-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {positionsWithVotes} of {totalPositions} positions selected
                     </span>
                   )}
                 </p>
@@ -322,7 +332,7 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
                 <button
                   onClick={handleReviewVote}
                   className="w-full flex items-center justify-center space-x-2 bg-blue-800 hover:bg-blue-900 text-white py-3 px-4 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                  disabled={!allPositionsCompleted}
+                  disabled={!canReviewVote}
                 >
                   <CheckCircle className="w-5 h-5" />
                   <span>Review & Cast Your Vote</span>
@@ -333,20 +343,27 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
                   <h3 className="font-semibold text-gray-900 text-sm mb-2">Progress</h3>
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Positions completed:</span>
+                      <span className="text-gray-600">Positions selected:</span>
                       <span className="font-semibold">
-                        {Object.keys(selectedVotes).length} of {positions.length}
+                        {positionsWithVotes} of {totalPositions}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
                         className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                         style={{ 
-                          width: `${(Object.keys(selectedVotes).length / positions.length) * 100}%` 
+                          width: `${(positionsWithVotes / totalPositions) * 100}%` 
                         }}
                       ></div>
                     </div>
                   </div>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                  <h3 className="font-semibold text-yellow-900 text-sm mb-2">Note</h3>
+                  <p className="text-xs text-yellow-700">
+                    You can leave positions empty if you prefer not to vote for that position.
+                    Your vote will be submitted with empty selections for those positions.
+                  </p>
                 </div>
               </div>
             </div>
@@ -392,6 +409,7 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
                           ? `You can select up to ${maxVotes} candidate(s) for this position`
                           : 'Select one candidate for this position'
                         }
+                        <span className="ml-2 text-blue-200 italic">(Optional - can be left empty)</span>
                       </p>
                       {voteStatus.status !== 'full' && voteStatus.status !== 'empty' && (
                         <p className="text-base text-blue-200 font-medium">
@@ -451,6 +469,22 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
                         ))}
                       </div>
                     )}
+                    {/* Empty vote option */}
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-700">No Selection Option</h4>
+                          <p className="text-sm text-gray-500">
+                            You can leave this position empty if you prefer not to vote for any candidate.
+                          </p>
+                        </div>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selectedCount === 0 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                          {selectedCount === 0 ? (
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -470,17 +504,19 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    {allPositionsCompleted ? 'Ready to submit' : 'Complete all positions'}
+                    {positionsWithVotes === 0 ? 'No positions selected' : 
+                     positionsWithVotes === totalPositions ? 'All positions selected' : 
+                     `${positionsWithVotes} of ${totalPositions} positions selected`}
                   </p>
                   <p className="text-xs text-gray-600">
-                    {Object.keys(selectedVotes).length} of {positions.length} positions
+                    You can leave positions empty
                   </p>
                 </div>
               </div>
               <button
                 onClick={handleReviewVote}
                 className="flex items-center space-x-2 bg-blue-800 hover:bg-blue-900 text-white py-2 px-4 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm shadow-sm flex-shrink-0"
-                disabled={!allPositionsCompleted}
+                disabled={!canReviewVote}
               >
                 <CheckCircle className="w-4 h-4" />
                 <span>Review</span>

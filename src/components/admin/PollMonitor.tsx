@@ -654,33 +654,24 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
     </div>
   );
 
-  // Modern candidate card - mobile optimized
-  // FIXED: Removed unused index parameter
-  const CandidateCard = ({ candidate, totalVotes, isLeading }: {
+  // Modern candidate card - mobile optimized (REMOVED isLeading)
+  const CandidateCard = ({ candidate, totalVotes }: {
     candidate: Candidate,
-    totalVotes: number,
-    isLeading: boolean
+    totalVotes: number
   }) => {
     const voteCount = candidate.vote_count || 0;
     const percentage = getVotePercentage(voteCount, totalVotes || 0);
 
     return (
-      <div className={`bg-white rounded-xl p-3 border-2 transition-all duration-300 ${isLeading ? 'border-emerald-200 bg-emerald-50/50' : 'border-gray-100'
-        }`}>
+      <div className="bg-white rounded-xl p-3 border-2 border-gray-100 transition-all duration-300">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2 flex-1 min-w-0">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isLeading ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600'
-              }`}>
-              {isLeading ? (
-                <Award className="w-4 h-4" />
-              ) : (
-                <Users className="w-4 h-4" />
-              )}
+            <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center flex-shrink-0">
+              <Users className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
               <h4 className="font-semibold text-gray-900 text-sm leading-tight truncate">
                 {candidate.name}
-                {isLeading && <TrendingUp className="w-3 h-3 text-emerald-500 inline ml-1" />}
               </h4>
               <p className="text-gray-600 text-xs truncate">{candidate.party}</p>
             </div>
@@ -698,8 +689,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
           </div>
           <div className="w-full bg-gray-100 rounded-full h-1.5">
             <div
-              className={`h-1.5 rounded-full transition-all duration-1000 ${isLeading ? 'bg-emerald-500' : 'bg-blue-500'
-                }`}
+              className="h-1.5 rounded-full bg-blue-500 transition-all duration-1000"
               style={{ width: `${percentage}%` }}
             />
           </div>
@@ -844,37 +834,22 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
         <div className="space-y-4 lg:space-y-6">
           {Object.entries(groupedCandidates).map(([position, positionCandidates]) => {
             const sortedCandidates = positionCandidates.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
-            const leadingCandidate = sortedCandidates[0];
-            const hasVotes = sortedCandidates.some(c => (c.vote_count || 0) > 0);
 
             return (
               <div key={position} className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 lg:gap-3 mb-4 lg:mb-6">
                   <h2 className="text-lg lg:text-xl font-bold text-gray-900">{position}</h2>
-                  {hasVotes && leadingCandidate && (
-                    <div className="flex items-center space-x-2 px-3 py-1 lg:px-4 lg:py-2 bg-emerald-500/10 text-emerald-700 rounded-full border border-emerald-200">
-                      <Award className="w-3 h-3 lg:w-4 lg:h-4" />
-                      <span className="text-xs lg:text-sm font-medium">
-                        Leading: <span className="truncate">{leadingCandidate.name}</span>
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Responsive candidate grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 lg:gap-4">
-                  {/* FIXED: Removed unused index parameter */}
-                  {sortedCandidates.map((candidate) => {
-                    const isLeading = candidate.id === leadingCandidate?.id && (candidate.vote_count || 0) > 0;
-                    return (
-                      <CandidateCard
-                        key={candidate.id}
-                        candidate={candidate}
-                        totalVotes={totalVotes}
-                        isLeading={isLeading}
-                      />
-                    );
-                  })}
+                  {sortedCandidates.map((candidate) => (
+                    <CandidateCard
+                      key={candidate.id}
+                      candidate={candidate}
+                      totalVotes={totalVotes}
+                    />
+                  ))}
                 </div>
               </div>
             );

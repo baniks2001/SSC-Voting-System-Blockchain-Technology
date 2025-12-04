@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { User, ArrowLeft, ShieldCheck, Hash, CheckCircle, XCircle, Loader, Smartphone, Monitor, AlertTriangle, Clock } from 'lucide-react';
+import { User, ArrowLeft, ShieldCheck, Hash, CheckCircle, XCircle, Loader, Smartphone, Monitor, AlertTriangle, Clock, Users, MinusCircle } from 'lucide-react';
 import { Candidate, Position } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -192,6 +192,20 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
     });
   };
 
+  // Get positions with no selections (empty votes)
+  const getEmptyPositions = () => {
+    return positions.filter(position => {
+      const selectedCandidates = getSelectedCandidates(position.name);
+      return selectedCandidates.length === 0;
+    });
+  };
+
+  // Calculate total positions with votes and empty positions
+  const positionsWithVotes = getSelectedPositions().length;
+  const emptyPositions = getEmptyPositions().length;
+  const allSelectedCandidates = getAllSelectedCandidates();
+  const totalSelectedCandidates = allSelectedCandidates.length;
+
   // STEP 1: Check voter status for duplicate vote prevention
   const checkVoterStatus = async (): Promise<boolean> => {
     if (!user?.studentId) return false;
@@ -212,7 +226,9 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
         voterId: user?.studentId,
         votes: votes,
         ballotId: hashedBallotId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        // Include empty positions information
+        emptyPositions: emptyPositions > 0 ? getEmptyPositions().map(p => p.name) : []
       };
 
       const result = await api.post('/voting/cast-blockchain', voteData);
@@ -228,7 +244,8 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
           timestamp: receiptSource.timestamp || result.timestamp || new Date().toISOString(),
           status: 'confirmed',
           voterId: user?.studentId,
-          ballotId: hashedBallotId
+          ballotId: hashedBallotId,
+          emptyPositions: emptyPositions
         };
 
         return receiptData;
@@ -402,12 +419,6 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
 
   const isConfirmDisabled = loading || isSubmitting || !ballotId || !hashedBallotId || ballotId === 'Generating...';
 
-  // Calculate total selected positions and candidates
-  const selectedPositions = getSelectedPositions();
-  const allSelectedCandidates = getAllSelectedCandidates();
-  const totalSelectedPositions = selectedPositions.length;
-  const totalSelectedCandidates = allSelectedCandidates.length;
-
   // Confirmation Modal
   const ConfirmationModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -433,8 +444,9 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
             <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
               <p className="text-sm font-semibold text-blue-800 mb-2">Vote Summary:</p>
               <div className="text-xs text-gray-700 space-y-1">
-                <p>• {totalSelectedPositions} position{totalSelectedPositions !== 1 ? 's' : ''} selected</p>
-                <p>• {totalSelectedCandidates} candidate{totalSelectedCandidates !== 1 ? 's' : ''} selected</p>
+                <p>• {positionsWithVotes} position{positionsWithVotes !== 1 ? 's' : ''} with selection{positionsWithVotes !== 1 ? 's' : ''}</p>
+                <p>• {emptyPositions} position{emptyPositions !== 1 ? 's' : ''} left empty</p>
+                <p>• {totalSelectedCandidates} candidate{totalSelectedCandidates !== 1 ? 's' : ''} selected total</p>
               </div>
             </div>
           </div>
@@ -572,9 +584,9 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
                       new Date(blockchainReceipt.timestamp).toLocaleString() :
                       'Timestamp not available'}
                   </p>
-                  {blockchainReceipt.node && (
-                    <p className="text-xs text-gray-600 mt-1">
-                      Node: {blockchainReceipt.node}
+                  {blockchainReceipt.emptyPositions && blockchainReceipt.emptyPositions > 0 && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      Note: {blockchainReceipt.emptyPositions} position(s) were left empty
                     </p>
                   )}
                 </div>
@@ -743,10 +755,10 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
                 <div className="text-center">
                   <div className="bg-gray-100 rounded-xl px-4 py-2 inline-block">
                     <p className="text-sm font-semibold text-gray-800">
-                      {totalSelectedPositions} position{totalSelectedPositions !== 1 ? 's' : ''} selected
+                      {positionsWithVotes} position{positionsWithVotes !== 1 ? 's' : ''} with selection{positionsWithVotes !== 1 ? 's' : ''}
                     </p>
                     <p className="text-xs text-gray-600 mt-1">
-                      {totalSelectedCandidates} candidate{totalSelectedCandidates !== 1 ? 's' : ''} total
+                      {emptyPositions} position{emptyPositions !== 1 ? 's' : ''} left empty • {totalSelectedCandidates} total candidate{totalSelectedCandidates !== 1 ? 's' : ''}
                     </p>
                   </div>
                 </div>
@@ -777,6 +789,12 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
                   </button>
                 </div>
 
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                  <p className="text-xs text-yellow-700">
+                    You can submit your vote with empty positions. This will be recorded as a null/empty vote for those positions.
+                  </p>
+                </div>
+
                 {isConfirmDisabled && ballotId && hashedBallotId && (
                   <div className="text-center">
                     <p className="text-sm text-green-600 bg-green-50 rounded-xl p-3">
@@ -793,21 +811,34 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <CheckCircle className="w-5 h-5 mr-2 text-blue-800" />
-                Your Selections ({totalSelectedCandidates} candidate{totalSelectedCandidates !== 1 ? 's' : ''} across {totalSelectedPositions} position{totalSelectedPositions !== 1 ? 's' : ''})
+                Your Selections ({totalSelectedCandidates} candidate{totalSelectedCandidates !== 1 ? 's' : ''} across {positionsWithVotes} of {positions.length} position{positions.length !== 1 ? 's' : ''})
               </h2>
 
               <div className="space-y-4">
-                {selectedPositions.map((position) => {
+                {positions.map((position) => {
                   const selectedCandidates = getSelectedCandidates(position.name);
                   const maxVotes = position.maxVotes || 1;
+                  const isEmpty = selectedCandidates.length === 0;
 
                   return (
                     <div key={position.id} className="border border-gray-200 rounded-xl p-4 bg-white hover:bg-gray-50 transition-colors">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-gray-900 text-base bg-gray-100 rounded-lg px-3 py-2">
-                          {position.name}
-                        </h3>
-                        <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="font-semibold text-gray-900 text-base bg-gray-100 rounded-lg px-3 py-2">
+                            {position.name}
+                          </h3>
+                          {isEmpty && (
+                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium flex items-center">
+                              <MinusCircle className="w-3 h-3 mr-1" />
+                              Empty
+                            </span>
+                          )}
+                        </div>
+                        <span className={`text-sm px-3 py-1 rounded-full font-medium ${
+                          isEmpty 
+                            ? 'bg-yellow-100 text-yellow-800' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
                           {selectedCandidates.length}/{maxVotes} selected
                         </span>
                       </div>
@@ -846,24 +877,39 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
                           ))}
                         </div>
                       ) : (
-                        <div className="text-red-500 bg-red-50 p-3 rounded-lg text-sm border border-red-200">
-                          No candidate selected for this position
+                        <div className="text-center py-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                          <div className="flex flex-col items-center">
+                            <MinusCircle className="w-8 h-8 text-yellow-600 mb-2" />
+                            <p className="text-yellow-700 text-sm">
+                              No candidate selected for this position
+                            </p>
+                            <p className="text-yellow-600 text-xs mt-1">
+                              This will be recorded as an empty vote
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
                   );
                 })}
 
-                {/* Show message if no positions have selections */}
-                {selectedPositions.length === 0 && (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                      <AlertTriangle className="w-8 h-8 text-gray-400" />
+                {/* Show summary of empty positions */}
+                {emptyPositions > 0 && (
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <div className="flex items-center">
+                      <Users className="w-5 h-5 text-blue-600 mr-2" />
+                      <div>
+                        <h4 className="font-semibold text-blue-800 text-sm">Empty Positions Summary</h4>
+                        <p className="text-blue-600 text-xs">
+                          You have left {emptyPositions} position{emptyPositions !== 1 ? 's' : ''} empty.
+                          {emptyPositions > 0 && (
+                            <span className="ml-1">
+                              Positions: {getEmptyPositions().map(p => p.name).join(', ')}
+                            </span>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-700 mb-2">No Selections Made</h3>
-                    <p className="text-gray-500 text-sm">
-                      You haven't selected any candidates yet. Go back to make your selections.
-                    </p>
                   </div>
                 )}
               </div>

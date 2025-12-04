@@ -1,12 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { UserPlus, Edit, Trash2, Search, User, Award, Layers, MoreVertical, Filter, Check, Users } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { UserPlus, Edit, Trash2, Search, User, Award, Layers, MoreVertical, Filter, Check, Users, CheckCircle, XCircle, AlertCircle, Info, X, AlertTriangle } from 'lucide-react';
 import { Candidate, Position, Voter } from '../../types';
 import { api } from '../../utils/api';
 import { positionApi } from '../../utils/positionApi';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { Modal } from '../common/Modal';
-import { useToast } from '../common/Toast';
 import { usePoll } from '../../contexts/PollContext';
+
+interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  timestamp: Date;
+}
+
+interface ConfirmationModalData {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  type?: 'danger' | 'warning' | 'info';
+  onConfirm: () => void;
+  onCancel: () => void;
+}
 
 export const CandidateManagement: React.FC = () => {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -23,9 +41,24 @@ export const CandidateManagement: React.FC = () => {
   const [showPositionFilters, setShowPositionFilters] = useState(false);
   const [voterSearch, setVoterSearch] = useState('');
   const [showVoterDropdown, setShowVoterDropdown] = useState(false);
-  const { showToast } = useToast();
   const { pollStatus } = usePoll();
   
+  // Notification state
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const notificationIdCounter = useRef(1);
+
+  // Confirmation modal state
+  const [confirmationModal, setConfirmationModal] = useState<ConfirmationModalData>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    cancelText: 'Cancel',
+    type: 'danger',
+    onConfirm: () => {},
+    onCancel: () => {}
+  });
+
   const isVotingActive = pollStatus === 'active';
 
   const [candidateFormData, setCandidateFormData] = useState({
@@ -44,6 +77,166 @@ export const CandidateManagement: React.FC = () => {
   // Add state for duplicate name validation
   const [duplicateNameError, setDuplicateNameError] = useState('');
 
+  // Add notification function
+  const addNotification = useCallback((title: string, message: string, type: Notification['type']) => {
+    const id = notificationIdCounter.current++;
+    const newNotification: Notification = {
+      id,
+      title,
+      message,
+      type,
+      timestamp: new Date()
+    };
+
+    setNotifications(prev => [newNotification, ...prev]);
+
+    // Auto-remove notification after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  }, []);
+
+  // Remove notification
+  const removeNotification = useCallback((id: number) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
+
+  // Show confirmation modal function
+  const showConfirmation = useCallback((data: Omit<ConfirmationModalData, 'isOpen'>) => {
+    setConfirmationModal({
+      ...data,
+      isOpen: true
+    });
+  }, []);
+
+  // Close confirmation modal function
+  const closeConfirmation = useCallback(() => {
+    setConfirmationModal(prev => ({ ...prev, isOpen: false }));
+  }, []);
+
+  // Notification component
+  const NotificationModal: React.FC = () => {
+    if (notifications.length === 0) return null;
+
+    return (
+      <div className="fixed top-4 right-4 z-50 space-y-3 max-w-md">
+        {notifications.map((notification) => {
+          const bgColor = notification.type === 'success' ? 'bg-emerald-50 border-emerald-200' :
+                         notification.type === 'error' ? 'bg-rose-50 border-rose-200' :
+                         notification.type === 'warning' ? 'bg-amber-50 border-amber-200' :
+                         'bg-blue-50 border-blue-200';
+          
+          const textColor = notification.type === 'success' ? 'text-emerald-800' :
+                           notification.type === 'error' ? 'text-rose-800' :
+                           notification.type === 'warning' ? 'text-amber-800' :
+                           'text-blue-800';
+          
+          const iconColor = notification.type === 'success' ? 'text-emerald-600' :
+                           notification.type === 'error' ? 'text-rose-600' :
+                           notification.type === 'warning' ? 'text-amber-600' :
+                           'text-blue-600';
+
+          const Icon = notification.type === 'success' ? CheckCircle :
+                      notification.type === 'error' ? XCircle :
+                      notification.type === 'warning' ? AlertCircle : Info;
+
+          return (
+            <div
+              key={notification.id}
+              className={`${bgColor} border rounded-xl p-4 shadow-lg animate-slideIn`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-start space-x-3">
+                  <Icon className={`w-5 h-5 mt-0.5 flex-shrink-0 ${iconColor}`} />
+                  <div className="flex-1 min-w-0">
+                    <h4 className={`font-semibold ${textColor} mb-1`}>
+                      {notification.title}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {notification.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => removeNotification(notification.id)}
+                  className="text-gray-400 hover:text-gray-600 ml-2 flex-shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Confirmation Modal Component
+  const ConfirmationModal: React.FC = () => {
+    if (!confirmationModal.isOpen) return null;
+
+    const bgColor = confirmationModal.type === 'danger' ? 'bg-rose-50 border-rose-200' :
+                   confirmationModal.type === 'warning' ? 'bg-amber-50 border-amber-200' :
+                   'bg-blue-50 border-blue-200';
+    
+    const textColor = confirmationModal.type === 'danger' ? 'text-rose-800' :
+                     confirmationModal.type === 'warning' ? 'text-amber-800' :
+                     'text-blue-800';
+    
+    const iconColor = confirmationModal.type === 'danger' ? 'text-rose-600' :
+                     confirmationModal.type === 'warning' ? 'text-amber-600' :
+                     'text-blue-600';
+
+    const buttonColor = confirmationModal.type === 'danger' ? 'bg-rose-600 hover:bg-rose-700' :
+                       confirmationModal.type === 'warning' ? 'bg-amber-600 hover:amber-700' :
+                       'bg-blue-600 hover:bg-blue-700';
+
+    const Icon = confirmationModal.type === 'danger' ? AlertTriangle :
+                confirmationModal.type === 'warning' ? AlertCircle : Info;
+
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className={`bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border ${bgColor}`}>
+          <div className="flex items-start space-x-4 mb-6">
+            <div className={`p-3 rounded-xl ${iconColor} bg-white border ${bgColor.split('border-')[1]}`}>
+              <Icon className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-gray-900">{confirmationModal.title}</h3>
+              <p className={`${textColor} mt-2`}>{confirmationModal.message}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
+            <button
+              type="button"
+              onClick={() => {
+                confirmationModal.onCancel();
+                closeConfirmation();
+              }}
+              className="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors w-full sm:w-auto"
+            >
+              {confirmationModal.cancelText}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                confirmationModal.onConfirm();
+                closeConfirmation();
+              }}
+              className={`px-6 py-3 text-sm font-medium text-white ${buttonColor} rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 ${confirmationModal.type === 'danger' ? 'focus:ring-rose-500' : confirmationModal.type === 'warning' ? 'focus:ring-amber-500' : 'focus:ring-blue-500'} transition-colors w-full sm:w-auto`}
+            >
+              {confirmationModal.confirmText}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -53,7 +246,7 @@ export const CandidateManagement: React.FC = () => {
       setLoading(true);
       await Promise.all([fetchCandidates(), fetchPositions()]);
     } catch (error: any) {
-      showToast('error', 'Failed to fetch data');
+      console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
@@ -64,7 +257,7 @@ export const CandidateManagement: React.FC = () => {
       const response = await api.get('/candidates/admin');
       setCandidates(response);
     } catch (error: any) {
-      showToast('error', 'Failed to fetch candidates');
+      console.error('Failed to fetch candidates:', error);
     }
   };
 
@@ -78,7 +271,7 @@ export const CandidateManagement: React.FC = () => {
       }));
       setPositions(positionsWithValidMaxVotes);
     } catch (error: any) {
-      showToast('error', 'Failed to fetch positions');
+      console.error('Failed to fetch positions:', error);
     }
   };
 
@@ -117,7 +310,7 @@ export const CandidateManagement: React.FC = () => {
     // Validate candidate name
     const candidateName = candidateFormData.name.trim();
     if (!candidateName) {
-      showToast('error', 'Candidate name is required');
+      addNotification('Validation Error', 'Candidate name is required', 'error');
       return;
     }
 
@@ -126,7 +319,7 @@ export const CandidateManagement: React.FC = () => {
       const isDuplicate = checkDuplicateCandidateName(candidateName, editingCandidate?.id);
       if (isDuplicate) {
         setDuplicateNameError(`A candidate with the name "${candidateName}" already exists.`);
-        showToast('error', `Candidate "${candidateName}" already exists`);
+        addNotification('Duplicate Candidate', `Candidate "${candidateName}" already exists`, 'error');
         return;
       }
     }
@@ -134,10 +327,10 @@ export const CandidateManagement: React.FC = () => {
     try {
       if (editingCandidate) {
         await api.put(`/candidates/${editingCandidate.id}`, candidateFormData);
-        showToast('success', 'Candidate updated successfully');
+        addNotification('Candidate Updated', 'Candidate updated successfully', 'success');
       } else {
         await api.post('/candidates', candidateFormData);
-        showToast('success', 'Candidate created successfully');
+        addNotification('Candidate Created', 'Candidate created successfully', 'success');
       }
       setShowCandidateModal(false);
       resetCandidateForm();
@@ -147,9 +340,9 @@ export const CandidateManagement: React.FC = () => {
       if (error.message && error.message.toLowerCase().includes('duplicate') || 
           error.message && error.message.toLowerCase().includes('already exists')) {
         setDuplicateNameError(`A candidate with the name "${candidateName}" already exists.`);
-        showToast('error', `Candidate "${candidateName}" already exists`);
+        addNotification('Duplicate Candidate', `Candidate "${candidateName}" already exists`, 'error');
       } else {
-        showToast('error', error.message || 'Operation failed');
+        addNotification('Operation Failed', error.message || 'Failed to save candidate', 'error');
       }
     }
   };
@@ -169,16 +362,16 @@ export const CandidateManagement: React.FC = () => {
 
       if (editingPosition) {
         await positionApi.updatePosition(editingPosition.id, positionData);
-        showToast('success', 'Position updated successfully');
+        addNotification('Position Updated', 'Position updated successfully', 'success');
       } else {
         await positionApi.createPosition(positionData);
-        showToast('success', 'Position created successfully');
+        addNotification('Position Created', 'Position created successfully', 'success');
       }
       setShowPositionModal(false);
       resetPositionForm();
       fetchPositions();
     } catch (error: any) {
-      showToast('error', error.message || 'Operation failed');
+      addNotification('Operation Failed', error.message || 'Failed to save position', 'error');
     }
   };
 
@@ -205,32 +398,59 @@ export const CandidateManagement: React.FC = () => {
     setShowPositionModal(true);
   };
 
-  const handleDeleteCandidate = async (id: number) => {
-    if (!confirm('Are you sure you want to permanently delete this candidate? This action cannot be undone.')) return;
-    
-    try {
-      await api.delete(`/candidates/${id}`);
-      showToast('success', 'Candidate deleted successfully');
-      setCandidates(prev => prev.filter(candidate => candidate.id !== id));
-      setShowMobileActions(null);
-    } catch (error: any) {
-      showToast('error', error.message || 'Failed to delete candidate');
-      fetchCandidates();
-    }
+  const handleDeleteCandidate = (candidate: Candidate) => {
+    showConfirmation({
+      title: 'Delete Candidate',
+      message: `Are you sure you want to permanently delete "${candidate.name}"? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/candidates/${candidate.id}`);
+          addNotification('Candidate Deleted', `"${candidate.name}" has been deleted successfully`, 'success');
+          setCandidates(prev => prev.filter(c => c.id !== candidate.id));
+          setShowMobileActions(null);
+        } catch (error: any) {
+          addNotification('Delete Failed', error.message || 'Failed to delete candidate', 'error');
+          fetchCandidates();
+        }
+      },
+      onCancel: () => {
+        setShowMobileActions(null);
+      }
+    });
   };
 
-  const handleDeletePosition = async (id: number) => {
-    if (!confirm('Are you sure you want to permanently delete this position? This will also delete all associated candidates and cannot be undone.')) return;
-    
-    try {
-      await positionApi.deletePosition(id);
-      showToast('success', 'Position deleted successfully');
-      setPositions(prev => prev.filter(position => position.id !== id));
-      fetchCandidates();
-    } catch (error: any) {
-      showToast('error', error.message || 'Failed to delete position');
-      fetchPositions();
-    }
+  const handleDeletePosition = (position: Position) => {
+    // Check if position has candidates
+    const positionCandidates = candidates.filter(c => c.position === position.name);
+    const hasCandidates = positionCandidates.length > 0;
+
+    showConfirmation({
+      title: 'Delete Position',
+      message: hasCandidates
+        ? `Are you sure you want to delete the "${position.name}" position? This will also delete ${positionCandidates.length} associated candidate(s). This action cannot be undone.`
+        : `Are you sure you want to delete the "${position.name}" position? This action cannot be undone.`,
+      confirmText: 'Delete Position',
+      cancelText: 'Cancel',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await positionApi.deletePosition(position.id);
+          addNotification('Position Deleted', `"${position.name}" has been deleted successfully`, 'success');
+          setPositions(prev => prev.filter(p => p.id !== position.id));
+          // Also remove candidates associated with this position
+          if (hasCandidates) {
+            setCandidates(prev => prev.filter(c => c.position !== position.name));
+          }
+        } catch (error: any) {
+          addNotification('Delete Failed', error.message || 'Failed to delete position', 'error');
+          fetchPositions();
+        }
+      },
+      onCancel: () => {}
+    });
   };
 
   const resetCandidateForm = () => {
@@ -283,7 +503,7 @@ export const CandidateManagement: React.FC = () => {
     // Check for duplicate when selecting from voter list
     if (checkDuplicateCandidateName(selectedName)) {
       setDuplicateNameError(`A candidate with the name "${selectedName}" already exists.`);
-      showToast('error', `Candidate "${selectedName}" already exists`);
+      addNotification('Duplicate Candidate', `Candidate "${selectedName}" already exists`, 'error');
       return;
     }
     
@@ -340,6 +560,12 @@ export const CandidateManagement: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/30 animate-fadeIn p-3 sm:p-4 lg:p-6">
+      {/* Notification Modal */}
+      <NotificationModal />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal />
+
       {/* Header Section */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -452,6 +678,12 @@ export const CandidateManagement: React.FC = () => {
                         {position.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>Candidates:</span>
+                      <span className="font-medium">
+                        {candidates.filter(c => c.position === position.name).length}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex space-x-2">
                     <button
@@ -466,7 +698,7 @@ export const CandidateManagement: React.FC = () => {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDeletePosition(position.id)}
+                      onClick={() => handleDeletePosition(position)}
                       disabled={isVotingActive}
                       className={`flex-1 text-xs px-3 py-2 rounded-lg transition-all duration-200 ${
                         isVotingActive 
@@ -566,7 +798,7 @@ export const CandidateManagement: React.FC = () => {
                           <span>Edit</span>
                         </button>
                         <button
-                          onClick={() => handleDeleteCandidate(candidate.id)}
+                          onClick={() => handleDeleteCandidate(candidate)}
                           disabled={isVotingActive}
                           className={`w-full text-left px-3 py-2.5 text-sm flex items-center space-x-2 transition-colors ${
                             isVotingActive 
@@ -609,7 +841,7 @@ export const CandidateManagement: React.FC = () => {
                     <span>Edit</span>
                   </button>
                   <button
-                    onClick={() => handleDeleteCandidate(candidate.id)}
+                    onClick={() => handleDeleteCandidate(candidate)}
                     disabled={isVotingActive}
                     className={`flex-1 flex items-center justify-center space-x-1 text-xs px-3 py-2.5 rounded-lg transition-all duration-200 ${
                       isVotingActive 

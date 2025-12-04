@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users, Vote, UserCheck, Activity, Download, Play, Pause, StopCircle,
   RefreshCw, AlertCircle, X, Save, Calendar, History, Trash2, Eye, Search,
-  Copy, FileText, Shield,BarChart3, Clock
+  Copy, FileText, Shield, BarChart3, Clock, CheckCircle, XCircle, Info
 } from 'lucide-react';
 import { DashboardStats, AuditLog } from '../../types';
 import { api } from '../../utils/api';
@@ -42,6 +42,13 @@ interface Candidate {
   vote_count?: number;
 }
 
+interface Notification {
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  title?: string;
+}
+
 type ExportType = 'xlsx' | 'docs' | 'json';
 
 export const Dashboard: React.FC = () => {
@@ -69,6 +76,10 @@ export const Dashboard: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState('all');
   const [copiedElectionId, setCopiedElectionId] = useState<number | null>(null);
   const [auditLogsExportType, setAuditLogsExportType] = useState<ExportType>('json');
+  
+  // Notification state
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const notificationIdCounter = useRef(1);
 
   const { pollStatus, updatePollStatus, loading: pollStatusLoading } = usePoll();
   const { user, logout } = useAuth();
@@ -80,6 +91,23 @@ export const Dashboard: React.FC = () => {
   const [superAdminPassword, setSuperAdminPassword] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+
+  // Notification functions
+  const addNotification = useCallback((message: string, type: Notification['type'], title?: string) => {
+    const id = notificationIdCounter.current++;
+    const notification: Notification = { id, message, type, title };
+    
+    setNotifications(prev => [...prev, notification]);
+    
+    // Auto remove notification after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  }, []);
+
+  const removeNotification = useCallback((id: number) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
 
   // Modern status pill component
   const StatusPill = ({ icon: Icon, text, variant = 'default' }: { icon: any, text: string, variant?: 'success' | 'warning' | 'error' | 'info' | 'default' }) => {
@@ -95,6 +123,69 @@ export const Dashboard: React.FC = () => {
       <div className={`flex items-center space-x-2 px-3 py-2 rounded-xl border ${variants[variant]} backdrop-blur-sm`}>
         <Icon className="w-4 h-4" />
         <span className="text-sm font-medium">{text}</span>
+      </div>
+    );
+  };
+
+  // Notification component
+  const NotificationToast = ({ notification }: { notification: Notification }) => {
+    const getIcon = () => {
+      switch (notification.type) {
+        case 'success': return <CheckCircle className="w-5 h-5 text-emerald-500" />;
+        case 'error': return <XCircle className="w-5 h-5 text-rose-500" />;
+        case 'warning': return <AlertCircle className="w-5 h-5 text-amber-500" />;
+        case 'info': return <Info className="w-5 h-5 text-blue-500" />;
+        default: return <Info className="w-5 h-5 text-gray-500" />;
+      }
+    };
+
+    const getBorderColor = () => {
+      switch (notification.type) {
+        case 'success': return 'border-emerald-200';
+        case 'error': return 'border-rose-200';
+        case 'warning': return 'border-amber-200';
+        case 'info': return 'border-blue-200';
+        default: return 'border-gray-200';
+      }
+    };
+
+    const getBgColor = () => {
+      switch (notification.type) {
+        case 'success': return 'bg-emerald-50';
+        case 'error': return 'bg-rose-50';
+        case 'warning': return 'bg-amber-50';
+        case 'info': return 'bg-blue-50';
+        default: return 'bg-gray-50';
+      }
+    };
+
+    return (
+      <div className={`relative rounded-xl shadow-lg ${getBorderColor()} border ${getBgColor()} backdrop-blur-sm overflow-hidden animate-slideIn`}>
+        <div className="p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              {getIcon()}
+            </div>
+            <div className="ml-3 w-0 flex-1 pt-0.5">
+              {notification.title && (
+                <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+              )}
+              <p className="text-sm text-gray-700">{notification.message}</p>
+            </div>
+            <div className="ml-4 flex-shrink-0 flex">
+              <button
+                onClick={() => removeNotification(notification.id)}
+                className="rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+        {/* Progress bar */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-current to-transparent opacity-20">
+          <div className="h-full bg-current animate-progressBar"></div>
+        </div>
       </div>
     );
   };
@@ -356,11 +447,11 @@ export const Dashboard: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to fetch election details:', error);
-      alert('Failed to load election details');
+      addNotification('Failed to load election details', 'error');
     } finally {
       setLoadingElectionDetails(false);
     }
-  }, []);
+  }, [addNotification]);
 
   // Enhanced Excel file generator for individual elections
   const generateExcelFile = useCallback(async (electionData: any, id: number) => {
@@ -537,14 +628,14 @@ export const Dashboard: React.FC = () => {
         await generateJsonFile(electionDetails, id);
       }
 
-      alert(`Election exported successfully as ${exportType.toUpperCase()}`);
+      addNotification(`Election exported successfully as ${exportType.toUpperCase()}`, 'success');
     } catch (error) {
       console.error('Export election error:', error);
-      alert('Failed to export election. Please try again or use a different format.');
+      addNotification('Failed to export election. Please try again or use a different format.', 'error');
     } finally {
       setExporting(false);
     }
-  }, [generateExcelFile, generateJsonFile, generateProperDocx]);
+  }, [generateExcelFile, generateJsonFile, generateProperDocx, addNotification]);
 
   // Fixed election history export function
   const exportElectionHistory = useCallback(async (exportType: ExportType = 'json') => {
@@ -620,14 +711,14 @@ export const Dashboard: React.FC = () => {
         await downloadBlob(blob, `election-history-${new Date().toISOString().split('T')[0]}.json`);
       }
 
-      alert(`Election history exported successfully as ${exportType.toUpperCase()}`);
+      addNotification(`Election history exported successfully as ${exportType.toUpperCase()}`, 'success');
     } catch (error) {
       console.error('Failed to export election history:', error);
-      alert('Failed to export election history. Please try JSON format instead.');
+      addNotification('Failed to export election history. Please try JSON format instead.', 'error');
     } finally {
       setExporting(false);
     }
-  }, [electionHistory, filteredElectionHistory, generateProperDocx]);
+  }, [electionHistory, filteredElectionHistory, generateProperDocx, addNotification]);
 
   // Enhanced audit logs export with dropdown connection
   const exportAuditLogs = useCallback(async (exportType: ExportType = 'json') => {
@@ -704,14 +795,14 @@ export const Dashboard: React.FC = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      alert(`Audit logs exported successfully as ${exportType.toUpperCase()}`);
+      addNotification(`Audit logs exported successfully as ${exportType.toUpperCase()}`, 'success');
     } catch (error) {
       console.error('Failed to export audit logs:', error);
-      alert('Failed to export audit logs. Please try again.');
+      addNotification('Failed to export audit logs. Please try again.', 'error');
     } finally {
       setExporting(false);
     }
-  }, [stats?.auditLogs]);
+  }, [stats?.auditLogs, addNotification]);
 
   // Copy election data to clipboard with actual results
   const copyElectionData = useCallback(async (election: ElectionData) => {
@@ -769,13 +860,13 @@ Exported on: ${new Date().toLocaleString()}`.trim();
           setCopiedElectionId(null);
         }, 2000);
 
-        alert('Election results copied to clipboard! 📋\n\nIncludes actual candidate results with vote counts.');
+        addNotification('Election results copied to clipboard! 📋', 'success', 'Copy Successful');
       }
     } catch (error) {
       console.error('Copy election data error:', error);
-      alert('Failed to copy election data. Please try again.');
+      addNotification('Failed to copy election data. Please try again.', 'error');
     }
-  }, []);
+  }, [addNotification]);
 
   // Delete election record
   const deleteElectionRecord = useCallback(async (id: number) => {
@@ -785,13 +876,13 @@ Exported on: ${new Date().toLocaleString()}`.trim();
 
     try {
       await api.delete(`/poll/elections/${id}`);
-      alert('Election record deleted successfully');
+      addNotification('Election record deleted successfully', 'success');
       await fetchElectionHistory();
     } catch (error) {
       console.error('Delete election record error:', error);
-      alert('Failed to delete election record');
+      addNotification('Failed to delete election record', 'error');
     }
-  }, [fetchElectionHistory]);
+  }, [fetchElectionHistory, addNotification]);
 
   // Super admin authentication function
   const authenticateSuperAdmin = useCallback(async (password: string) => {
@@ -869,11 +960,11 @@ Exported on: ${new Date().toLocaleString()}`.trim();
             if (electionsResponse.success && electionsResponse.elections.length > 0) {
               const latestElection = electionsResponse.elections[0];
               await exportElection(latestElection.id, 'json');
-              alert('Election finished and JSON file exported successfully!');
+              addNotification('Election finished and JSON file exported successfully!', 'success');
             }
           } catch (exportError) {
             console.error('Auto-export failed:', exportError);
-            alert('Election finished successfully, but automatic JSON export failed. You can export manually from Election History.');
+            addNotification('Election finished successfully, but automatic JSON export failed. You can export manually from Election History.', 'warning');
           }
         }, 1000);
       } else {
@@ -882,21 +973,21 @@ Exported on: ${new Date().toLocaleString()}`.trim();
           'paused': 'Voting paused successfully! Student login is now disabled.',
           'not_started': 'Poll reset successfully! Voting is not started.'
         };
-        alert(actionMessages[action]);
+        addNotification(actionMessages[action], 'success');
       }
 
     } catch (error: any) {
       console.error('Failed to update poll status:', error);
       if (error.status === 403) {
-        alert('Access denied: Only super admins can perform this action.');
+        addNotification('Access denied: Only super admins can perform this action.', 'error');
       } else {
-        alert(`Failed to update poll status: ${error.message}`);
+        addNotification(`Failed to update poll status: ${error.message}`, 'error');
       }
       throw error;
     } finally {
       setPollLoading(false);
     }
-  }, [updatePollStatus, fetchData, finishPollData, fetchElectionHistory, exportElection]);
+  }, [updatePollStatus, fetchData, finishPollData, fetchElectionHistory, exportElection, addNotification]);
 
   const handlePollControl = useCallback(async (action: PollStatus) => {
     if (action === 'finished') {
@@ -912,17 +1003,18 @@ Exported on: ${new Date().toLocaleString()}`.trim();
 
   const handleFinishPollSubmit = useCallback(async () => {
     if (!finishPollData.electionName || !finishPollData.electionDate || !finishPollData.academicYear) {
-      alert('Please fill in all required fields');
+      addNotification('Please fill in all required fields', 'warning');
       return;
     }
 
     setShowFinishPollForm(false);
     setShowPasswordModal(true);
-  }, [finishPollData]);
+  }, [finishPollData, addNotification]);
 
   const handleFinishSequence = useCallback(async () => {
     if (!superAdminPassword) {
       setPasswordError('Password is required');
+      addNotification('Super admin password is required', 'warning');
       return;
     }
 
@@ -932,6 +1024,7 @@ Exported on: ${new Date().toLocaleString()}`.trim();
       if (!isAuthenticated) {
         setPasswordError('Invalid super admin password');
         setPollLoading(false);
+        addNotification('Invalid super admin password', 'error');
         return;
       }
 
@@ -949,7 +1042,7 @@ Exported on: ${new Date().toLocaleString()}`.trim();
         : 'Election finished but blockchain reset may need manual attention.'
         }`;
 
-      alert(successMessage);
+      addNotification(successMessage, 'success');
 
       await fetchData();
       if (isSuperAdmin) {
@@ -962,11 +1055,11 @@ Exported on: ${new Date().toLocaleString()}`.trim();
       if (error.message.includes('blockchain') || error.message.includes('reset') || error.message.includes('Failed to fetch')) {
         errorMessage += '\n\nElection data was saved successfully, but blockchain reset failed. You may need to manually reset the blockchain.';
       }
-      alert(errorMessage);
+      addNotification(errorMessage, 'error');
     } finally {
       setPollLoading(false);
     }
-  }, [superAdminPassword, performPollControl, resetBlockchain, fetchData, fetchElectionHistory, isSuperAdmin]);
+  }, [superAdminPassword, performPollControl, resetBlockchain, fetchData, fetchElectionHistory, isSuperAdmin, addNotification, authenticateSuperAdmin]);
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -1020,6 +1113,13 @@ Exported on: ${new Date().toLocaleString()}`.trim();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-4 lg:p-6 space-y-6 animate-fadeIn">
+      {/* Notification Area - Top Right */}
+      <div className="fixed top-4 right-4 z-50 space-y-3 w-96 max-w-[calc(100vw-2rem)]">
+        {notifications.map(notification => (
+          <NotificationToast key={notification.id} notification={notification} />
+        ))}
+      </div>
+
       {/* Finish Poll Form Modal */}
       {showFinishPollForm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -1545,7 +1645,6 @@ Exported on: ${new Date().toLocaleString()}`.trim();
                         <option value="">Export Election Data</option>
                         <option value="json">JSON Format</option>
                         <option value="xlsx">Excel Format</option>
-                        <option value="docs">Word Document</option>
                       </select>
                       <Download className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
                     </div>

@@ -161,34 +161,38 @@ router.post('/mark-voted', auth, async (req, res) => {
   }
 });
 
-// Submit vote to Ethereum blockchain (FIXED METHOD CALL)
+// Submit vote to Ethereum blockchain (UPDATED to handle empty votes)
 router.post('/cast-blockchain', async (req, res) => {
   try {
     console.log('🔗 Fully decentralized blockchain vote submission');
-    const { voterId, votes, timestamp, ballotId } = req.body;
+    const { voterId, votes, timestamp, ballotId, emptyPositions } = req.body;
 
-    if (!voterId || !votes || !Array.isArray(votes)) {
+    if (!voterId) {
       console.log('❌ Invalid vote data for blockchain submission');
       return res.status(400).json({
         success: false,
-        error: 'Invalid vote data: voterId and votes array are required'
+        error: 'Invalid vote data: voterId is required'
       });
     }
 
     console.log('📥 Received decentralized vote submission:', {
       voterId,
-      voteCount: votes.length,
+      voteCount: votes ? votes.length : 0,
       timestamp,
-      ballotId: ballotId
+      ballotId: ballotId,
+      emptyPositions: emptyPositions || []
     });
 
-    for (const vote of votes) {
-      if (!vote.candidateId || !vote.position) {
-        console.error('❌ Vote missing required fields:', vote);
-        return res.status(400).json({
-          success: false,
-          error: `Vote missing candidateId or position`
-        });
+    // Validate votes if they exist (votes can be empty array or null)
+    if (votes && Array.isArray(votes)) {
+      for (const vote of votes) {
+        if (!vote.candidateId || !vote.position) {
+          console.error('❌ Vote missing required fields:', vote);
+          return res.status(400).json({
+            success: false,
+            error: `Vote missing candidateId or position`
+          });
+        }
       }
     }
 
@@ -250,15 +254,21 @@ router.post('/cast-blockchain', async (req, res) => {
     // Prepare vote data for blockchain
     const voteData = {
       voterId: voterId,
-      votes: votes,
+      votes: votes || [], // Can be empty array
       timestamp: timestamp || new Date().toISOString(),
       ballotId: ballotId,
+      emptyPositions: emptyPositions || [], // Track empty positions
       voterHash: crypto.createHash('sha256')
         .update(`${voterId}-${Date.now()}-${Math.random().toString(36)}`)
         .digest('hex')
     };
 
     console.log('⛓️ Submitting to decentralized blockchain network...');
+    console.log('📋 Vote data includes:', {
+      totalVotes: votes ? votes.length : 0,
+      emptyPositions: emptyPositions?.length || 0,
+      emptyPositionsList: emptyPositions || []
+    });
 
     // FIXED: Call the correct method name
     const blockchainResult = await ethereumService.submitVoteToAllNodes(voteData);
@@ -275,7 +285,8 @@ router.post('/cast-blockchain', async (req, res) => {
       transactionHash: blockchainResult.receipt.transactionHash,
       blockNumber: blockchainResult.receipt.blockNumber,
       node: blockchainResult.receipt.node,
-      simulated: blockchainResult.receipt.simulated
+      simulated: blockchainResult.receipt.simulated,
+      emptyPositions: emptyPositions?.length || 0
     });
 
     // If we have a real transaction hash, try to get the receipt
@@ -306,7 +317,7 @@ router.post('/cast-blockchain', async (req, res) => {
     }
 
     await logAuditAction(voterId, 'voter', 'DECENTRALIZED_VOTE_CAST',
-      `Vote cast on decentralized Ethereum blockchain. TX: ${blockchainResult.receipt.transactionHash} (Node: ${blockchainResult.receipt.node})`, req);
+      `Vote cast on decentralized Ethereum blockchain. TX: ${blockchainResult.receipt.transactionHash} (Node: ${blockchainResult.receipt.node}) - Empty positions: ${emptyPositions?.length || 0}`, req);
 
     console.log('🎉 Fully decentralized blockchain vote process completed successfully for voter:', voterId);
 
@@ -314,7 +325,8 @@ router.post('/cast-blockchain', async (req, res) => {
       success: true,
       receipt: {
         ...blockchainResult.receipt,
-        receiptDetails: receiptDetails
+        receiptDetails: receiptDetails,
+        emptyPositions: emptyPositions?.length || 0
       },
       node: blockchainResult.receipt.node,
       simulated: blockchainResult.receipt.simulated,
@@ -325,6 +337,7 @@ router.post('/cast-blockchain', async (req, res) => {
         blockNumber: blockchainResult.receipt.blockNumber,
         timestamp: voteData.timestamp,
         voterHash: voteData.voterHash,
+        emptyPositions: emptyPositions?.length || 0,
         receiptConfirmed: !!receiptDetails
       }
     });
@@ -642,7 +655,26 @@ async function getPositionsFromCandidates() {
   }
 }
 
-// Poll results from blockchain votes + SQL candidates
+// Get empty votes count for statistics
+async function getEmptyVotesStats() {
+  try {
+    const [stats] = await pool.execute(`
+      SELECT 
+        COUNT(*) as total_votes,
+        SUM(CASE WHEN vote_count = 0 THEN 1 ELSE 0 END) as empty_votes,
+        position
+      FROM candidates 
+      WHERE is_active = 1
+      GROUP BY position
+    `);
+    return stats;
+  } catch (error) {
+    console.error('Error fetching empty votes stats:', error);
+    return [];
+  }
+}
+
+// Poll results from blockchain votes + SQL candidates (UPDATED to handle empty votes)
 router.get('/results', async (req, res) => {
   try {
     console.log('📊 Fetching poll results (Blockchain votes + SQL candidates)');
@@ -664,16 +696,18 @@ router.get('/results', async (req, res) => {
       };
     }
 
-    const [sqlCandidates, uniquePositions] = await Promise.all([
+    const [sqlCandidates, uniquePositions, emptyVotesStats] = await Promise.all([
       getCandidatesFromSQL(),
-      getPositionsFromCandidates()
+      getPositionsFromCandidates(),
+      getEmptyVotesStats()
     ]);
 
     console.log('📋 Data retrieved:', {
       blockchainVotes: blockchainResults.totalVotes,
       sqlCandidates: sqlCandidates.length,
       uniquePositions: uniquePositions.length,
-      blockchainVoteData: blockchainResults.voteData?.length || 0
+      blockchainVoteData: blockchainResults.voteData?.length || 0,
+      emptyVotesStats: emptyVotesStats.length
     });
 
     // Create candidate map with all SQL candidates
@@ -684,11 +718,24 @@ router.get('/results', async (req, res) => {
         name: candidate.name,
         party: candidate.party,
         position: candidate.position,
-        vote_count: 0 // Initialize to 0
+        vote_count: 0, // Initialize to 0
+        empty_votes: 0 // Track empty votes for this position
+      });
+    });
+
+    // Create position map for empty votes tracking
+    const positionMap = new Map();
+    uniquePositions.forEach(position => {
+      positionMap.set(position, {
+        position: position,
+        total_votes: 0,
+        candidate_votes: 0,
+        empty_votes: 0
       });
     });
 
     let totalVotes = 0;
+    let totalEmptyVotes = 0;
 
     // Count votes from blockchain results
     if (blockchainResults.results && Object.keys(blockchainResults.results).length > 0) {
@@ -700,6 +747,12 @@ router.get('/results', async (req, res) => {
             const voteCount = candidateData.voteCount || 0;
             candidateMap.get(candidateId).vote_count += voteCount;
             totalVotes += voteCount;
+            
+            // Update position stats
+            if (positionMap.has(position)) {
+              positionMap.get(position).candidate_votes += voteCount;
+              positionMap.get(position).total_votes += voteCount;
+            }
           }
         });
       });
@@ -715,40 +768,89 @@ router.get('/results', async (req, res) => {
             if (candidateId && candidateMap.has(candidateId)) {
               candidateMap.get(candidateId).vote_count++;
               totalVotes++;
+              
+              // Update position stats
+              const position = v.position;
+              if (positionMap.has(position)) {
+                positionMap.get(position).candidate_votes++;
+                positionMap.get(position).total_votes++;
+              }
+            }
+          });
+        }
+        
+        // Check for empty positions in vote data
+        if (vote.emptyPositions && Array.isArray(vote.emptyPositions)) {
+          vote.emptyPositions.forEach(position => {
+            if (positionMap.has(position)) {
+              positionMap.get(position).empty_votes++;
+              positionMap.get(position).total_votes++;
+              totalEmptyVotes++;
             }
           });
         }
       });
     }
 
+    // Update empty votes count in candidate map (for positions with no selections)
+    positionMap.forEach((stats, position) => {
+      // Calculate empty votes as difference between total votes and candidate votes
+      stats.empty_votes = stats.total_votes - stats.candidate_votes;
+      
+      // Update candidate map for this position
+      candidateMap.forEach(candidate => {
+        if (candidate.position === position) {
+          candidate.empty_votes = stats.empty_votes;
+        }
+      });
+    });
+
     // Group candidates by position
     const groupedCandidates = {};
     candidateMap.forEach(candidate => {
       const positionName = candidate.position;
       if (!groupedCandidates[positionName]) {
-        groupedCandidates[positionName] = [];
+        groupedCandidates[positionName] = {
+          candidates: [],
+          stats: positionMap.get(positionName) || {
+            position: positionName,
+            total_votes: 0,
+            candidate_votes: 0,
+            empty_votes: 0
+          }
+        };
       }
-      groupedCandidates[positionName].push(candidate);
+      groupedCandidates[positionName].candidates.push(candidate);
     });
 
     // Sort candidates by vote count within each position
     Object.keys(groupedCandidates).forEach(position => {
-      groupedCandidates[position].sort((a, b) => b.vote_count - a.vote_count);
+      groupedCandidates[position].candidates.sort((a, b) => b.vote_count - a.vote_count);
     });
 
     console.log('✅ Results calculated successfully:', {
       totalVotes,
+      totalEmptyVotes,
       positions: Object.keys(groupedCandidates).length,
       candidates: sqlCandidates.length,
       candidatesWithVotes: Array.from(candidateMap.values()).filter(c => c.vote_count > 0).length
     });
 
+    // Prepare position statistics
+    const positionStatistics = Array.from(positionMap.values()).map(stats => ({
+      ...stats,
+      empty_percentage: stats.total_votes > 0 ? 
+        Math.round((stats.empty_votes / stats.total_votes) * 100) : 0
+    }));
+
     const response = serializeBigInt({
       success: true,
       totalVotes: totalVotes,
+      totalEmptyVotes: totalEmptyVotes,
       candidates: Array.from(candidateMap.values()),
       positions: Object.keys(groupedCandidates),
       resultsByPosition: groupedCandidates,
+      positionStatistics: positionStatistics,
       voteData: blockchainResults.voteData || [],
       source: 'blockchain_votes_sql_candidates',
       lastUpdated: new Date().toISOString(),
@@ -756,7 +858,9 @@ router.get('/results', async (req, res) => {
         totalCandidates: sqlCandidates.length,
         totalPositions: uniquePositions.length,
         blockchainVotes: blockchainResults.totalVotes,
-        calculatedVotes: totalVotes
+        calculatedVotes: totalVotes,
+        emptyVotesPercentage: totalVotes > 0 ? 
+          Math.round((totalEmptyVotes / totalVotes) * 100) : 0
       }
     });
 
@@ -772,6 +876,140 @@ router.get('/results', async (req, res) => {
         candidates: [],
         resultsByPosition: {}
       }
+    });
+  }
+});
+
+// Get detailed empty votes report
+router.get('/empty-votes-report', async (req, res) => {
+  try {
+    console.log('📊 Fetching empty votes report');
+
+    const [results] = await pool.execute(`
+      SELECT 
+        v.student_id,
+        v.full_name,
+        v.course,
+        v.section,
+        v.voted_at,
+        COUNT(vv.candidate_id) as voted_count,
+        (SELECT COUNT(DISTINCT position) FROM candidates WHERE is_active = 1) as total_positions
+      FROM voters v
+      LEFT JOIN vote_verification vv ON v.student_id = vv.voter_id
+      WHERE v.has_voted = 1
+      GROUP BY v.student_id, v.full_name, v.course, v.section, v.voted_at
+      HAVING voted_count < total_positions
+      ORDER BY v.voted_at DESC
+    `);
+
+    const report = results.map(row => ({
+      studentId: row.student_id,
+      fullName: row.full_name,
+      course: row.course,
+      section: row.section,
+      votedAt: row.voted_at,
+      votedCount: row.voted_count,
+      totalPositions: row.total_positions,
+      emptyPositions: row.total_positions - row.voted_count,
+      emptyPercentage: Math.round(((row.total_positions - row.voted_count) / row.total_positions) * 100)
+    }));
+
+    res.json({
+      success: true,
+      report: report,
+      totalVotersWithEmptyVotes: report.length,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Get empty votes report error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get empty votes report: ' + error.message
+    });
+  }
+});
+
+// Get voter's specific vote details (including empty positions)
+router.get('/voter-details/:voterId', async (req, res) => {
+  try {
+    const { voterId } = req.params;
+    console.log('🔍 Fetching voter details:', voterId);
+
+    // Get voter info
+    const [voterRows] = await pool.execute(
+      `SELECT * FROM voters WHERE student_id = ?`,
+      [voterId]
+    );
+
+    if (voterRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Voter not found'
+      });
+    }
+
+    const voter = voterRows[0];
+
+    // Get vote verification records
+    const [voteRecords] = await pool.execute(
+      `SELECT vv.*, c.position, c.name as candidate_name, c.party
+       FROM vote_verification vv
+       LEFT JOIN candidates c ON vv.candidate_id = c.id
+       WHERE vv.voter_id = ?
+       ORDER BY c.position`,
+      [voterId]
+    );
+
+    // Get all positions
+    const [positionRows] = await pool.execute(
+      `SELECT DISTINCT position FROM candidates WHERE is_active = 1 ORDER BY position`
+    );
+
+    const allPositions = positionRows.map(p => p.position);
+    const votedPositions = [...new Set(voteRecords.map(v => v.position))];
+    const emptyPositions = allPositions.filter(p => !votedPositions.includes(p));
+
+    const response = {
+      success: true,
+      voter: {
+        studentId: voter.student_id,
+        fullName: voter.full_name,
+        course: voter.course,
+        section: voter.section,
+        hasVoted: voter.has_voted,
+        votedAt: voter.voted_at,
+        voteHash: voter.vote_hash
+      },
+      voteDetails: {
+        totalPositions: allPositions.length,
+        votedPositions: votedPositions.length,
+        emptyPositions: emptyPositions.length,
+        positions: allPositions.map(position => {
+          const vote = voteRecords.find(v => v.position === position);
+          return {
+            position,
+            voted: !!vote,
+            candidate: vote ? {
+              id: vote.candidate_id,
+              name: vote.candidate_name,
+              party: vote.party
+            } : null,
+            timestamp: vote ? vote.timestamp : null
+          };
+        }),
+        emptyPositionsList: emptyPositions
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    res.json(response);
+
+  } catch (error) {
+    console.error('❌ Get voter details error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get voter details: ' + error.message
     });
   }
 });

@@ -52,6 +52,7 @@ export const VoterManagement: React.FC = () => {
   const [showCoursesModal, setShowCoursesModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showResetVoteModal, setShowResetVoteModal] = useState(false);
+  const [showCourseDeleteModal, setShowCourseDeleteModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -78,13 +79,14 @@ export const VoterManagement: React.FC = () => {
   const [addingCourse, setAddingCourse] = useState(false);
   const [statusAction, setStatusAction] = useState<'activate' | 'deactivate' | null>(null);
   const [resetVoteAction, setResetVoteAction] = useState<'all' | 'selected' | null>(null);
+  const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
   const { showToast } = useToast();
   const { pollStatus } = usePoll();
 
   const isVotingActive = pollStatus === 'active';
   const isVotingPaused = pollStatus === 'paused';
   const isVotingFinished = pollStatus === 'finished';
-  
+
   const canEditAllFields = isVotingFinished;
   const canEditPasswordOnly = isVotingActive || isVotingPaused;
 
@@ -114,15 +116,13 @@ export const VoterManagement: React.FC = () => {
   // Auto-generate password when all required fields are filled in add mode
   useEffect(() => {
     if (!editingVoter && showModal) {
-      // Check if all required fields are filled
       const { studentId, fullName, course, yearLevel, section } = formData;
       const allFieldsFilled = studentId && fullName && course && yearLevel && section;
-      
+
       if (allFieldsFilled) {
         const generatedPassword = generatePasswordForStudent(studentId, fullName, yearLevel, section);
         setFormData(prev => ({ ...prev, password: generatedPassword }));
       } else {
-        // Clear password if any required field is empty
         setFormData(prev => ({ ...prev, password: '' }));
       }
     }
@@ -135,6 +135,7 @@ export const VoterManagement: React.FC = () => {
 
   const fetchVoters = async () => {
     try {
+      setLoading(true);
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
       if (filters.course) params.append('course', filters.course);
@@ -143,9 +144,21 @@ export const VoterManagement: React.FC = () => {
       if (filters.hasVoted) params.append('hasVoted', filters.hasVoted);
       if (filters.isActive) params.append('isActive', filters.isActive);
 
-      const response = await api.get(`/voters?${params.toString()}`);
+      // First, get the response
+      const response = await api.get(`/voters?${params.toString()}`, {
+        successMessage: 'Voters loaded successfully'
+      });
+
+      // Then process the response
       const votersData = response.data || response;
-      setVoters(Array.isArray(votersData) ? votersData : []);
+      const votersArray = Array.isArray(votersData) ? votersData : [];
+
+      // Show custom message if there's a search or filter
+      if (searchTerm || Object.values(filters).some(Boolean)) {
+        showToast('success', `Found ${votersArray.length} voters`);
+      }
+
+      setVoters(votersArray);
     } catch (error: any) {
       showToast('error', 'Failed to fetch voters');
       setVoters([]);
@@ -156,7 +169,10 @@ export const VoterManagement: React.FC = () => {
 
   const fetchCourses = async () => {
     try {
-      const response = await api.get('/courses');
+      setCoursesLoading(true);
+      const response = await api.get('/courses', {
+        successMessage: 'Courses loaded successfully'
+      });
       setCourses(response);
     } catch (error: any) {
       showToast('error', 'Failed to fetch courses');
@@ -173,10 +189,19 @@ export const VoterManagement: React.FC = () => {
 
     try {
       setAddingCourse(true);
-      const response = await api.post('/courses', newCourse);
-      setCourses(prev => [...prev, response]);
+      const response = await api.post('/courses', newCourse, {
+        successMessage: 'Course added successfully'
+      });
+
+      // Handle response - backend should return course object
+      const addedCourse = {
+        id: response.id || response.insertId,
+        name: newCourse.name,
+        code: newCourse.code
+      };
+
+      setCourses(prev => [...prev, addedCourse]);
       setNewCourse({ name: '', code: '' });
-      showToast('success', 'Course added successfully');
     } catch (error: any) {
       showToast('error', error.message || 'Failed to add course');
     } finally {
@@ -184,17 +209,36 @@ export const VoterManagement: React.FC = () => {
     }
   };
 
-  const deleteCourse = async (courseId: number) => {
-    if (!confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
-      return;
-    }
+  const deleteCourse = async (course: Course) => {
+    setCourseToDelete(course);
+    setShowCourseDeleteModal(true);
+  };
+
+  const confirmDeleteCourse = async () => {
+    if (!courseToDelete) return;
 
     try {
-      await api.delete(`/courses/${courseId}`);
-      setCourses(prev => prev.filter(course => course.id !== courseId));
-      showToast('success', 'Course deleted successfully');
+      await api.delete(`/courses/${courseToDelete.id}`, {
+        successMessage: 'Course deleted successfully'
+      });
+
+      // Update the local state
+      setCourses(prev => prev.filter(course => course.id !== courseToDelete.id));
+      setShowCourseDeleteModal(false);
+      setCourseToDelete(null);
+
+      // Refresh courses and voters
+      fetchCourses();
+      fetchVoters();
+
     } catch (error: any) {
-      showToast('error', error.message || 'Failed to delete course');
+      if (error.message?.includes('assigned to voters')) {
+        showToast('error', 'Cannot delete course because it is assigned to voters. Please reassign or delete those voters first.');
+      } else {
+        showToast('error', error.message || 'Failed to delete course');
+      }
+      setShowCourseDeleteModal(false);
+      setCourseToDelete(null);
     }
   };
 
@@ -246,9 +290,10 @@ export const VoterManagement: React.FC = () => {
     try {
       setDeleting(true);
       for (const studentId of selectedStudents) {
-        await api.delete(`/voters/${studentId}`);
+        await api.delete(`/voters/${studentId}`, {
+          successMessage: `Successfully deleted ${selectedStudents.length} voter(s)`
+        });
       }
-      showToast('success', `Successfully deleted ${selectedStudents.length} voter(s)`);
       setSelectedStudents([]);
       setShowDeleteModal(false);
       fetchVoters();
@@ -260,15 +305,13 @@ export const VoterManagement: React.FC = () => {
   };
 
   const handleStatusChange = async (voterId: number, isActive: boolean) => {
-    console.log('🔄 Individual status change:', { voterId, isActive });
     try {
-      const response = await api.patch(`/voters/${voterId}`, { isActive });
-      console.log('✅ Individual status change successful:', response);
-      showToast('success', `Voter ${isActive ? 'activated' : 'deactivated'} successfully`);
+      await api.patch(`/voters/${voterId}`, { isActive }, {
+        successMessage: `Voter ${isActive ? 'activated' : 'deactivated'} successfully`
+      });
       fetchVoters();
       setShowMobileActions(null);
     } catch (error: any) {
-      console.error('❌ Individual status change failed:', error);
       showToast('error', error.message || `Failed to ${isActive ? 'activate' : 'deactivate'} voter`);
     }
   };
@@ -290,24 +333,18 @@ export const VoterManagement: React.FC = () => {
   const confirmBulkStatusChange = async () => {
     try {
       setDeleting(true);
-      console.log('🔄 Bulk status change:', {
-        selectedStudents,
-        statusAction,
-        isActive: statusAction === 'activate'
-      });
-
       await api.patch('/voters', {
         voterIds: selectedStudents,
         isActive: statusAction === 'activate'
+      }, {
+        successMessage: `Successfully ${statusAction === 'activate' ? 'activated' : 'deactivated'} ${selectedStudents.length} voter(s)`
       });
 
-      showToast('success', `Successfully ${statusAction === 'activate' ? 'activated' : 'deactivated'} ${selectedStudents.length} voter(s)`);
       setSelectedStudents([]);
       setShowStatusModal(false);
       setStatusAction(null);
       fetchVoters();
     } catch (error: any) {
-      console.error('❌ Bulk status change failed:', error);
       showToast('error', error.message || `Failed to ${statusAction === 'activate' ? 'activate' : 'deactivate'} voters`);
     } finally {
       setDeleting(false);
@@ -335,19 +372,20 @@ export const VoterManagement: React.FC = () => {
       if (resetVoteAction === 'selected') {
         await api.patch('/voters/reset-votes', {
           voterIds: selectedStudents
+        }, {
+          successMessage: `Successfully reset voting status for ${selectedStudents.length} voter(s)`
         });
-        showToast('success', `Successfully reset voting status for ${selectedStudents.length} voter(s)`);
         setSelectedStudents([]);
       } else {
-        await api.patch('/voters/reset-all-votes', {});
-        showToast('success', 'Successfully reset voting status for all voters');
+        await api.patch('/voters/reset-all-votes', {}, {
+          successMessage: 'Successfully reset voting status for all voters'
+        });
       }
 
       setShowResetVoteModal(false);
       setResetVoteAction(null);
       fetchVoters();
     } catch (error: any) {
-      console.error('❌ Reset has_voted failed:', error);
       showToast('error', error.message || 'Failed to reset voting status');
     } finally {
       setDeleting(false);
@@ -399,14 +437,17 @@ export const VoterManagement: React.FC = () => {
           password: formData.password,
           isActive: formData.isActive
         };
-        
-        await api.put(`/voters/${editingVoter.id}`, updateData);
-        showToast('success', 'Voter updated successfully');
+
+        await api.put(`/voters/${editingVoter.id}`, updateData, {
+          successMessage: 'Voter updated successfully'
+        });
         setShowModal(false);
         resetForm();
         fetchVoters();
       } else {
-        await api.post('/voters', formData);
+        await api.post('/voters', formData, {
+          successMessage: 'Voter created successfully'
+        });
         setShowModal(false);
         setShowSuccessModal(true);
         resetForm();
@@ -440,8 +481,9 @@ export const VoterManagement: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this voter?')) return;
     try {
-      await api.delete(`/voters/${id}`);
-      showToast('success', 'Voter deleted successfully');
+      await api.delete(`/voters/${id}`, {
+        successMessage: 'Voter deleted successfully'
+      });
       fetchVoters();
       setShowMobileActions(null);
     } catch (error: any) {
@@ -553,7 +595,7 @@ export const VoterManagement: React.FC = () => {
   const processImportedData = async (data: any[]): Promise<ImportedStudent[]> => {
     const processed: ImportedStudent[] = [];
     const existingStudentIds = new Set(voters.map(v => v.student_id.toLowerCase()));
-    
+
     for (const row of data) {
       try {
         const studentId = extractStudentId(row);
@@ -561,7 +603,7 @@ export const VoterManagement: React.FC = () => {
           processed.push({
             studentId: '',
             fullName: '',
-            course: '', // Course will be left blank for manual selection
+            course: '',
             yearLevel: 1,
             section: '',
             password: '',
@@ -571,13 +613,13 @@ export const VoterManagement: React.FC = () => {
           });
           continue;
         }
-        
+
         const fullName = extractFullName(row);
         if (!fullName) {
           processed.push({
             studentId,
             fullName: '',
-            course: '', // Course will be left blank for manual selection
+            course: '',
             yearLevel: 1,
             section: '',
             password: '',
@@ -587,17 +629,16 @@ export const VoterManagement: React.FC = () => {
           });
           continue;
         }
-        
-        // Course will be left blank and selected via dropdown in review step
+
         const course = '';
         const yearLevel = extractYearLevel(row);
         const section = extractSection(row);
-        
+
         if (existingStudentIds.has(studentId.toLowerCase())) {
           processed.push({
             studentId,
             fullName,
-            course, // Course will be left blank for manual selection
+            course,
             yearLevel,
             section,
             password: '',
@@ -607,12 +648,12 @@ export const VoterManagement: React.FC = () => {
           });
           continue;
         }
-        
+
         const password = generatePasswordForStudent(studentId, fullName, yearLevel, section);
         processed.push({
           studentId,
           fullName,
-          course, // Course will be left blank for manual selection
+          course,
           yearLevel,
           section,
           password,
@@ -624,7 +665,7 @@ export const VoterManagement: React.FC = () => {
         processed.push({
           studentId: '',
           fullName: '',
-          course: '', // Course will be left blank for manual selection
+          course: '',
           yearLevel: 1,
           section: '',
           password: '',
@@ -663,8 +704,6 @@ export const VoterManagement: React.FC = () => {
     }
     return '';
   };
-
-  // REMOVED: extractCourse function since we don't want to extract course from file
 
   const isLikelyStudentId = (value: string): boolean => {
     if (!value) return false;
@@ -773,8 +812,7 @@ export const VoterManagement: React.FC = () => {
     try {
       setImporting(true);
       const studentsToImport = importedStudents.filter(s => s.status === 'new');
-      
-      // Check if all new students have a course selected
+
       const studentsWithoutCourse = studentsToImport.filter(s => !s.course);
       if (studentsWithoutCourse.length > 0) {
         showToast('error', `Please select a course for ${studentsWithoutCourse.length} student(s)`);
@@ -1059,6 +1097,129 @@ export const VoterManagement: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/30 animate-fadeIn p-3 sm:p-4 lg:p-6">
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[200]">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full transform animate-scaleIn">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center shadow-lg">
+                <CheckCircle className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Success!</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Voter has been created and can now participate in the election.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[200]">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full transform animate-scaleIn">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-red-400 to-red-500 flex items-center justify-center shadow-lg">
+                <XCircle className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Duplicate Found</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {errorMessage || "A voter with this Student ID already exists."}
+                </p>
+              </div>
+              <div className="flex flex-col space-y-3">
+                <button
+                  onClick={() => setShowErrorModal(false)}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 px-4 rounded-xl transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowErrorModal(false);
+                    setShowModal(true);
+                  }}
+                  className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Course Delete Confirmation Modal - HIGHER Z-INDEX */}
+      {showCourseDeleteModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[150]">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full transform animate-scaleIn">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Delete Course</h2>
+              <button
+                onClick={() => {
+                  setShowCourseDeleteModal(false);
+                  setCourseToDelete(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 p-4 rounded-xl">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-red-800 font-medium">Warning: This action cannot be undone</p>
+                    <p className="text-xs text-red-700 mt-1">
+                      You are about to delete the course "{courseToDelete?.name}". This will permanently remove the course from the system.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete <span className="font-semibold">{courseToDelete?.name}</span> ({courseToDelete?.code})?
+                <br />
+                <span className="text-xs text-gray-500 mt-1 block">
+                  Course ID: {courseToDelete?.id}
+                </span>
+              </p>
+
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCourseDeleteModal(false);
+                    setCourseToDelete(null);
+                  }}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 px-4 rounded-xl transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteCourse}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Course
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Reset Vote Modal */}
       <Modal
         isOpen={showResetVoteModal}
@@ -1177,67 +1338,6 @@ export const VoterManagement: React.FC = () => {
           </div>
         </div>
       </Modal>
-
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full transform animate-scaleIn">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center shadow-lg">
-                <CheckCircle className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Success!</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  Voter has been created and can now participate in the election.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowSuccessModal(false)}
-                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Error Modal */}
-      {showErrorModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full transform animate-scaleIn">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-red-400 to-red-500 flex items-center justify-center shadow-lg">
-                <XCircle className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Duplicate Found</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {errorMessage || "A voter with this Student ID already exists."}
-                </p>
-              </div>
-              <div className="flex flex-col space-y-3">
-                <button
-                  onClick={() => setShowErrorModal(false)}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 px-4 rounded-xl transition-all duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    setShowErrorModal(false);
-                    setShowModal(true);
-                  }}
-                  className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Header Section */}
       <div className="mb-6 sm:mb-8">
@@ -1991,7 +2091,7 @@ export const VoterManagement: React.FC = () => {
                 <Key className="w-4 h-4 inline mr-2" />
                 Password {editingVoter && '(leave blank to keep current)'}
               </label>
-              {editingVoter && ( // Only show auto-generate button in edit mode
+              {editingVoter && (
                 <button
                   type="button"
                   onClick={generatePassword}
@@ -2010,7 +2110,7 @@ export const VoterManagement: React.FC = () => {
               required={!editingVoter}
               minLength={6}
               placeholder={canEditPasswordOnly ? "Enter new password" : ""}
-              readOnly={!editingVoter} // Read-only in add mode, editable in edit mode
+              readOnly={!editingVoter}
             />
             {formData.password && (
               <p className="text-xs text-gray-500 mt-1">
@@ -2467,7 +2567,7 @@ export const VoterManagement: React.FC = () => {
                   <div>
                     <p className="text-sm text-yellow-800 font-medium">Review Import Data</p>
                     <p className="text-xs text-yellow-700 mt-1">
-                      Please review the imported data and select a course for each voter using the dropdown menu before proceeding. 
+                      Please review the imported data and select a course for each voter using the dropdown menu before proceeding.
                       New records will be created, duplicates will be skipped.
                     </p>
                   </div>
@@ -2634,10 +2734,13 @@ export const VoterManagement: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Courses Modal */}
+      {/* Courses Modal - Hide when delete modal is open */}
       <Modal
-        isOpen={showCoursesModal}
-        onClose={() => setShowCoursesModal(false)}
+        isOpen={showCoursesModal && !showCourseDeleteModal}
+        onClose={() => {
+          setShowCoursesModal(false);
+          setNewCourse({ name: '', code: '' });
+        }}
         title="Manage Courses"
         size="md"
       >
@@ -2704,24 +2807,39 @@ export const VoterManagement: React.FC = () => {
 
           {/* Courses List */}
           <div className="border border-gray-200 rounded-xl p-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Existing Courses</h3>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm font-medium text-gray-700">Existing Courses</h3>
+              <span className="text-xs text-gray-500">{courses.length} course(s)</span>
+            </div>
             <div className="max-h-48 overflow-y-auto space-y-2">
               {courses.length === 0 ? (
-                <p className="text-center py-4 text-gray-500 text-sm">No courses found</p>
+                <div className="text-center py-6">
+                  <BookOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">No courses found</p>
+                  <p className="text-gray-400 text-xs mt-1">Add your first course above</p>
+                </div>
               ) : (
                 courses.map(course => (
                   <div
                     key={course.id}
-                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
                   >
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{course.name}</p>
-                      <p className="text-xs text-gray-500">Code: {course.code}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{course.name}</p>
+                      <div className="flex items-center space-x-2">
+                        <p className="text-xs text-gray-500">Code: {course.code}</p>
+                        <span className="text-xs text-gray-400">•</span>
+                        <p className="text-xs text-gray-500">ID: {course.id}</p>
+                      </div>
                     </div>
                     <button
-                      onClick={() => deleteCourse(course.id)}
-                      className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete course"
+                      onClick={() => deleteCourse(course)}
+                      disabled={canEditPasswordOnly}
+                      className={`p-2 rounded-lg transition-all duration-200 ${canEditPasswordOnly
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : 'text-gray-400 hover:text-red-600 hover:bg-red-50 group-hover:opacity-100 opacity-70'
+                        }`}
+                      title={canEditPasswordOnly ? "Cannot delete during voting" : "Delete course"}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -2734,7 +2852,10 @@ export const VoterManagement: React.FC = () => {
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
             <button
               type="button"
-              onClick={() => setShowCoursesModal(false)}
+              onClick={() => {
+                setShowCoursesModal(false);
+                setNewCourse({ name: '', code: '' });
+              }}
               className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 px-4 rounded-xl transition-all duration-200"
             >
               Close
