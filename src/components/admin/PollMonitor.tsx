@@ -15,7 +15,7 @@ import {
   X,
   HardDrive,
   Cloud,
-  RotateCw, // Changed from Sync to RotateCw
+  RotateCw, 
   PauseCircle,
 } from 'lucide-react';
 import { PollSettings, Position } from '../../types';
@@ -97,7 +97,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [currentNode] = useState<string>('node1');
+  const [currentNode, setCurrentNode] = useState<string>('node1');
   const [blockchainStatus, setBlockchainStatus] = useState<BlockchainStatus | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { showToast } = useToast();
@@ -115,14 +115,47 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
           node.name === 'node1' || node.name === 'node2'
         );
 
+        // Determine if both nodes are down
+        const bothNodesDown = filteredNodes.every((node: any) => !node.connected);
+        
+        // Check if we should update poll status to paused
+        if (bothNodesDown && pollSettings?.is_active && !pollSettings?.is_paused) {
+          console.log('🚨 Both nodes down, attempting to auto-pause poll...');
+          try {
+            // Call the poll pause endpoint
+            await api.post('/poll/paused', {}, {
+              successMessage: 'Poll auto-paused due to node failure',
+              errorMessage: 'Failed to auto-pause poll'
+            });
+            
+            // Refresh poll settings after pausing
+            const settingsResponse = await api.get('/poll/status');
+            setPollSettings(settingsResponse);
+            
+            showToast('warning', 'Poll auto-paused because both blockchain nodes are down');
+          } catch (pauseError) {
+            console.error('Failed to auto-pause poll:', pauseError);
+          }
+        }
+
+        // Update current node based on actual connection status
+        let actualCurrentNode = 'none';
+        const connectedNode = filteredNodes.find((node: any) => node.connected && node.name !== 'emergency_storage');
+        if (connectedNode) {
+          actualCurrentNode = connectedNode.name;
+        } else if (response.currentNode) {
+          actualCurrentNode = response.currentNode;
+        }
+        setCurrentNode(actualCurrentNode);
+
         // Update the blockchain status with enhanced data
         const updatedBlockchainStatus: BlockchainStatus = {
           ...response,
           nodes: filteredNodes,
           totalNodes: 2, // Only node1 and node2 now
           connectedNodes: filteredNodes.filter((node: any) => node.connected).length,
-          // Ensure currentNode is set
-          currentNode: response.currentNode || 'node1',
+          // Ensure currentNode is set based on actual connection
+          currentNode: actualCurrentNode,
           syncAllowed: response.syncAllowed || false,
           noDataSincePause: response.noDataSincePause || false,
           syncDataUpdated: response.syncDataUpdated || false
@@ -151,9 +184,11 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
       return false;
     } catch (error) {
       console.error('Blockchain status check failed:', error);
+      // If blockchain status check fails, both nodes might be down
+      setCurrentNode('none');
       return false;
     }
-  }, []);
+  }, [pollSettings, showToast]);
 
   const fetchCandidatesFromMySQL = useCallback(async (): Promise<Candidate[]> => {
     try {
@@ -825,14 +860,15 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                   variant={blockchainStatus?.isConnected ? 'success' : 'error'}
                 />
                 <StatusPill
-                  icon={RotateCw} // Changed from Sync to RotateCw
+                  icon={RotateCw}
                   text={getSyncStatusText()}
-                  variant={getSyncStatusVariant()} // Using the new helper function
+                  variant={getSyncStatusVariant()}
                 />
                 <StatusPill
                   icon={Server}
-                  text={`${blockchainStatus?.connectedNodes || 0}/${blockchainStatus?.totalNodes || 0} Nodes`}
-                  variant="info"
+                  text={`${blockchainStatus?.connectedNodes || 0}/${blockchainStatus?.totalNodes || 0} Nodes Connected`}
+                  variant={blockchainStatus?.connectedNodes === blockchainStatus?.totalNodes ? 'success' : 
+                         blockchainStatus?.connectedNodes === 0 ? 'error' : 'warning'}
                 />
               </div>
               <ControlButtons />
@@ -856,14 +892,15 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                       variant={blockchainStatus?.isConnected ? 'success' : 'error'}
                     />
                     <StatusPill
-                      icon={RotateCw} // Changed from Sync to RotateCw
+                      icon={RotateCw}
                       text={getSyncStatusText()}
-                      variant={getSyncStatusVariant()} // Using the new helper function
+                      variant={getSyncStatusVariant()}
                     />
                     <StatusPill
                       icon={Server}
-                      text={`${blockchainStatus?.connectedNodes || 0}/${blockchainStatus?.totalNodes || 0} Nodes`}
-                      variant="info"
+                      text={`${blockchainStatus?.connectedNodes || 0}/${blockchainStatus?.totalNodes || 0} Nodes Connected`}
+                      variant={blockchainStatus?.connectedNodes === blockchainStatus?.totalNodes ? 'success' : 
+                             blockchainStatus?.connectedNodes === 0 ? 'error' : 'warning'}
                     />
                   </div>
                   <div className="border-t border-gray-200 pt-4">
@@ -900,7 +937,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
           />
           <StatCard
             title="Current Node"
-            value={blockchainStatus?.currentNode || 'none'}
+            value={currentNode || 'none'}
             icon={Server}
             color="indigo"
             trend={`${blockchainStatus?.connectedNodes || 0} connected`}
@@ -948,11 +985,11 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
           <div className="text-xs lg:text-sm text-gray-500 space-y-2">
             <div>Last updated: {new Date().toLocaleString()}</div>
             <div className="flex flex-wrap justify-center gap-2 text-xs">
-              <span className="bg-blue-500/10 text-blue-600 px-2 py-1 rounded-full">
+              <span className={`px-2 py-1 rounded-full ${blockchainStatus?.isConnected ? 'bg-blue-500/10 text-blue-600' : 'bg-rose-500/10 text-rose-600'}`}>
                 {blockchainStatus?.isConnected ? 'Connected' : 'Offline'}
               </span>
               <span className="bg-gray-500/10 text-gray-600 px-2 py-1 rounded-full">
-                Node: {blockchainStatus?.currentNode || 'none'}
+                Node: {currentNode || 'none'}
               </span>
               <span className={`px-2 py-1 rounded-full ${blockchainStatus?.autoSyncEnabled ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-500/10 text-gray-600'}`}>
                 Auto-sync: {blockchainStatus?.autoSyncEnabled ? 'ON' : 'OFF'}
@@ -985,6 +1022,9 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                   <div className="flex flex-wrap gap-1 mt-1">
                     <span className="px-2 py-1 bg-purple-500/10 text-purple-700 rounded-full text-xs">
                       Auto-sync: {blockchainStatus?.autoSyncEnabled ? 'ON' : 'OFF'}
+                    </span>
+                    <span className="px-2 py-1 bg-blue-500/10 text-blue-700 rounded-full text-xs">
+                      Node: {currentNode}
                     </span>
                   </div>
                 </div>
