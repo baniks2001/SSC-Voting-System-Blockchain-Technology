@@ -1,28 +1,121 @@
-import React, { useState, useEffect } from 'react';
-import { UserPlus, Edit, Trash2, Eye, Search, Mail, Lock, User, MoreVertical, Shield } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { UserPlus, Edit, Trash2, Eye, Search, Mail, Lock, User, MoreVertical, Shield, X, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
 import { Admin } from '../../types';
 import { api } from '../../utils/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { Modal } from '../common/Modal';
-import { useToast } from '../common/Toast';
+
+// Define notification type
+interface Notification {
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  title?: string;
+}
 
 export const AdminManagement: React.FC = () => {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
   const [viewingAdmin, setViewingAdmin] = useState<Admin | null>(null);
+  const [adminToDelete, setAdminToDelete] = useState<Admin | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showMobileActions, setShowMobileActions] = useState<number | null>(null);
-  const { showToast } = useToast();
+  const [deletingAdmin, setDeletingAdmin] = useState(false);
+  
+  // Notification state
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const notificationIdCounter = useRef(1);
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     fullName: '',
-    role: 'admin' as 'admin' | 'auditor' | 'poll_monitor' | 'super_admin' // Add super_admin here
+    role: 'admin' as 'admin' | 'auditor' | 'poll_monitor' | 'super_admin'
   });
+
+  // Notification functions
+  const addNotification = useCallback((message: string, type: Notification['type'], title?: string) => {
+    const id = notificationIdCounter.current++;
+    const notification: Notification = { id, message, type, title };
+    
+    setNotifications(prev => [...prev, notification]);
+    
+    // Auto remove notification after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  }, []);
+
+  const removeNotification = useCallback((id: number) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
+
+  // Notification component
+  const NotificationToast = ({ notification }: { notification: Notification }) => {
+    const getIcon = () => {
+      switch (notification.type) {
+        case 'success': return <CheckCircle className="w-5 h-5 text-emerald-500" />;
+        case 'error': return <XCircle className="w-5 h-5 text-rose-500" />;
+        case 'warning': return <AlertCircle className="w-5 h-5 text-amber-500" />;
+        case 'info': return <Info className="w-5 h-5 text-blue-500" />;
+        default: return <Info className="w-5 h-5 text-gray-500" />;
+      }
+    };
+
+    const getBorderColor = () => {
+      switch (notification.type) {
+        case 'success': return 'border-emerald-200';
+        case 'error': return 'border-rose-200';
+        case 'warning': return 'border-amber-200';
+        case 'info': return 'border-blue-200';
+        default: return 'border-gray-200';
+      }
+    };
+
+    const getBgColor = () => {
+      switch (notification.type) {
+        case 'success': return 'bg-emerald-50';
+        case 'error': return 'bg-rose-50';
+        case 'warning': return 'bg-amber-50';
+        case 'info': return 'bg-blue-50';
+        default: return 'bg-gray-50';
+      }
+    };
+
+    return (
+      <div className={`relative rounded-xl shadow-lg ${getBorderColor()} border ${getBgColor()} backdrop-blur-sm overflow-hidden animate-slideIn`}>
+        <div className="p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              {getIcon()}
+            </div>
+            <div className="ml-3 w-0 flex-1 pt-0.5">
+              {notification.title && (
+                <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+              )}
+              <p className="text-sm text-gray-700">{notification.message}</p>
+            </div>
+            <div className="ml-4 flex-shrink-0 flex">
+              <button
+                onClick={() => removeNotification(notification.id)}
+                className="rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+        {/* Progress bar */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-current to-transparent opacity-20">
+          <div className="h-full bg-current animate-progressBar"></div>
+        </div>
+      </div>
+    );
+  };
 
   useEffect(() => {
     fetchAdmins();
@@ -32,8 +125,9 @@ export const AdminManagement: React.FC = () => {
     try {
       const response = await api.get('/admin/admins');
       setAdmins(response);
+      addNotification('Admins loaded successfully', 'success');
     } catch (error: any) {
-      showToast('error', 'Failed to fetch admins');
+      addNotification('Failed to fetch admins', 'error', 'Error');
     } finally {
       setLoading(false);
     }
@@ -44,16 +138,16 @@ export const AdminManagement: React.FC = () => {
     try {
       if (editingAdmin) {
         await api.put(`/admin/admins/${editingAdmin.id}`, formData);
-        showToast('success', 'Admin updated successfully');
+        addNotification('Admin updated successfully', 'success', 'Success');
       } else {
         await api.post('/admin/admins', formData);
-        showToast('success', 'Admin created successfully');
+        addNotification('Admin created successfully', 'success', 'Success');
       }
       setShowModal(false);
       resetForm();
       fetchAdmins();
     } catch (error: any) {
-      showToast('error', error.message || 'Operation failed');
+      addNotification(error.message || 'Operation failed', 'error', 'Error');
     }
   };
 
@@ -67,24 +161,38 @@ export const AdminManagement: React.FC = () => {
     });
     setShowModal(true);
     setShowMobileActions(null);
+    addNotification(`Editing admin: ${admin.full_name}`, 'info', 'Edit Mode');
   };
 
   const handleView = (admin: Admin) => {
     setViewingAdmin(admin);
     setShowViewModal(true);
     setShowMobileActions(null);
+    addNotification(`Viewing admin details: ${admin.full_name}`, 'info', 'View Mode');
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this admin?')) return;
+  // Show delete confirmation modal
+  const showDeleteConfirmation = (admin: Admin) => {
+    setAdminToDelete(admin);
+    setShowDeleteModal(true);
+    setShowMobileActions(null);
+  };
 
+  // Handle admin deletion
+  const handleDelete = async () => {
+    if (!adminToDelete) return;
+
+    setDeletingAdmin(true);
     try {
-      await api.delete(`/admin/admins/${id}`);
-      showToast('success', 'Admin deleted successfully');
+      await api.delete(`/admin/admins/${adminToDelete.id}`);
+      addNotification('Admin deleted successfully', 'success', 'Success');
       fetchAdmins();
-      setShowMobileActions(null);
+      setShowDeleteModal(false);
+      setAdminToDelete(null);
     } catch (error: any) {
-      showToast('error', error.message || 'Failed to delete admin');
+      addNotification(error.message || 'Failed to delete admin', 'error', 'Error');
+    } finally {
+      setDeletingAdmin(false);
     }
   };
 
@@ -136,6 +244,97 @@ export const AdminManagement: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/30 animate-fadeIn p-3 sm:p-4 lg:p-6">
+      {/* Notification Area - Top Right */}
+      <div className="fixed top-4 right-4 z-50 space-y-3 w-96 max-w-[calc(100vw-2rem)]">
+        {notifications.map(notification => (
+          <NotificationToast key={notification.id} notification={notification} />
+        ))}
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && adminToDelete && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-200 animate-scaleIn">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-rose-100 rounded-xl">
+                <AlertCircle className="w-6 h-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Delete Admin</h3>
+                <p className="text-gray-600 text-sm">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-gray-700 mb-3">
+                Are you sure you want to delete this admin?
+              </p>
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">{adminToDelete.full_name}</h4>
+                    <p className="text-sm text-gray-600">{adminToDelete.email}</p>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-500">Role:</span>
+                    <span className={`ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(adminToDelete.role)}`}>
+                      {adminToDelete.role.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Status:</span>
+                    <span className={`ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${adminToDelete.is_active
+                        ? 'bg-green-100 text-green-800 border border-green-200'
+                        : 'bg-red-100 text-red-800 border border-red-200'
+                      }`}>
+                      {adminToDelete.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-sm text-amber-700 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Warning: This will permanently delete the admin account and all associated permissions.</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setAdminToDelete(null);
+                }}
+                disabled={deletingAdmin}
+                className="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deletingAdmin}
+                className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 disabled:opacity-50 transition-colors"
+              >
+                {deletingAdmin ? (
+                  <LoadingSpinner size="sm" color="white" />
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Admin
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -155,7 +354,10 @@ export const AdminManagement: React.FC = () => {
             </div>
           </div>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setShowModal(true);
+              addNotification('Creating new admin', 'info', 'Add Admin');
+            }}
             className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
           >
             <UserPlus className="w-4 h-4" />
@@ -181,7 +383,10 @@ export const AdminManagement: React.FC = () => {
             />
             {searchTerm && (
               <button
-                onClick={() => setSearchTerm('')}
+                onClick={() => {
+                  setSearchTerm('');
+                  addNotification('Search cleared', 'info', 'Search');
+                }}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
               >
                 ×
@@ -286,7 +491,7 @@ export const AdminManagement: React.FC = () => {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(admin.id)}
+                          onClick={() => showDeleteConfirmation(admin)}
                           className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 transform hover:scale-105"
                           title="Delete Admin"
                         >
@@ -344,7 +549,7 @@ export const AdminManagement: React.FC = () => {
                             <span>Edit</span>
                           </button>
                           <button
-                            onClick={() => handleDelete(admin.id)}
+                            onClick={() => showDeleteConfirmation(admin)}
                             className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-50 flex items-center space-x-3 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />

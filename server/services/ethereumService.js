@@ -36,7 +36,8 @@ class MultiNodeEthereumService {
             discoveredAccount: null,
             contract: null,
             syncStatus: 'unknown',
-            lastSync: null
+            lastSync: null,
+            lastDataReceived: null
         }));
 
         this.simulationMode = false;
@@ -63,13 +64,20 @@ class MultiNodeEthereumService {
         this.lastSuccessfulSync = null;
         this.syncRetryCount = 0;
         this.maxSyncRetries = 5;
+        
+        // Auto-sync state
+        this.autoSyncEnabled = true;
+        this.syncDataUpdated = false;
+        this.lastSyncCheck = Date.now();
+        this.noDataSincePause = false;
 
         // Election state tracking
         this.electionState = {
             status: 'not_started',
             startTime: null,
             pauseTime: null,
-            finishTime: null
+            finishTime: null,
+            lastDataTimestamp: null
         };
 
         this.loadContractABI();
@@ -143,44 +151,62 @@ class MultiNodeEthereumService {
                 data: encrypted,
                 authTag: authTag.toString('hex'),
                 timestamp: new Date().toISOString(),
-                version: '2.0'
+                version: '2.0',
+                encrypted: true
             };
         } catch (error) {
             console.error('Emergency encryption error:', error);
             // Enhanced fallback with better security
-            const simpleEncrypted = Buffer.from(JSON.stringify(data)).toString('base64');
-            const hash = crypto.createHash('sha256').update(simpleEncrypted).digest('hex');
+            const dataString = JSON.stringify(data);
+            const salt = crypto.randomBytes(16);
+            const derivedKey = crypto.scryptSync(this.emergencyEncryptionKey, salt, 32);
+            const iv2 = crypto.randomBytes(16);
+            const cipher2 = crypto.createCipheriv('aes-256-cbc', derivedKey, iv2);
+            let encrypted2 = cipher2.update(dataString, 'utf8', 'hex');
+            encrypted2 += cipher2.final('hex');
+            
             return {
-                iv: 'enhanced_fallback',
-                data: simpleEncrypted,
-                authTag: hash,
+                iv: salt.toString('hex') + iv2.toString('hex'),
+                data: encrypted2,
+                authTag: crypto.createHash('sha256').update(encrypted2 + this.emergencyEncryptionKey).digest('hex'),
                 timestamp: new Date().toISOString(),
-                version: '2.0'
+                version: '2.0_fallback',
+                encrypted: true
             };
         }
     }
 
     decryptEmergencyData(encryptedData) {
         try {
-            if (encryptedData.iv === 'simple' || encryptedData.iv === 'enhanced_fallback') {
-                const decrypted = Buffer.from(encryptedData.data, 'base64').toString('utf8');
-                const data = JSON.parse(decrypted);
+            if (!encryptedData.encrypted) {
+                console.log('⚠️ Data not encrypted, using as-is');
+                return encryptedData;
+            }
+
+            if (encryptedData.version === '2.0_fallback') {
+                // Handle fallback encryption
+                const combinedIv = encryptedData.iv;
+                const salt = Buffer.from(combinedIv.substring(0, 32), 'hex');
+                const iv = Buffer.from(combinedIv.substring(32), 'hex');
+                const derivedKey = crypto.scryptSync(this.emergencyEncryptionKey, salt, 32);
                 
-                // Verify integrity for fallback data
-                if (encryptedData.iv === 'enhanced_fallback') {
-                    const expectedHash = crypto.createHash('sha256').update(encryptedData.data).digest('hex');
-                    if (expectedHash !== encryptedData.authTag) {
-                        throw new Error('Fallback data integrity check failed');
-                    }
+                const decipher = crypto.createDecipheriv('aes-256-cbc', derivedKey, iv);
+                let decrypted = decipher.update(encryptedData.data, 'hex', 'utf8');
+                decrypted += decipher.final('utf8');
+                
+                // Verify integrity
+                const expectedHash = crypto.createHash('sha256').update(encryptedData.data + this.emergencyEncryptionKey).digest('hex');
+                if (expectedHash !== encryptedData.authTag) {
+                    throw new Error('Fallback data integrity check failed');
                 }
                 
-                return data;
+                return JSON.parse(decrypted);
             }
 
             const algorithm = 'aes-256-gcm';
             const key = crypto.scryptSync(this.emergencyEncryptionKey, 'salt', 32);
             const iv = Buffer.from(encryptedData.iv, 'hex');
-            const decipher = crypto.createDecipher(algorithm, key);
+            const decipher = crypto.createDecipheriv(algorithm, key, iv);
             
             decipher.setAuthTag(Buffer.from(encryptedData.authTag, 'hex'));
             
@@ -303,6 +329,9 @@ class MultiNodeEthereumService {
                     syncStatus: 'pending'
                 });
 
+                // Update last data timestamp
+                this.electionState.lastDataTimestamp = new Date().toISOString();
+                
                 // Trigger immediate sync attempt
                 this.triggerImmediateSync();
             }
@@ -317,7 +346,7 @@ class MultiNodeEthereumService {
     async syncEmergencyToNodes() {
         if (!this.shouldAllowSync()) {
             console.log('🚫 Emergency to nodes sync skipped - election state does not allow sync');
-            return;
+            return 0;
         }
 
         const connectedNodes = this.nodes.filter(node =>
@@ -326,7 +355,7 @@ class MultiNodeEthereumService {
 
         if (connectedNodes.length === 0) {
             console.log('⚠️ No connected nodes available for emergency sync');
-            return;
+            return 0;
         }
 
         const emergencyData = this.loadEmergencyStorage();
@@ -336,7 +365,7 @@ class MultiNodeEthereumService {
 
         if (pendingVotes.length === 0) {
             console.log('ℹ️ No pending emergency votes to sync to nodes');
-            return;
+            return 0;
         }
 
         console.log(`🔄 Syncing ${pendingVotes.length} pending emergency votes to ${connectedNodes.length} nodes...`);
@@ -407,12 +436,13 @@ class MultiNodeEthereumService {
         this.recordSyncHistory('emergency_to_nodes', totalSynced, totalErrors);
 
         console.log(`✅ Emergency to nodes sync completed: ${totalSynced} votes synced, ${totalErrors} errors`);
+        return totalSynced;
     }
 
     async syncNodesToEmergency() {
         if (!this.shouldAllowSync()) {
             console.log('🚫 Nodes to emergency sync skipped - election state does not allow sync');
-            return;
+            return 0;
         }
 
         const connectedNodes = this.nodes.filter(node =>
@@ -420,7 +450,7 @@ class MultiNodeEthereumService {
         );
 
         if (connectedNodes.length === 0) {
-            return;
+            return 0;
         }
 
         try {
@@ -483,8 +513,11 @@ class MultiNodeEthereumService {
                 console.log(`💾 Emergency storage sync complete: ${syncedCount} added, total: ${emergencyData.votes.length}`);
             }
 
+            return syncedCount;
+
         } catch (error) {
             console.log('❌ Blockchain to emergency storage sync failed:', error.message);
+            return 0;
         }
     }
 
@@ -567,11 +600,25 @@ class MultiNodeEthereumService {
     checkEmergencyMode() {
         const connectedNodes = this.nodes.filter(node => node.isConnected);
         const wasInEmergency = this.emergencyMode;
-        this.emergencyMode = connectedNodes.length === 0;
+        
+        // Check if node1 and node2 are down
+        const node1Down = !this.nodes.find(n => n.name === 'node1')?.isConnected;
+        const node2Down = !this.nodes.find(n => n.name === 'node2')?.isConnected;
+        
+        this.emergencyMode = node1Down && node2Down;
 
         if (this.emergencyMode && !wasInEmergency) {
             this.emergencyModeStart = new Date();
             console.log('🚨 ENTERING EMERGENCY MODE - Both nodes down, using emergency storage');
+            
+            // Pause the poll if both nodes are down
+            if (this.electionState.status === 'voting') {
+                this.updateElectionState({
+                    status: 'paused',
+                    pauseTime: new Date().toISOString()
+                });
+                console.log('⏸️ Poll automatically paused because both nodes are down');
+            }
 
         } else if (!this.emergencyMode && wasInEmergency) {
             console.log('✅ EXITING EMERGENCY MODE - Nodes recovered');
@@ -595,18 +642,37 @@ class MultiNodeEthereumService {
     }
 
     shouldAllowSync() {
-        return this.electionState.status === 'voting' || this.electionState.status === 'paused';
+        // Allow sync during voting or paused states
+        // But if paused and no data received since pause, don't allow sync
+        if (this.electionState.status === 'voting') {
+            return true;
+        } else if (this.electionState.status === 'paused') {
+            // Check if we have received data since pause
+            if (this.electionState.pauseTime && this.electionState.lastDataTimestamp) {
+                const pauseTime = new Date(this.electionState.pauseTime).getTime();
+                const lastDataTime = new Date(this.electionState.lastDataTimestamp).getTime();
+                
+                // If no data received since pause, don't allow sync
+                if (lastDataTime <= pauseTime) {
+                    this.noDataSincePause = true;
+                    console.log('🚫 No data received since pause, sync not allowed');
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     async syncEmergencyVotesToNodes() {
         if (!this.shouldAllowSync()) {
             console.log('🚫 Syncing disabled - election state does not allow sync');
-            return;
+            return 0;
         }
 
         if (this.voteStorage.size === 0) {
             console.log('ℹ️ No emergency votes to sync');
-            return;
+            return 0;
         }
 
         const connectedNodes = this.nodes.filter(node =>
@@ -615,7 +681,7 @@ class MultiNodeEthereumService {
 
         if (connectedNodes.length === 0) {
             console.log('⚠️ No connected nodes available for emergency sync');
-            return;
+            return 0;
         }
 
         console.log(`🔄 Syncing ${this.voteStorage.size} emergency votes to ${connectedNodes.length} recovered nodes...`);
@@ -680,6 +746,8 @@ class MultiNodeEthereumService {
         if (totalSynced > 0) {
             console.log('🎉 All emergency votes have been successfully synced to recovered nodes!');
         }
+        
+        return totalSynced;
     }
 
     async init() {
@@ -755,16 +823,49 @@ class MultiNodeEthereumService {
 
     async startAutoSync() {
         console.log('🔄 Starting enhanced auto-sync with emergency storage...');
+        
+        // Clear any existing interval
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+        }
+        
         this.syncInterval = setInterval(async () => {
             try {
                 await this.checkNodeHealth();
                 const inEmergency = this.checkEmergencyMode();
 
+                // Update node data timestamps
+                this.updateNodeDataTimestamps();
+
                 if (!inEmergency) {
                     if (this.shouldAllowSync()) {
-                        await this.syncAllNodes();
-                        await this.syncBlockchainToEmergencyStorage();
-                        await this.syncEmergencyToNodes();
+                        // Check if all data is already updated
+                        if (await this.isAllDataUpdated()) {
+                            console.log('✅ All data is updated, skipping auto-sync');
+                            this.syncDataUpdated = true;
+                            
+                            // Stop auto-sync if all data is updated
+                            if (this.autoSyncEnabled) {
+                                console.log('🛑 Stopping auto-sync as all data is updated');
+                                clearInterval(this.syncInterval);
+                                this.syncInterval = null;
+                                this.autoSyncEnabled = false;
+                            }
+                            return;
+                        }
+                        
+                        this.syncDataUpdated = false;
+                        
+                        // Perform sync operations
+                        const nodeSyncResult = await this.syncAllNodes();
+                        const emergencySyncResult = await this.syncBlockchainToEmergencyStorage();
+                        const emergencyToNodesResult = await this.syncEmergencyToNodes();
+                        
+                        // If no sync happened, check if we should stop auto-sync
+                        if (nodeSyncResult === 0 && emergencySyncResult === 0 && emergencyToNodesResult === 0) {
+                            console.log('ℹ️ No sync operations performed, data appears to be in sync');
+                        }
+                        
                     } else {
                         console.log('🚫 Auto-sync skipped - election state does not allow sync');
                     }
@@ -783,6 +884,68 @@ class MultiNodeEthereumService {
                 }
             }
         }, 10000); // Sync every 10 seconds
+    }
+
+    // Check if all data is updated across all nodes and emergency storage
+    async isAllDataUpdated() {
+        try {
+            const connectedNodes = this.nodes.filter(node => 
+                node.isConnected && node.contract && node.syncStatus === 'synced'
+            );
+            
+            if (connectedNodes.length === 0) {
+                return false;
+            }
+            
+            // Get vote counts from all connected nodes
+            const nodeVoteCounts = [];
+            for (const node of connectedNodes) {
+                try {
+                    const voteCount = await node.contract.methods.getTotalVotes().call();
+                    nodeVoteCounts.push(parseInt(voteCount));
+                    node.lastDataReceived = new Date().toISOString();
+                } catch (error) {
+                    console.log(`⚠️ Failed to get vote count from ${node.name}:`, error.message);
+                    return false;
+                }
+            }
+            
+            // Get vote count from emergency storage
+            const emergencyData = this.loadEmergencyStorage();
+            const emergencyVoteCount = emergencyData.metadata.totalVotes;
+            
+            // Check if all vote counts are the same
+            const allCountsSame = nodeVoteCounts.every(count => count === emergencyVoteCount);
+            
+            // Also check if there are any pending sync votes
+            const pendingVotes = emergencyData.votes.filter(vote => 
+                vote.syncStatus === 'pending' || vote.source === 'emergency'
+            );
+            
+            const noPendingVotes = pendingVotes.length === 0;
+            
+            return allCountsSame && noPendingVotes;
+            
+        } catch (error) {
+            console.log('⚠️ Error checking if all data is updated:', error.message);
+            return false;
+        }
+    }
+
+    // Update node data timestamps
+    updateNodeDataTimestamps() {
+        const now = new Date().toISOString();
+        for (const node of this.nodes) {
+            if (node.isConnected && node.lastSync) {
+                const lastSyncTime = new Date(node.lastSync).getTime();
+                const currentTime = Date.now();
+                
+                // If node synced within last minute, update lastDataReceived
+                if (currentTime - lastSyncTime < 60000) {
+                    node.lastDataReceived = now;
+                }
+            }
+        }
     }
 
     recordSyncHistory(type, synced, errors) {
@@ -810,7 +973,7 @@ class MultiNodeEthereumService {
     async syncBlockchainToEmergencyStorage() {
         if (!this.shouldAllowSync()) {
             console.log('🚫 Blockchain to emergency storage sync skipped - election state does not allow sync');
-            return;
+            return 0;
         }
 
         const connectedNodes = this.nodes.filter(node =>
@@ -818,7 +981,7 @@ class MultiNodeEthereumService {
         );
 
         if (connectedNodes.length === 0) {
-            return;
+            return 0;
         }
 
         try {
@@ -880,8 +1043,11 @@ class MultiNodeEthereumService {
                 console.log(`💾 Emergency storage sync complete: ${syncedCount} added, total: ${emergencyData.votes.length}`);
             }
 
+            return syncedCount;
+
         } catch (error) {
             console.log('❌ Blockchain to emergency storage sync failed:', error.message);
+            return 0;
         }
     }
 
@@ -959,16 +1125,23 @@ class MultiNodeEthereumService {
 
         console.log('🔍 Finding active node...');
 
-        const connectedNodeWithContract = this.nodes.find(node =>
-            node.isConnected && node.contract && node.syncStatus === 'synced'
-        );
-
-        if (connectedNodeWithContract) {
-            this.currentPrimaryNode = connectedNodeWithContract.name;
-            console.log(`✅ Using ${connectedNodeWithContract.name} (has contract)`);
-            return connectedNodeWithContract;
+        // Check if node1 is available
+        const node1 = this.nodes.find(node => node.name === 'node1' && node.isConnected && node.contract && node.syncStatus === 'synced');
+        if (node1) {
+            this.currentPrimaryNode = 'node1';
+            console.log(`✅ Using node1 (has contract)`);
+            return node1;
         }
 
+        // Check if node2 is available
+        const node2 = this.nodes.find(node => node.name === 'node2' && node.isConnected && node.contract && node.syncStatus === 'synced');
+        if (node2) {
+            this.currentPrimaryNode = 'node2';
+            console.log(`✅ Using node2 (node1 unavailable)`);
+            return node2;
+        }
+
+        // Check if any node is connected
         const anyConnectedNode = this.nodes.find(node =>
             node.isConnected && node.discoveredAccount
         );
@@ -1048,6 +1221,9 @@ class MultiNodeEthereumService {
                         simulated: false
                     }
                 });
+
+                // Update node last data received timestamp
+                node.lastDataReceived = new Date().toISOString();
 
             } catch (error) {
                 console.warn(`❌ ${node.name} submission failed:`, error.message);
@@ -1137,7 +1313,7 @@ class MultiNodeEthereumService {
     async syncAllNodes() {
         if (!this.shouldAllowSync()) {
             console.log('🚫 Node-to-node sync skipped - election state does not allow sync');
-            return;
+            return 0;
         }
 
         const connectedNodes = this.nodes.filter(node =>
@@ -1145,7 +1321,7 @@ class MultiNodeEthereumService {
         );
 
         if (connectedNodes.length < 2) {
-            return;
+            return 0;
         }
 
         try {
@@ -1168,7 +1344,7 @@ class MultiNodeEthereumService {
             const validCounts = nodeVoteCounts.filter(v => v.count >= 0);
 
             if (validCounts.length < 2) {
-                return;
+                return 0;
             }
 
             const maxCount = Math.max(...validCounts.map(v => v.count));
@@ -1182,15 +1358,21 @@ class MultiNodeEthereumService {
 
                 console.log(`🔄 Syncing from ${sourceNode.name} (${maxCount} votes) to ${targetNodes.length} node(s)`);
 
+                let totalSynced = 0;
                 for (const targetNode of targetNodes) {
-                    await this.syncNodeFromSource(sourceNode, targetNode);
+                    const synced = await this.syncNodeFromSource(sourceNode, targetNode);
+                    totalSynced += synced;
                 }
+                
+                return totalSynced;
             } else {
                 console.log(`✅ Nodes in sync: ${validCounts.map(v => `${v.name}=${v.count}`).join(', ')}`);
+                return 0;
             }
 
         } catch (error) {
             console.log('❌ Sync all nodes failed:', error.message);
+            return 0;
         }
     }
 
@@ -1242,10 +1424,14 @@ class MultiNodeEthereumService {
 
             targetNode.syncStatus = 'synced';
             targetNode.lastSync = new Date().toISOString();
+            targetNode.lastDataReceived = new Date().toISOString();
+
+            return syncedCount;
 
         } catch (error) {
             console.log(`❌ Sync from ${sourceNode.name} to ${targetNode.name} failed:`, error.message);
             targetNode.syncStatus = 'sync_failed';
+            return 0;
         }
     }
 
@@ -1284,7 +1470,7 @@ class MultiNodeEthereumService {
     async syncSimulationToNode(node) {
         if (this.voteStorage.size === 0) {
             console.log(`ℹ️ No in-memory data to sync to ${node.name}`);
-            return;
+            return 0;
         }
 
         console.log(`🔄 Syncing ${this.voteStorage.size} in-memory votes to ${node.name}...`);
@@ -1324,6 +1510,7 @@ class MultiNodeEthereumService {
         }
 
         console.log(`✅ Sync completed for ${node.name}: ${syncedCount} in-memory votes synced, ${errorCount} errors`);
+        return syncedCount;
     }
 
     async resetVotingData() {
@@ -1342,13 +1529,17 @@ class MultiNodeEthereumService {
             this.syncHistory = [];
             this.lastSuccessfulSync = null;
             this.syncRetryCount = 0;
+            this.autoSyncEnabled = true;
+            this.syncDataUpdated = false;
+            this.noDataSincePause = false;
 
             // STEP 3: Reset election state to not_started
             this.electionState = {
                 status: 'not_started',
                 startTime: null,
                 pauseTime: null,
-                finishTime: null
+                finishTime: null,
+                lastDataTimestamp: null
             };
 
             // STEP 4: Reset ALL node failure counts and sync status
@@ -1356,6 +1547,7 @@ class MultiNodeEthereumService {
                 node.failureCount = 0;
                 node.syncStatus = 'unknown';
                 node.lastSync = null;
+                node.lastDataReceived = null;
             });
 
             // STEP 5: Clear emergency storage with new structure
@@ -1421,7 +1613,13 @@ class MultiNodeEthereumService {
             fs.writeFileSync(archiveFile, archiveContent);
             console.log(`📁 Archived reset info to: ${archiveFile}`);
 
-            // STEP 8: Return SUCCESS
+            // STEP 8: Restart auto-sync
+            if (this.syncInterval) {
+                clearInterval(this.syncInterval);
+            }
+            await this.startAutoSync();
+
+            // STEP 9: Return SUCCESS
             const successfulBlockchainResets = blockchainResetResults.filter(r => r.success).length;
 
             console.log('✅ ENHANCED SYSTEM RESET: All data cleared successfully');
@@ -1439,7 +1637,8 @@ class MultiNodeEthereumService {
                     blockchainContracts: `${successfulBlockchainResets}/${this.nodes.length} reset`,
                     serviceState: 'RESET',
                     electionState: 'RESET_TO_NOT_STARTED',
-                    emergencyStorage: 'CLEARED_AND_RESTRUCTURED'
+                    emergencyStorage: 'CLEARED_AND_RESTRUCTURED',
+                    autoSync: 'RESTARTED'
                 },
                 message: `SUCCESS: ${previousVoteCount} votes cleared from memory, ${successfulBlockchainResets} blockchain nodes reset`
             };
@@ -1480,6 +1679,9 @@ class MultiNodeEthereumService {
             dataIntegrity: this.verifyDataIntegrity(emergencyStats) ? 'verified' : 'compromised',
             lastSuccessfulSync: this.lastSuccessfulSync,
             syncHistory: this.syncHistory.length,
+            autoSyncEnabled: this.autoSyncEnabled,
+            syncDataUpdated: this.syncDataUpdated,
+            electionState: this.electionState,
             forceResetAvailable: true,
             message: 'ENHANCED_RESET: All storage systems will be cleared with data integrity checks'
         };
@@ -1600,6 +1802,7 @@ class MultiNodeEthereumService {
                         hasContract: !!node.contract,
                         syncStatus: node.syncStatus,
                         lastSync: node.lastSync,
+                        lastDataReceived: node.lastDataReceived,
                         isPrimary: node.name === this.currentPrimaryNode,
                         failureCount: node.failureCount
                     };
@@ -1625,7 +1828,7 @@ class MultiNodeEthereumService {
                 nodes: nodesStatus,
                 connectedNodes: connectedNodes,
                 totalNodes: this.nodes.length,
-                autoSyncEnabled: true,
+                autoSyncEnabled: this.autoSyncEnabled,
                 syncStatus: this.getOverallSyncStatus(nodesStatus),
                 failoverActive: this.emergencyMode,
                 robustMode: true,
@@ -1636,6 +1839,8 @@ class MultiNodeEthereumService {
                 },
                 electionState: this.electionState,
                 syncAllowed: this.shouldAllowSync(),
+                noDataSincePause: this.noDataSincePause,
+                syncDataUpdated: this.syncDataUpdated,
                 syncHistory: {
                     lastSuccessful: this.lastSuccessfulSync,
                     totalSyncs: this.syncHistory.length,
@@ -1651,6 +1856,8 @@ class MultiNodeEthereumService {
                 dataIntegrity: response.dataIntegrity,
                 electionState: response.electionState.status,
                 syncAllowed: response.syncAllowed,
+                autoSyncEnabled: response.autoSyncEnabled,
+                noDataSincePause: response.noDataSincePause,
                 lastSuccessfulSync: response.syncHistory.lastSuccessful
             });
 
@@ -1664,7 +1871,7 @@ class MultiNodeEthereumService {
                 emergencyVoteCount: this.voteStorage.size,
                 emergencyStorageVoteCount: 0,
                 dataIntegrity: 'unknown',
-                autoSyncEnabled: true,
+                autoSyncEnabled: this.autoSyncEnabled,
                 nodes: this.nodes.map(n => ({
                     name: n.name,
                     connected: n.isConnected,
@@ -1682,6 +1889,8 @@ class MultiNodeEthereumService {
                 },
                 electionState: this.electionState,
                 syncAllowed: this.shouldAllowSync(),
+                noDataSincePause: this.noDataSincePause,
+                syncDataUpdated: this.syncDataUpdated,
                 error: error.message
             };
         }
@@ -1854,8 +2063,31 @@ class MultiNodeEthereumService {
     }
 
     updateElectionState(newState) {
+        const oldStatus = this.electionState.status;
         this.electionState = { ...this.electionState, ...newState };
         console.log(`📊 Election state updated: ${this.electionState.status}`);
+        
+        // If status changed to voting or paused, restart auto-sync
+        if ((oldStatus !== 'voting' && this.electionState.status === 'voting') ||
+            (oldStatus !== 'paused' && this.electionState.status === 'paused')) {
+            
+            console.log('🔄 Election state changed, restarting auto-sync if needed');
+            
+            if (!this.autoSyncEnabled || !this.syncInterval) {
+                this.autoSyncEnabled = true;
+                this.startAutoSync();
+            }
+        }
+        
+        // If status changed to finished, stop auto-sync
+        if (oldStatus !== 'finished' && this.electionState.status === 'finished') {
+            console.log('🛑 Election finished, stopping auto-sync');
+            if (this.syncInterval) {
+                clearInterval(this.syncInterval);
+                this.syncInterval = null;
+                this.autoSyncEnabled = false;
+            }
+        }
     }
 
     destroy() {
