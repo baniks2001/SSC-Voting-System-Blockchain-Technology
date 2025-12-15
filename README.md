@@ -1,5 +1,6 @@
 SSC-Voting-with-Blockcchain
 
+IF Everything is Setup you can also use the start-electron.bat to open a electron app.
 Explained Guide: How to run and install SSC-Voting-System
 This guide will walk you through setting up a full-stack voting system that uses a React/Vue frontend,
 a Node.js backend, a MySQL database, and a private Ethereum blockchain for secure and transparent vote recording.
