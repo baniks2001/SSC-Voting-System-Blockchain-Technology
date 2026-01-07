@@ -264,7 +264,6 @@ app.use('*', (req, res) => {
 // Global unhandled rejection handler
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // Don't exit process for unhandled rejections
 });
 
 // Global uncaught exception handler
@@ -327,7 +326,6 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 let memoryCheckInterval;
 
 const setupMemoryMonitoring = () => {
-    // Clear existing interval if any
     if (memoryCheckInterval) {
         clearInterval(memoryCheckInterval);
     }
@@ -342,7 +340,6 @@ const setupMemoryMonitoring = () => {
         // Warning threshold
         if (usedMB > 500) {
             console.warn('🚨 High memory usage detected');
-            // Force garbage collection if available
             if (global.gc) {
                 console.log('🔄 Forcing garbage collection');
                 global.gc();
@@ -407,20 +404,15 @@ const startServer = async () => {
             process.exit(1);
         });
 
-        // Handle server close
         server.on('close', () => {
             console.log('🛑 Server closed');
-            // Clean up intervals
             if (memoryCheckInterval) {
                 clearInterval(memoryCheckInterval);
             }
         });
 
-        // Optimize server socket handling
         server.on('connection', (socket) => {
-            // Set socket timeout to prevent hanging connections
             socket.setTimeout(30000);
-            // Enable keep-alive
             socket.setKeepAlive(true, 60000);
         });
 
@@ -431,7 +423,7 @@ const startServer = async () => {
     }
 };
 
-// Start the server
+
 startServer();
 
 export default app;

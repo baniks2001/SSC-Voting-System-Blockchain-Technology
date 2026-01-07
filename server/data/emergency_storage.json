@@ -1,0 +1,6 @@
+{
+  "iv": "simple",
+  "data": "eyJ2b3RlcyI6W10sIm1ldGFkYXRhIjp7ImNyZWF0ZWRBdCI6IjIwMjYtMDEtMDdUMDQ6MTQ6MzQuMDcwWiIsImxhc3RVcGRhdGVkIjoiMjAyNi0wMS0wN1QwNDoxNDozNC4wNzBaIiwidG90YWxWb3RlcyI6MCwiZWxlY3Rpb25TdGF0ZSI6eyJzdGF0dXMiOiJub3Rfc3RhcnRlZCIsInN0YXJ0VGltZSI6bnVsbCwicGF1c2VUaW1lIjpudWxsLCJmaW5pc2hUaW1lIjpudWxsfX19",
+  "authTag": "none",
+  "timestamp": "2026-01-07T04:14:34.202Z"
+}

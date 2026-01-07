@@ -75,12 +75,12 @@ export const Dashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState('all');
   const [auditLogsExportType, setAuditLogsExportType] = useState<ExportType>('json');
-  
+
   // NEW: Delete confirmation modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [electionToDelete, setElectionToDelete] = useState<ElectionData | null>(null);
   const [deletingElection, setDeletingElection] = useState(false);
-  
+
   // Notification state
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const notificationIdCounter = useRef(1);
@@ -100,9 +100,9 @@ export const Dashboard: React.FC = () => {
   const addNotification = useCallback((message: string, type: Notification['type'], title?: string) => {
     const id = notificationIdCounter.current++;
     const notification: Notification = { id, message, type, title };
-    
+
     setNotifications(prev => [...prev, notification]);
-    
+
     // Auto remove notification after 5 seconds
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
@@ -561,7 +561,7 @@ export const Dashboard: React.FC = () => {
     try {
       // Create a simple text-based document that Word can open
       const docContent = `Election Results Export\n\n${content}`;
-      
+
       const blob = new Blob([docContent], {
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       });
@@ -1333,19 +1333,20 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Election History Modal */}
       {showElectionHistory && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden border border-gray-200 shadow-xl">
-            <div className="p-6 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Election History</h3>
-                  <p className="text-gray-600 mt-1">View and manage past election records</p>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-0 sm:p-4 overflow-y-auto">
+          {/* Modal Container */}
+          <div className="w-full h-full sm:w-full sm:max-w-6xl sm:max-h-[90vh] sm:rounded-2xl bg-white border border-gray-200 shadow-xl flex flex-col">
+            {/* Header - Fixed for mobile */}
+            <div className="p-4 sm:p-6 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Election History</h3>
+                  <p className="text-sm sm:text-base text-gray-600 mt-1">View and manage past election records</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   {filteredElectionHistory.length > 0 && (
-                    <div className="relative group">
+                    <div className="relative flex-1 sm:flex-none">
                       <select
                         onChange={(e) => {
                           if (e.target.value) {
@@ -1354,42 +1355,44 @@ export const Dashboard: React.FC = () => {
                           }
                         }}
                         disabled={exporting}
-                        className="flex items-center justify-center gap-2 px-4 py-3 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 rounded-xl transition-all duration-200 hover:shadow-md text-sm font-medium appearance-none cursor-pointer pr-10 disabled:opacity-50"
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 rounded-lg sm:rounded-xl transition-all duration-200 hover:shadow-md text-sm font-medium appearance-none cursor-pointer pr-8 sm:pr-10 disabled:opacity-50"
                         title="Export all election history"
                       >
                         <option value="">Export All</option>
                         <option value="json">JSON Format</option>
                         <option value="xlsx">Excel Format</option>
                       </select>
-                      <Download className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
+                      <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute right-2.5 sm:right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
                     </div>
                   )}
                   <button
                     onClick={() => setShowElectionHistory(false)}
-                    className="text-gray-400 hover:text-gray-600 p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                    className="p-2 rounded-lg sm:rounded-xl hover:bg-gray-100 transition-colors flex-shrink-0"
+                    aria-label="Close"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-5 h-5 text-gray-500" />
                   </button>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
+              {/* Search and Filter - Mobile optimized */}
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 relative">
-                  <Search className="w-4 h-4 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search elections by name or academic year..."
+                    placeholder="Search elections..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
                   />
                 </div>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
-                  className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all w-full sm:w-48"
+                  className="px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
                 >
-                  <option value="all">All Academic Years</option>
+                  <option value="all">All Years</option>
                   {academicYears.map(year => (
                     <option key={year} value={year}>{year}</option>
                   ))}
@@ -1397,16 +1400,17 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)] bg-gray-50/50">
+            {/* Content Area - Mobile scrollable */}
+            <div className="flex-1 overflow-y-auto bg-gray-50/50 p-4 sm:p-6">
               {loadingElections ? (
-                <div className="flex justify-center py-12">
+                <div className="flex justify-center items-center py-12">
                   <LoadingSpinner size="lg" text="Loading election history..." />
                 </div>
               ) : filteredElectionHistory.length === 0 ? (
-                <div className="text-center py-12 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200">
-                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 mb-2 text-lg font-medium">No election history found</p>
-                  <p className="text-gray-400">
+                <div className="text-center py-12 bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200">
+                  <Calendar className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-2 text-base sm:text-lg font-medium">No election history found</p>
+                  <p className="text-gray-400 text-sm sm:text-base">
                     {searchTerm || selectedYear !== 'all'
                       ? "No elections match your search criteria."
                       : "Finish an election to see it here."
@@ -1416,53 +1420,70 @@ export const Dashboard: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   {filteredElectionHistory.map((election) => (
-                    <div key={election.id} className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:shadow-md transition-all duration-300">
-                      <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-xl font-bold text-gray-900 mb-3 break-words">
+                    <div
+                      key={election.id}
+                      className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200 hover:shadow-md transition-all duration-300"
+                    >
+                      <div className="flex flex-col lg:flex-row justify-between items-start gap-4 sm:gap-6">
+                        {/* Election Info */}
+                        <div className="flex-1 min-w-0 w-full">
+                          <h4 className="text-base sm:text-xl font-bold text-gray-900 mb-3 break-words">
                             {election.election_name}
                           </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600 mb-4">
-                            <div className="bg-blue-50 p-3 rounded-xl border border-blue-200">
-                              <span className="font-medium text-xs text-blue-600 block mb-1">Election Date</span>
-                              <p className="text-sm font-semibold text-blue-900">{new Date(election.election_date).toLocaleDateString()}</p>
+
+                          {/* Mobile Compact Grid */}
+                          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-gray-600 mb-4">
+                            <div className="bg-blue-50 p-2 sm:p-3 rounded-lg sm:rounded-xl border border-blue-200">
+                              <span className="font-medium text-xs text-blue-600 block mb-1">Date</span>
+                              <p className="text-xs sm:text-sm font-semibold text-blue-900 truncate">
+                                {new Date(election.election_date).toLocaleDateString()}
+                              </p>
                             </div>
-                            <div className="bg-purple-50 p-3 rounded-xl border border-purple-200">
+                            <div className="bg-purple-50 p-2 sm:p-3 rounded-lg sm:rounded-xl border border-purple-200">
                               <span className="font-medium text-xs text-purple-600 block mb-1">Academic Year</span>
-                              <p className="text-sm font-semibold text-purple-900">{election.academic_year}</p>
+                              <p className="text-xs sm:text-sm font-semibold text-purple-900">
+                                {election.academic_year}
+                              </p>
                             </div>
-                            <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
-                              <span className="font-medium text-xs text-gray-600 block mb-1">Finished At</span>
-                              <p className="text-sm font-semibold text-gray-900">{new Date(election.finished_at).toLocaleString()}</p>
+                            <div className="bg-gray-50 p-2 sm:p-3 rounded-lg sm:rounded-xl border border-gray-200">
+                              <span className="font-medium text-xs text-gray-600 block mb-1">Finished</span>
+                              <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
+                                {new Date(election.finished_at).toLocaleDateString()}
+                              </p>
                             </div>
-                            <div className="bg-orange-50 p-3 rounded-xl border border-orange-200">
+                            <div className="bg-orange-50 p-2 sm:p-3 rounded-lg sm:rounded-xl border border-orange-200">
                               <span className="font-medium text-xs text-orange-600 block mb-1">Hash</span>
-                              <p className="text-xs font-mono text-orange-700 truncate" title={election.election_hash || 'Not available'}>
+                              <p className="text-xs font-mono text-orange-700 truncate"
+                                title={election.election_hash || 'Not available'}>
                                 {getElectionHashDisplay(election)}
                               </p>
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+
+                          {/* Stats */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-emerald-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-emerald-200">
                               <span className="font-medium text-xs text-emerald-700 block mb-1">Candidates</span>
-                              <p className="text-lg font-bold text-emerald-900">{election.total_candidates}</p>
+                              <p className="text-base sm:text-lg font-bold text-emerald-900">{election.total_candidates}</p>
                             </div>
-                            <div className="bg-green-50 p-4 rounded-xl border border-green-200">
+                            <div className="bg-green-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-green-200">
                               <span className="font-medium text-xs text-green-700 block mb-1">Total Votes</span>
-                              <p className="text-lg font-bold text-green-900">{election.total_votes}</p>
+                              <p className="text-base sm:text-lg font-bold text-green-900">{election.total_votes}</p>
                             </div>
                           </div>
                         </div>
-                        <div className="flex flex-row lg:flex-col gap-3 w-full lg:w-auto">
+
+                        {/* Action Buttons - Mobile optimized */}
+                        <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full lg:w-auto mt-4 sm:mt-0">
                           <button
                             onClick={() => fetchElectionDetails(election.id)}
-                            className="flex items-center justify-center gap-2 px-4 py-3 text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-blue-200 rounded-xl transition-all duration-200 hover:shadow-md text-sm font-medium min-w-[120px]"
+                            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-blue-200 rounded-lg sm:rounded-xl transition-all duration-200 hover:shadow-md text-sm font-medium"
                             title="View election details"
                           >
-                            <Eye className="w-4 h-4" />
-                            View Details
+                            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <span>View Details</span>
                           </button>
-                          <div className="relative group">
+                          <div className="relative">
                             <select
                               onChange={(e) => {
                                 if (e.target.value) {
@@ -1471,22 +1492,22 @@ export const Dashboard: React.FC = () => {
                                 }
                               }}
                               disabled={exporting}
-                              className="flex items-center justify-center gap-2 px-4 py-3 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 rounded-xl transition-all duration-200 hover:shadow-md text-sm font-medium min-w-[120px] appearance-none cursor-pointer pr-10 disabled:opacity-50"
+                              className="w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 rounded-lg sm:rounded-xl transition-all duration-200 hover:shadow-md text-sm font-medium appearance-none cursor-pointer pr-8 sm:pr-10 disabled:opacity-50"
                               title="Export election data"
                             >
                               <option value="">Export</option>
                               <option value="json">JSON Format</option>
                               <option value="xlsx">Excel Format</option>
                             </select>
-                            <Download className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
+                            <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute right-2.5 sm:right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
                           </div>
                           <button
                             onClick={() => showDeleteConfirmation(election)}
-                            className="flex items-center justify-center gap-2 px-4 py-3 text-rose-600 hover:text-rose-800 hover:bg-rose-50 border border-rose-200 rounded-xl transition-all duration-200 hover:shadow-md text-sm font-medium min-w-[120px]"
+                            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-rose-600 hover:text-rose-800 hover:bg-rose-50 border border-rose-200 rounded-lg sm:rounded-xl transition-all duration-200 hover:shadow-md text-sm font-medium"
                             title="Delete election record"
                           >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
+                            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <span>Delete</span>
                           </button>
                         </div>
                       </div>
@@ -1498,69 +1519,74 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Election Details Modal */}
+      
       {showElectionDetails && selectedElection && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-200 shadow-xl">
-            <div className="p-6 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[70] p-0 sm:p-4 overflow-y-auto">
+          <div className="w-full h-full sm:w-full sm:max-w-4xl sm:max-h-[90vh] sm:rounded-2xl bg-white border border-gray-200 shadow-xl flex flex-col">
+            <div className="p-4 sm:p-6 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
               <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Election Details</h3>
-                  <p className="text-gray-600 mt-1">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Election Details</h3>
+                  <p className="text-sm sm:text-base text-gray-600 mt-1 truncate">
                     {selectedElection.election.election_name} - {selectedElection.election.academic_year}
                   </p>
                 </div>
                 <button
                   onClick={() => setShowElectionDetails(false)}
-                  className="text-gray-400 hover:text-gray-600 p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-lg sm:rounded-xl hover:bg-gray-100 transition-colors flex-shrink-0 ml-2"
+                  aria-label="Close"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)] bg-gray-50/50">
+            <div className="flex-1 overflow-y-auto bg-gray-50/50 p-4 sm:p-6">
               {loadingElectionDetails ? (
                 <div className="flex justify-center py-12">
                   <LoadingSpinner size="lg" text="Loading election details..." />
                 </div>
               ) : (
-                <div className="space-y-6">
-                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
-                    <h4 className="text-lg font-bold text-gray-900 mb-4">Election Information</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                <div className="space-y-4 sm:space-y-6">
+                  {/* Election Information - Mobile responsive grid */}
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200">
+                    <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-4">Election Information</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                      <div className="bg-blue-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-blue-200">
                         <span className="font-medium text-xs text-blue-600 block mb-1">Election Name</span>
-                        <p className="text-sm font-semibold text-blue-900">{selectedElection.election.election_name}</p>
+                        <p className="text-sm font-semibold text-blue-900 break-words">
+                          {selectedElection.election.election_name}
+                        </p>
                       </div>
-                      <div className="bg-purple-50 p-4 rounded-xl border border-purple-200">
+                      <div className="bg-purple-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-purple-200">
                         <span className="font-medium text-xs text-purple-600 block mb-1">Election Date</span>
                         <p className="text-sm font-semibold text-purple-900">
                           {new Date(selectedElection.election.election_date).toLocaleDateString()}
                         </p>
                       </div>
-                      <div className="bg-green-50 p-4 rounded-xl border border-green-200">
+                      <div className="bg-green-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-green-200">
                         <span className="font-medium text-xs text-green-600 block mb-1">Academic Year</span>
                         <p className="text-sm font-semibold text-green-900">{selectedElection.election.academic_year}</p>
                       </div>
-                      <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
+                      <div className="bg-orange-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-orange-200">
                         <span className="font-medium text-xs text-orange-600 block mb-1">Total Candidates</span>
                         <p className="text-sm font-semibold text-orange-900">{selectedElection.election.total_candidates}</p>
                       </div>
-                      <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                      <div className="bg-emerald-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-emerald-200">
                         <span className="font-medium text-xs text-emerald-600 block mb-1">Total Votes</span>
                         <p className="text-sm font-semibold text-emerald-900">{selectedElection.election.total_votes}</p>
                       </div>
-                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                      <div className="bg-gray-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-gray-200">
                         <span className="font-medium text-xs text-gray-600 block mb-1">Finished At</span>
                         <p className="text-sm font-semibold text-gray-900">
                           {new Date(selectedElection.election.finished_at).toLocaleString()}
                         </p>
                       </div>
                     </div>
+
+                    {/* Election Hash - Mobile responsive */}
                     {selectedElection.election.election_hash && (
-                      <div className="mt-4 bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+                      <div className="mt-4 bg-yellow-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-yellow-200">
                         <span className="font-medium text-xs text-yellow-600 block mb-1">Election Hash</span>
                         <p className="text-xs font-mono text-yellow-700 break-all">
                           {selectedElection.election.election_hash}
@@ -1569,31 +1595,34 @@ export const Dashboard: React.FC = () => {
                     )}
                   </div>
 
+                  {/* Results Section - Mobile optimized */}
                   {selectedElection.results?.resultsByPosition && (
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
-                      <h4 className="text-lg font-bold text-gray-900 mb-4">Election Results by Position</h4>
-                      <div className="space-y-6">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200">
+                      <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-4">Election Results</h4>
+                      <div className="space-y-4">
                         {Object.entries(selectedElection.results.resultsByPosition).map(([position, candidates]: [string, any]) => (
-                          <div key={position} className="border border-gray-200 rounded-xl overflow-hidden">
-                            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4">
-                              <h5 className="text-lg font-bold text-white">{position.toUpperCase()}</h5>
+                          <div key={position} className="border border-gray-200 rounded-lg sm:rounded-xl overflow-hidden">
+                            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-3 sm:p-4">
+                              <h5 className="text-sm sm:text-lg font-bold text-white truncate">{position.toUpperCase()}</h5>
                             </div>
-                            <div className="divide-y divide-gray-200">
+                            <div className="divide-y divide-gray-200 max-h-60 overflow-y-auto">
                               {candidates.map((candidate: any, index: number) => (
-                                <div key={candidate.candidate_name} className="p-4 hover:bg-gray-50 transition-colors">
+                                <div key={candidate.candidate_name} className="p-3 sm:p-4 hover:bg-gray-50 transition-colors">
                                   <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-4">
-                                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${index === 0 ? 'bg-emerald-500' : 'bg-blue-500'
-                                        }`}>
+                                    <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
+                                      <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold flex-shrink-0 ${index === 0 ? 'bg-emerald-500' : 'bg-blue-500'}`}>
                                         {index + 1}
                                       </div>
-                                      <div>
-                                        <p className="font-semibold text-gray-900">{candidate.candidate_name}</p>
-                                        <p className="text-sm text-gray-600">{candidate.party}</p>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                                          {candidate.candidate_name}
+                                        </p>
+                                        <p className="text-xs sm:text-sm text-gray-600 truncate">{candidate.party}</p>
                                       </div>
                                     </div>
-                                    <div className="text-right">
-                                      <p className="text-lg font-bold text-gray-900">{candidate.vote_count} votes</p>
+                                    <div className="text-right ml-2">
+                                      <p className="text-sm sm:text-lg font-bold text-gray-900">{candidate.vote_count}</p>
+                                      <p className="text-xs text-gray-500">votes</p>
                                     </div>
                                   </div>
                                 </div>
@@ -1605,28 +1634,36 @@ export const Dashboard: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Statistics - Mobile responsive */}
                   {selectedElection.results?.statistics && (
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
-                      <h4 className="text-lg font-bold text-gray-900 mb-4">Election Statistics</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 text-center">
-                          <span className="font-medium text-xs text-blue-600 block mb-1">Total Candidates</span>
-                          <p className="text-2xl font-bold text-blue-900">{selectedElection.results.statistics.totalCandidates}</p>
+                    <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200">
+                      <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-4">Statistics</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="bg-blue-50 p-4 rounded-lg sm:rounded-xl border border-blue-200 text-center">
+                          <span className="font-medium text-xs text-blue-600 block mb-1">Candidates</span>
+                          <p className="text-xl sm:text-2xl font-bold text-blue-900">
+                            {selectedElection.results.statistics.totalCandidates}
+                          </p>
                         </div>
-                        <div className="bg-green-50 p-4 rounded-xl border border-green-200 text-center">
+                        <div className="bg-green-50 p-4 rounded-lg sm:rounded-xl border border-green-200 text-center">
                           <span className="font-medium text-xs text-green-600 block mb-1">Total Votes</span>
-                          <p className="text-2xl font-bold text-green-900">{selectedElection.results.statistics.totalVotes}</p>
+                          <p className="text-xl sm:text-2xl font-bold text-green-900">
+                            {selectedElection.results.statistics.totalVotes}
+                          </p>
                         </div>
-                        <div className="bg-purple-50 p-4 rounded-xl border border-purple-200 text-center">
+                        <div className="bg-purple-50 p-4 rounded-lg sm:rounded-xl border border-purple-200 text-center">
                           <span className="font-medium text-xs text-purple-600 block mb-1">Positions</span>
-                          <p className="text-2xl font-bold text-purple-900">{selectedElection.results.statistics.positions}</p>
+                          <p className="text-xl sm:text-2xl font-bold text-purple-900">
+                            {selectedElection.results.statistics.positions}
+                          </p>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <div className="relative group">
+                  {/* Export Button - Mobile optimized */}
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+                    <div className="relative w-full sm:w-auto">
                       <select
                         onChange={(e) => {
                           if (e.target.value) {
@@ -1635,7 +1672,7 @@ export const Dashboard: React.FC = () => {
                           }
                         }}
                         disabled={exporting}
-                        className="flex items-center justify-center gap-2 px-6 py-3 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 rounded-xl transition-all duration-200 hover:shadow-md text-sm font-medium appearance-none cursor-pointer pr-10 disabled:opacity-50"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 rounded-lg sm:rounded-xl transition-all duration-200 hover:shadow-md text-sm font-medium appearance-none cursor-pointer pr-10 disabled:opacity-50"
                       >
                         <option value="">Export Election Data</option>
                         <option value="json">JSON Format</option>
