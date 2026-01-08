@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Vote, Users, CheckCircle, ArrowRight, User, LogOut, AlertCircle, Menu, X } from 'lucide-react';
+import { Vote, Users, CheckCircle, ArrowRight, User, LogOut, AlertCircle, Menu, X, Image } from 'lucide-react';
 import { Candidate, Position } from '../../types';
 import { api } from '../../utils/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -441,8 +441,19 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
                             }`}
                           >
                             <div className="flex items-center space-x-4">
-                              <div className="w-14 h-14 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                                <User className="w-7 h-7 text-gray-500" />
+                              <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100">
+                                {candidate.image_url ? (
+                                  <img
+                                    src={candidate.image_url}
+                                    alt={candidate.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random`;
+                                    }}
+                                  />
+                                ) : (
+                                  <User className="w-7 h-7 text-gray-500" />
+                                )}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-bold text-lg text-gray-900 truncate">

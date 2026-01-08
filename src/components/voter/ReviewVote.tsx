@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { User, ArrowLeft, ShieldCheck, Hash, CheckCircle, XCircle, Loader, Smartphone, Monitor, AlertTriangle, Clock, Users, MinusCircle } from 'lucide-react';
+import { User, ArrowLeft, ShieldCheck, Hash, CheckCircle, XCircle, Loader, Smartphone, Monitor, AlertTriangle, Clock, Users, MinusCircle, Image } from 'lucide-react';
 import { Candidate, Position } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -848,8 +848,19 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
                           {selectedCandidates.map((candidate) => (
                             <div key={candidate.id} className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 p-3 bg-white rounded-xl border border-gray-200">
                               <div className="flex items-center space-x-3 w-full sm:w-auto">
-                                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                                  <User className="w-5 h-5 text-gray-500" />
+                                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100">
+                                  {candidate.image_url ? (
+                                    <img
+                                      src={candidate.image_url}
+                                      alt={candidate.name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random`;
+                                      }}
+                                    />
+                                  ) : (
+                                    <User className="w-5 h-5 text-gray-500" />
+                                  )}
                                 </div>
                                 <div className="min-w-0 flex-1 sm:hidden">
                                   <h4 className="font-semibold text-gray-900 text-base">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { UserPlus, Edit, Trash2, Search, User, Award, Layers, MoreVertical, Filter, Check, Users, CheckCircle, XCircle, AlertCircle, Info, X, AlertTriangle } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Search, User, Award, Layers, MoreVertical, Filter, Check, Users, CheckCircle, XCircle, AlertCircle, Info, X, AlertTriangle, Upload, Image } from 'lucide-react';
 import { Candidate, Position, Voter } from '../../types';
 import { api } from '../../utils/api';
 import { positionApi } from '../../utils/positionApi';
@@ -64,7 +64,10 @@ export const CandidateManagement: React.FC = () => {
   const [candidateFormData, setCandidateFormData] = useState({
     name: '',
     party: '',
-    position: ''
+    position: '',
+    image: null as File | null,
+    imagePreview: '',
+    current_image_url: ''
   });
 
   const [positionFormData, setPositionFormData] = useState({
@@ -325,11 +328,25 @@ export const CandidateManagement: React.FC = () => {
     }
 
     try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('name', candidateFormData.name);
+      formData.append('party', candidateFormData.party);
+      formData.append('position', candidateFormData.position);
+      
+      if (editingCandidate && candidateFormData.current_image_url) {
+        formData.append('current_image_url', candidateFormData.current_image_url);
+      }
+      
+      if (candidateFormData.image) {
+        formData.append('image', candidateFormData.image);
+      }
+
       if (editingCandidate) {
-        await api.put(`/candidates/${editingCandidate.id}`, candidateFormData);
+        await api.put(`/candidates/${editingCandidate.id}`, formData);
         addNotification('Candidate Updated', 'Candidate updated successfully', 'success');
       } else {
-        await api.post('/candidates', candidateFormData);
+        await api.post('/candidates', formData);
         addNotification('Candidate Created', 'Candidate created successfully', 'success');
       }
       setShowCandidateModal(false);
@@ -380,7 +397,10 @@ export const CandidateManagement: React.FC = () => {
     setCandidateFormData({
       name: candidate.name,
       party: candidate.party,
-      position: candidate.position
+      position: candidate.position,
+      image: null,
+      imagePreview: candidate.image_url || '',
+      current_image_url: candidate.image_url ? candidate.image_url.split('/').pop() || '' : ''
     });
     setDuplicateNameError(''); // Clear any previous errors
     setShowCandidateModal(true);
@@ -457,7 +477,10 @@ export const CandidateManagement: React.FC = () => {
     setCandidateFormData({
       name: '',
       party: '',
-      position: ''
+      position: '',
+      image: null,
+      imagePreview: '',
+      current_image_url: ''
     });
     setEditingCandidate(null);
     setVoterSearch('');
@@ -530,6 +553,40 @@ export const CandidateManagement: React.FC = () => {
     if (duplicateNameError) {
       setDuplicateNameError('');
     }
+  };
+
+  // Handle image upload
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        addNotification('Invalid File', 'Please select an image file (JPEG, PNG, etc.)', 'error');
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        addNotification('File Too Large', 'Image must be less than 5MB', 'error');
+        return;
+      }
+
+      setCandidateFormData(prev => ({
+        ...prev,
+        image: file,
+        imagePreview: URL.createObjectURL(file)
+      }));
+    }
+  };
+
+  // Remove image
+  const handleRemoveImage = () => {
+    setCandidateFormData(prev => ({
+      ...prev,
+      image: null,
+      imagePreview: '',
+      current_image_url: ''
+    }));
   };
 
   const filteredCandidates = candidates.filter(candidate =>
@@ -758,8 +815,21 @@ export const CandidateManagement: React.FC = () => {
               <div className="p-4 sm:p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
+                      {candidate.image_url ? (
+                        <img 
+                          src={candidate.image_url} 
+                          alt={candidate.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random`;
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                          <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                        </div>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{candidate.name}</h3>
@@ -869,7 +939,67 @@ export const CandidateManagement: React.FC = () => {
         title={editingCandidate ? 'Edit Candidate' : 'Add New Candidate'}
         size="md"
       >
-        <form onSubmit={handleCandidateSubmit} className="space-y-4">
+        <form onSubmit={handleCandidateSubmit} className="space-y-4" encType="multipart/form-data">
+          {/* Profile Picture Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Image className="w-4 h-4 inline mr-2" />
+              Profile Picture (Optional)
+            </label>
+            <div className="space-y-3">
+              {candidateFormData.imagePreview || (editingCandidate && editingCandidate.image_url) ? (
+                <div className="flex flex-col items-center space-y-3">
+                  <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-gray-300">
+                    <img
+                      src={candidateFormData.imagePreview || (editingCandidate?.image_url || '')}
+                      alt="Profile preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(candidateFormData.name || 'Candidate')}&background=random`;
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="text-sm text-red-600 hover:text-red-800 flex items-center space-x-1"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Remove Photo</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                  <Image className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm text-gray-600 mb-2">No profile picture</p>
+                </div>
+              )}
+              
+              <label className="block">
+                <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                  <div className="space-y-1 text-center">
+                    <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                    <div className="flex text-sm text-gray-600">
+                      <span className="relative rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                        Upload a file
+                      </span>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      PNG, JPG, GIF up to 5MB
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    className="sr-only"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                </div>
+              </label>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <User className="w-4 h-4 inline mr-2" />

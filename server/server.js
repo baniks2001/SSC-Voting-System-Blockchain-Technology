@@ -92,6 +92,7 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
+
 // Body parser with optimized settings
 app.use(express.json({
     limit: '5mb', // Reduced from 10mb to prevent memory issues
@@ -130,6 +131,8 @@ app.use((req, res, next) => {
 
     next();
 });
+
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);

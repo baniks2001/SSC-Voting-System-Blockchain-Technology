@@ -1,4 +1,4 @@
-// utils/api.ts - ENHANCED VERSION WITH TOAST NOTIFICATIONS
+// utils/api.ts - ENHANCED VERSION WITH TOAST NOTIFICATIONS AND FORMDATA SUPPORT
 
 // ✅ UPDATED: Use environment variable with fallback
 const API_BASE_URL = import.meta.env.VITE_API_URL ? 
@@ -25,6 +25,7 @@ interface RequestConfig {
   showLoading?: boolean;
   successMessage?: string;
   errorMessage?: string;
+  isFormData?: boolean;
 }
 
 // Toast manager for API notifications
@@ -81,10 +82,13 @@ class ApiClient {
     return error;
   }
 
-  private getAuthHeaders(skipAuth = false): Record<string, string> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+  private getAuthHeaders(skipAuth = false, isFormData = false): Record<string, string> {
+    const headers: Record<string, string> = {};
+
+    // Don't set Content-Type for FormData - let browser set it with boundary
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (!skipAuth) {
       try {
@@ -359,7 +363,8 @@ class ApiClient {
 
   async post(endpoint: string, data: any, config: RequestConfig = {}) {
     return this.queuedRequest(async () => {
-      const headers = this.getAuthHeaders(config.skipAuth);
+      const isFormData = config.isFormData || data instanceof FormData;
+      const headers = this.getAuthHeaders(config.skipAuth, isFormData);
       const url = `${this.baseUrl}${endpoint}`;
       
       toastManager.showToast('info', `Creating ${endpoint.replace('/', '')}...`);
@@ -367,7 +372,7 @@ class ApiClient {
       const response = await this.fetchWithTimeout(url, {
         method: 'POST',
         headers,
-        body: data ? JSON.stringify(data) : undefined,
+        body: isFormData ? data : (data ? JSON.stringify(data) : undefined),
         timeout: config.timeout,
       });
       
@@ -377,7 +382,8 @@ class ApiClient {
 
   async put(endpoint: string, data: any, config: RequestConfig = {}) {
     return this.queuedRequest(async () => {
-      const headers = this.getAuthHeaders(config.skipAuth);
+      const isFormData = config.isFormData || data instanceof FormData;
+      const headers = this.getAuthHeaders(config.skipAuth, isFormData);
       const url = `${this.baseUrl}${endpoint}`;
       
       toastManager.showToast('info', `Updating ${endpoint.replace('/', '')}...`);
@@ -385,7 +391,7 @@ class ApiClient {
       const response = await this.fetchWithTimeout(url, {
         method: 'PUT',
         headers,
-        body: data ? JSON.stringify(data) : undefined,
+        body: isFormData ? data : (data ? JSON.stringify(data) : undefined),
         timeout: config.timeout,
       });
       
@@ -395,7 +401,8 @@ class ApiClient {
 
   async patch(endpoint: string, data: any, config: RequestConfig = {}) {
     return this.queuedRequest(async () => {
-      const headers = this.getAuthHeaders(config.skipAuth);
+      const isFormData = config.isFormData || data instanceof FormData;
+      const headers = this.getAuthHeaders(config.skipAuth, isFormData);
       const url = `${this.baseUrl}${endpoint}`;
       
       toastManager.showToast('info', `Updating ${endpoint.replace('/', '')}...`);
@@ -403,7 +410,7 @@ class ApiClient {
       const response = await this.fetchWithTimeout(url, {
         method: 'PATCH',
         headers,
-        body: data ? JSON.stringify(data) : undefined,
+        body: isFormData ? data : (data ? JSON.stringify(data) : undefined),
         timeout: config.timeout,
       });
       
@@ -471,6 +478,52 @@ class ApiClient {
     return results;
   }
 
+  // File upload helper method
+  async uploadFile(endpoint: string, file: File, additionalData: Record<string, any> = {}, config: RequestConfig = {}) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Append additional data to form
+    Object.entries(additionalData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (value instanceof File) {
+          formData.append(key, value);
+        } else if (typeof value === 'object') {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+    
+    return this.post(endpoint, formData, { ...config, isFormData: true });
+  }
+
+  // Upload multiple files helper
+  async uploadFiles(endpoint: string, files: File[], additionalData: Record<string, any> = {}, config: RequestConfig = {}) {
+    const formData = new FormData();
+    
+    // Append all files
+    files.forEach((file, index) => {
+      formData.append(`files[${index}]`, file);
+    });
+    
+    // Append additional data to form
+    Object.entries(additionalData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (value instanceof File) {
+          formData.append(key, value);
+        } else if (typeof value === 'object') {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+    
+    return this.post(endpoint, formData, { ...config, isFormData: true });
+  }
+
   // Utility methods
   getQueueStats() {
     return {
@@ -499,6 +552,85 @@ class ApiClient {
     } catch {
       return false;
     }
+  }
+
+  // Helper to check if we're connected to the API
+  async checkConnection(): Promise<{ connected: boolean; latency?: number }> {
+    try {
+      const startTime = Date.now();
+      await this.get('/health', { timeout: 3000, skipAuth: true });
+      const latency = Date.now() - startTime;
+      return { connected: true, latency };
+    } catch (error) {
+      return { connected: false };
+    }
+  }
+
+  // Add request interceptors for debugging/analytics
+  addRequestInterceptor(interceptor: (endpoint: string, config: RequestConfig) => void) {
+    // This can be extended to add request interceptors
+    console.log('Request interceptor added:', interceptor);
+  }
+
+  // Add response interceptors for debugging/analytics
+  addResponseInterceptor(interceptor: (response: any, endpoint: string, config: RequestConfig) => void) {
+    // This can be extended to add response interceptors
+    console.log('Response interceptor added:', interceptor);
+  }
+
+  // Download file helper
+  async downloadFile(endpoint: string, config: RequestConfig = {}): Promise<Blob> {
+    return this.queuedRequest(async () => {
+      const headers = this.getAuthHeaders(config.skipAuth);
+      const url = `${this.baseUrl}${endpoint}`;
+      
+      const response = await this.fetchWithTimeout(url, {
+        method: 'GET',
+        headers,
+        timeout: config.timeout,
+      });
+      
+      if (!response.ok) {
+        throw this.createApiError(`Download failed: ${response.statusText}`, response.status);
+      }
+      
+      return response.blob();
+    }, endpoint, config);
+  }
+
+  // Stream response helper (for large files or streaming data)
+  async streamResponse(endpoint: string, onData: (chunk: any) => void, config: RequestConfig = {}) {
+    return this.queuedRequest(async () => {
+      const headers = this.getAuthHeaders(config.skipAuth);
+      const url = `${this.baseUrl}${endpoint}`;
+      
+      const response = await this.fetchWithTimeout(url, {
+        method: 'GET',
+        headers,
+        timeout: config.timeout,
+      });
+      
+      if (!response.ok) {
+        throw this.createApiError(`Stream failed: ${response.statusText}`, response.status);
+      }
+      
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw this.createApiError('Response body is not readable');
+      }
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          onData(value);
+        }
+      } finally {
+        reader.releaseLock();
+      }
+      
+      return { success: true, message: 'Stream completed' };
+    }, endpoint, config);
   }
 }
 
