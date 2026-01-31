@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { User, ArrowLeft, ShieldCheck, Hash, CheckCircle, XCircle, Loader, Smartphone, Monitor, AlertTriangle, Clock, Users, MinusCircle, Image } from 'lucide-react';
+import { User, ArrowLeft, ShieldCheck, Hash, CheckCircle, XCircle, Loader, Smartphone, Monitor, AlertTriangle, Clock, Users, MinusCircle } from 'lucide-react';
 import { Candidate, Position } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -102,31 +102,46 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
     }
   }, [submissionStatus, onLogout]);
 
-  const generateSecureRandom = (length: number): string => {
-    const array = new Uint8Array(length);
-    crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-  };
-
-  const generateSecureBallotId = useCallback(async (): Promise<{ ballotId: string; hashedBallotId: string }> => {
+  const generateSecureBallotId = useCallback(async () => {
     if (!user) {
       throw new Error('User not authenticated');
     }
 
     const timestamp = Date.now().toString(36);
-    const randomPart1 = generateSecureRandom(8);
-    const randomPart2 = generateSecureRandom(4);
-    const voterSalt = generateSecureRandom(2);
+    const randomPart1 = Math.random().toString(36).substring(2, 15);
+    const randomPart2 = Math.random().toString(36).substring(2, 15);
+    const voterSalt = Math.random().toString(36).substring(2, 6);
 
     const uniqueBallotId = `vote_${timestamp}_${randomPart1}_${randomPart2}_${voterSalt}`;
 
     const hashData = `${user.studentId}-${user.fullName}-${timestamp}-${randomPart1}-${randomPart2}-${voterSalt}-${Date.now()}-${Math.random()}`;
 
-    const encoder = new TextEncoder();
-    const data = encoder.encode(hashData);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const secureHashedBallotId = `0x${hashArray.map(b => b.toString(16).padStart(2, '0')).join('')}`;
+    let secureHashedBallotId: string;
+
+    try {
+      // Try to use crypto.subtle if available (HTTPS context)
+      if (typeof crypto !== 'undefined' && crypto.subtle) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(hashData);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        secureHashedBallotId = `0x${hashArray.map(b => b.toString(16).padStart(2, '0')).join('')}`;
+      } else {
+        // Fallback to simple hash method
+        let hash = 0;
+        for (let i = 0; i < hashData.length; i++) {
+          const char = hashData.charCodeAt(i);
+          hash = ((hash << 5) - hash) + char;
+          hash = hash & hash; // Convert to 32-bit integer
+        }
+        secureHashedBallotId = `0x${Math.abs(hash).toString(16).padStart(8, '0')}`;
+      }
+    } catch (error) {
+      console.warn('Crypto hash failed, using fallback:', error);
+      // Ultimate fallback
+      const randomBytes = Array.from(crypto.getRandomValues(new Uint8Array(8)));
+      secureHashedBallotId = `0x${randomBytes.map(b => b.toString(16).padStart(2, '0')).join('')}`;
+    }
 
     return {
       ballotId: uniqueBallotId,
@@ -245,7 +260,12 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
           status: 'confirmed',
           voterId: user?.studentId,
           ballotId: hashedBallotId,
-          emptyPositions: emptyPositions
+          emptyPositions: emptyPositions,
+          // Enhanced dual-node information
+          nodesSubmitted: result.nodesSubmitted || 1,
+          totalNodes: result.totalNodes || 1,
+          blockchainResults: result.blockchainResults || [],
+          blockchainStorage: true
         };
 
         return receiptData;

@@ -175,14 +175,6 @@ router.post('/cast-blockchain', async (req, res) => {
       });
     }
 
-    console.log('📥 Received decentralized vote submission:', {
-      voterId,
-      voteCount: votes ? votes.length : 0,
-      timestamp,
-      ballotId: ballotId,
-      emptyPositions: emptyPositions || []
-    });
-
     // Validate votes if they exist (votes can be empty array or null)
     if (votes && Array.isArray(votes)) {
       for (const vote of votes) {
@@ -197,8 +189,6 @@ router.post('/cast-blockchain', async (req, res) => {
     }
 
     // FIXED: Check if blockchain service is properly initialized
-    console.log('🔍 Checking blockchain service status...');
-
     if (!ethereumService || typeof ethereumService.submitVoteToAllNodes !== 'function') {
       console.error('❌ Blockchain service not properly initialized or method not found');
       return res.status(500).json({
@@ -212,10 +202,9 @@ router.post('/cast-blockchain', async (req, res) => {
       blockchainInfo = await ethereumService.getBlockchainInfo();
       console.log('📊 Blockchain Status:', {
         isConnected: blockchainInfo.isConnected,
-        simulationMode: blockchainInfo.simulationMode,
         contractDeployed: blockchainInfo.contractDeployed,
         contractAddress: blockchainInfo.contractAddress,
-        node: blockchainInfo.node,
+        currentNode: blockchainInfo.currentNode,
         blockNumber: blockchainInfo.blockNumber
       });
     } catch (blockchainError) {
@@ -226,7 +215,7 @@ router.post('/cast-blockchain', async (req, res) => {
       });
     }
 
-    if (!blockchainInfo.isConnected && !blockchainInfo.simulationMode) {
+    if (!blockchainInfo.isConnected) {
       console.log('❌ No blockchain nodes connected');
       return res.status(500).json({
         success: false,
@@ -235,20 +224,19 @@ router.post('/cast-blockchain', async (req, res) => {
     }
 
     console.log('✅ Blockchain network status:', {
-      node: blockchainInfo.node,
+      currentNode: blockchainInfo.currentNode,
       blockNumber: blockchainInfo.blockNumber,
-      account: blockchainInfo.accountStatus?.address,
-      balance: blockchainInfo.accountStatus?.balance,
-      simulationMode: blockchainInfo.simulationMode,
+      connectedNodes: blockchainInfo.connectedNodes,
+      totalNodes: blockchainInfo.totalNodes,
       contractDeployed: blockchainInfo.contractDeployed,
       contractAddress: blockchainInfo.contractAddress
     });
 
     // Log blockchain configuration
     if (blockchainInfo.contractDeployed && blockchainInfo.contractAddress) {
-      console.log('🎯 Using REAL blockchain contract at:', blockchainInfo.contractAddress);
+      console.log('🎯 Using blockchain contract at:', blockchainInfo.contractAddress);
     } else {
-      console.log('🔶 Using SIMULATION mode - No contract deployed');
+      console.log('❌ No contract deployed on blockchain nodes');
     }
 
     // Prepare vote data for blockchain
@@ -263,14 +251,9 @@ router.post('/cast-blockchain', async (req, res) => {
         .digest('hex')
     };
 
-    console.log('⛓️ Submitting to decentralized blockchain network...');
-    console.log('📋 Vote data includes:', {
-      totalVotes: votes ? votes.length : 0,
-      emptyPositions: emptyPositions?.length || 0,
-      emptyPositionsList: emptyPositions || []
-    });
-
-    // FIXED: Call the correct method name
+    console.log('⛓️ Submitting to blockchain storage...');
+    
+    // Submit to blockchain nodes
     const blockchainResult = await ethereumService.submitVoteToAllNodes(voteData);
 
     if (!blockchainResult.success) {
@@ -281,25 +264,39 @@ router.post('/cast-blockchain', async (req, res) => {
       });
     }
 
-    console.log('✅ Vote successfully recorded on decentralized blockchain:', {
-      transactionHash: blockchainResult.receipt.transactionHash,
-      blockNumber: blockchainResult.receipt.blockNumber,
-      node: blockchainResult.receipt.node,
-      simulated: blockchainResult.receipt.simulated,
+    console.log('✅ Vote successfully recorded in blockchain storage:', {
+      results: blockchainResult.results,
+      submittedTo: blockchainResult.submittedTo,
+      totalNodes: blockchainResult.totalNodes,
       emptyPositions: emptyPositions?.length || 0
+    });
+
+    // Get the first successful receipt for response
+    const firstReceipt = blockchainResult.results?.find(r => r.success)?.receipt;
+    if (!firstReceipt) {
+      console.error('❌ No successful receipt found in blockchain results');
+      return res.status(500).json({
+        success: false,
+        error: 'No successful transaction receipt available'
+      });
+    }
+
+    console.log('✅ Using receipt from node:', firstReceipt.node, {
+      transactionHash: firstReceipt.transactionHash,
+      blockNumber: firstReceipt.blockNumber
     });
 
     // If we have a real transaction hash, try to get the receipt
     let receiptDetails = null;
-    if (blockchainResult.receipt.transactionHash &&
-      blockchainResult.receipt.transactionHash !== 'unknown' &&
-      !blockchainResult.receipt.simulated) {
+    if (firstReceipt.transactionHash &&
+      firstReceipt.transactionHash !== 'unknown' &&
+      !firstReceipt.simulated) {
       try {
         console.log('📋 Attempting to fetch transaction receipt...');
         const activeNode = await ethereumService.getActiveNode();
         receiptDetails = await waitForTransactionReceipt(
           activeNode.web3,
-          blockchainResult.receipt.transactionHash,
+          firstReceipt.transactionHash,
           {
             maxAttempts: 20,
             timeout: 30000,
@@ -316,40 +313,44 @@ router.post('/cast-blockchain', async (req, res) => {
       }
     }
 
-    await logAuditAction(voterId, 'voter', 'DECENTRALIZED_VOTE_CAST',
-      `Vote cast on decentralized Ethereum blockchain. TX: ${blockchainResult.receipt.transactionHash} (Node: ${blockchainResult.receipt.node}) - Empty positions: ${emptyPositions?.length || 0}`, req);
+    await logAuditAction(voterId, 'voter', 'BLOCKCHAIN_VOTE_CAST',
+      `Vote cast in blockchain storage. TX: ${firstReceipt.transactionHash} (Node: ${firstReceipt.node}) - Empty positions: ${emptyPositions?.length || 0}`, req);
 
-    console.log('🎉 Fully decentralized blockchain vote process completed successfully for voter:', voterId);
+    console.log('🎉 Blockchain vote process completed successfully for voter:', voterId);
 
     const response = serializeBigInt({
       success: true,
       receipt: {
-        ...blockchainResult.receipt,
+        ...firstReceipt,
         receiptDetails: receiptDetails,
         emptyPositions: emptyPositions?.length || 0
       },
-      node: blockchainResult.receipt.node,
-      simulated: blockchainResult.receipt.simulated,
-      message: `Vote successfully recorded ${blockchainResult.receipt.simulated ? 'in simulation mode' : 'on decentralized Ethereum blockchain'} (Node: ${blockchainResult.receipt.node})`,
+      node: firstReceipt.node,
+      simulated: firstReceipt.simulated,
+      message: `Vote successfully recorded in blockchain storage (Node: ${firstReceipt.node})`,
       voteReceipt: {
         ballotId: voteData.ballotId,
-        transactionHash: blockchainResult.receipt.transactionHash,
-        blockNumber: blockchainResult.receipt.blockNumber,
+        transactionHash: firstReceipt.transactionHash,
+        blockNumber: firstReceipt.blockNumber,
         timestamp: voteData.timestamp,
         voterHash: voteData.voterHash,
         emptyPositions: emptyPositions?.length || 0,
         receiptConfirmed: !!receiptDetails
-      }
+      },
+      // Enhanced dual-node information
+      nodesSubmitted: blockchainResult.submittedTo,
+      totalNodes: blockchainResult.totalNodes,
+      blockchainResults: blockchainResult.results
     });
 
     res.json(response);
 
   } catch (error) {
-    console.error('❌ Decentralized blockchain vote submission error:', error);
+    console.error('❌ Blockchain vote submission error:', error);
 
     res.status(500).json({
       success: false,
-      error: 'Failed to submit vote to decentralized blockchain network: ' + error.message
+      error: 'Failed to submit vote to blockchain storage: ' + error.message
     });
   }
 });
@@ -362,7 +363,7 @@ router.get('/transaction-receipt/:txHash', async (req, res) => {
 
     const blockchainInfo = await ethereumService.getBlockchainInfo();
 
-    if (!blockchainInfo.isConnected && !blockchainInfo.simulationMode) {
+    if (!blockchainInfo.isConnected) {
       return res.status(500).json({
         success: false,
         error: 'Blockchain network unavailable'
@@ -505,9 +506,8 @@ router.get('/verify-vote-with-receipt/:ballotId', async (req, res) => {
       receipt: receiptDetails,
       blockchainInfo: {
         connected: blockchainInfo.isConnected,
-        simulationMode: blockchainInfo.simulationMode,
         blockNumber: blockchainInfo.blockNumber,
-        node: blockchainInfo.node
+        currentNode: blockchainInfo.currentNode
       }
     };
 
@@ -550,7 +550,7 @@ router.get('/enhanced-blockchain-status', async (req, res) => {
     };
 
     // Test with a simple transaction if possible
-    if (blockchainInfo.isConnected && !blockchainInfo.simulationMode) {
+    if (blockchainInfo.isConnected) {
       try {
         const activeNode = await ethereumService.getActiveNode();
 
@@ -617,7 +617,6 @@ router.get('/enhanced-blockchain-status', async (req, res) => {
       success: false,
       error: 'Failed to get enhanced blockchain status: ' + error.message,
       isConnected: false,
-      simulationMode: true,
       receiptSupport: false
     });
   }
@@ -688,7 +687,7 @@ router.get('/results', async (req, res) => {
         hasResults: !!blockchainResults.results
       });
     } catch (error) {
-      console.log('⚠️ Blockchain results failed, using simulation:', error.message);
+      console.log('⚠️ Blockchain results failed, using fallback:', error.message);
       blockchainResults = {
         totalVotes: 0,
         voteData: [],

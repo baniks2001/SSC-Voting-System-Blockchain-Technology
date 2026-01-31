@@ -41,23 +41,12 @@ class MultiNodeEthereumService {
         }));
 
         this.simulationMode = false;
-        this.voteStorage = new Map();
         this.initialized = false;
         this.initializing = false;
         this.maxFailures = 3;
         this.currentPrimaryNode = 'node1';
         this.syncInterval = null;
         this.contractABI = null;
-
-        // Enhanced Emergency Storage with backup files
-        this.emergencyStoragePath = path.join(__dirname, '../data/emergency_storage.json');
-        this.emergencyBackupPath = path.join(__dirname, '../data/emergency_backup.json');
-        this.emergencyEncryptionKey = process.env.EMERGENCY_STORAGE_KEY || 'default-emergency-key-2024';
-        this.ensureEmergencyStorage();
-
-        this.emergencyMode = false;
-        this.emergencyModeStart = null;
-        this.pendingSyncVotes = new Map();
 
         // Enhanced sync tracking
         this.syncHistory = [];
@@ -81,444 +70,6 @@ class MultiNodeEthereumService {
         };
 
         this.loadContractABI();
-    }
-
-    ensureEmergencyStorage() {
-        const dir = path.dirname(this.emergencyStoragePath);
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        if (!fs.existsSync(this.emergencyStoragePath)) {
-            const initialData = this.createEmergencyStorageData();
-            this.saveEmergencyStorage(initialData);
-        }
-        // Ensure backup directory exists
-        const backupDir = path.dirname(this.emergencyBackupPath);
-        if (!fs.existsSync(backupDir)) {
-            fs.mkdirSync(backupDir, { recursive: true });
-        }
-    }
-
-    createEmergencyStorageData() {
-        return {
-            votes: [],
-            metadata: {
-                createdAt: new Date().toISOString(),
-                lastUpdated: new Date().toISOString(),
-                totalVotes: 0,
-                electionState: this.electionState,
-                dataHash: this.generateDataHash([]),
-                version: '2.0'
-            }
-        };
-    }
-
-    generateDataHash(votes) {
-        const dataString = JSON.stringify(votes) + this.emergencyEncryptionKey;
-        return crypto.createHash('sha256').update(dataString).digest('hex');
-    }
-
-    verifyDataIntegrity(data) {
-        if (!data.metadata || !data.metadata.dataHash) {
-            console.log('⚠️ No data hash found, regenerating...');
-            data.metadata.dataHash = this.generateDataHash(data.votes);
-            return true;
-        }
-
-        const currentHash = this.generateDataHash(data.votes);
-        if (data.metadata.dataHash !== currentHash) {
-            console.error('❌ DATA TAMPERING DETECTED! Hash mismatch');
-            return false;
-        }
-
-        return true;
-    }
-
-    encryptEmergencyData(data) {
-        try {
-            const algorithm = 'aes-256-gcm';
-            const key = crypto.scryptSync(this.emergencyEncryptionKey, 'salt', 32);
-            const iv = crypto.randomBytes(16);
-            const cipher = crypto.createCipher(algorithm, key);
-            
-            let encrypted = cipher.update(JSON.stringify(data), 'utf8', 'hex');
-            encrypted += cipher.final('hex');
-            
-            const authTag = cipher.getAuthTag();
-            
-            return {
-                iv: iv.toString('hex'),
-                data: encrypted,
-                authTag: authTag.toString('hex'),
-                timestamp: new Date().toISOString(),
-                version: '2.0',
-                encrypted: true
-            };
-        } catch (error) {
-            console.error('Emergency encryption error:', error);
-            // Enhanced fallback with better security
-            const dataString = JSON.stringify(data);
-            const salt = crypto.randomBytes(16);
-            const derivedKey = crypto.scryptSync(this.emergencyEncryptionKey, salt, 32);
-            const iv2 = crypto.randomBytes(16);
-            const cipher2 = crypto.createCipheriv('aes-256-cbc', derivedKey, iv2);
-            let encrypted2 = cipher2.update(dataString, 'utf8', 'hex');
-            encrypted2 += cipher2.final('hex');
-            
-            return {
-                iv: salt.toString('hex') + iv2.toString('hex'),
-                data: encrypted2,
-                authTag: crypto.createHash('sha256').update(encrypted2 + this.emergencyEncryptionKey).digest('hex'),
-                timestamp: new Date().toISOString(),
-                version: '2.0_fallback',
-                encrypted: true
-            };
-        }
-    }
-
-    decryptEmergencyData(encryptedData) {
-        try {
-            if (!encryptedData.encrypted) {
-                console.log('⚠️ Data not encrypted, using as-is');
-                return encryptedData;
-            }
-
-            if (encryptedData.version === '2.0_fallback') {
-                // Handle fallback encryption
-                const combinedIv = encryptedData.iv;
-                const salt = Buffer.from(combinedIv.substring(0, 32), 'hex');
-                const iv = Buffer.from(combinedIv.substring(32), 'hex');
-                const derivedKey = crypto.scryptSync(this.emergencyEncryptionKey, salt, 32);
-                
-                const decipher = crypto.createDecipheriv('aes-256-cbc', derivedKey, iv);
-                let decrypted = decipher.update(encryptedData.data, 'hex', 'utf8');
-                decrypted += decipher.final('utf8');
-                
-                // Verify integrity
-                const expectedHash = crypto.createHash('sha256').update(encryptedData.data + this.emergencyEncryptionKey).digest('hex');
-                if (expectedHash !== encryptedData.authTag) {
-                    throw new Error('Fallback data integrity check failed');
-                }
-                
-                return JSON.parse(decrypted);
-            }
-
-            const algorithm = 'aes-256-gcm';
-            const key = crypto.scryptSync(this.emergencyEncryptionKey, 'salt', 32);
-            const iv = Buffer.from(encryptedData.iv, 'hex');
-            const decipher = crypto.createDecipheriv(algorithm, key, iv);
-            
-            decipher.setAuthTag(Buffer.from(encryptedData.authTag, 'hex'));
-            
-            let decrypted = decipher.update(encryptedData.data, 'hex', 'utf8');
-            decrypted += decipher.final('utf8');
-            
-            return JSON.parse(decrypted);
-        } catch (error) {
-            console.error('Emergency decryption error:', error);
-            
-            // Try to load from backup if main file is corrupted
-            try {
-                console.log('🔄 Attempting to load from backup file...');
-                if (fs.existsSync(this.emergencyBackupPath)) {
-                    const backupData = fs.readFileSync(this.emergencyBackupPath, 'utf8');
-                    const backupEncrypted = JSON.parse(backupData);
-                    return this.decryptEmergencyData(backupEncrypted);
-                }
-            } catch (backupError) {
-                console.error('❌ Backup file also corrupted:', backupError);
-            }
-            
-            return this.createEmergencyStorageData();
-        }
-    }
-
-    saveEmergencyStorage(data) {
-        try {
-            // Verify data integrity before saving
-            if (!this.verifyDataIntegrity(data)) {
-                throw new Error('Data integrity verification failed');
-            }
-
-            const encryptedData = this.encryptEmergencyData(data);
-            
-            // Create backup first
-            if (fs.existsSync(this.emergencyStoragePath)) {
-                const currentData = fs.readFileSync(this.emergencyStoragePath, 'utf8');
-                fs.writeFileSync(this.emergencyBackupPath, currentData);
-            }
-            
-            // Save main file
-            fs.writeFileSync(this.emergencyStoragePath, JSON.stringify(encryptedData, null, 2));
-            
-            console.log(`💾 Emergency storage saved with backup (Total votes: ${data.votes.length})`);
-            return true;
-        } catch (error) {
-            console.error('Error saving emergency storage:', error);
-            return false;
-        }
-    }
-
-    loadEmergencyStorage() {
-        try {
-            if (!fs.existsSync(this.emergencyStoragePath)) {
-                return this.createEmergencyStorageData();
-            }
-            
-            const fileData = fs.readFileSync(this.emergencyStoragePath, 'utf8');
-            const encryptedData = JSON.parse(fileData);
-            const data = this.decryptEmergencyData(encryptedData);
-            
-            // Verify data integrity after loading
-            if (!this.verifyDataIntegrity(data)) {
-                console.log('🔄 Regenerating data hash due to integrity issues');
-                data.metadata.dataHash = this.generateDataHash(data.votes);
-                this.saveEmergencyStorage(data);
-            }
-            
-            return data;
-        } catch (error) {
-            console.error('Error loading emergency storage:', error);
-            return this.createEmergencyStorageData();
-        }
-    }
-
-    async saveVoteToEmergencyStorage(voteData) {
-        try {
-            const currentData = this.loadEmergencyStorage();
-            
-            // Check if vote already exists
-            const existingVoteIndex = currentData.votes.findIndex(v => 
-                v.ballotId === voteData.ballotId || v.voterId === voteData.voterId
-            );
-            
-            if (existingVoteIndex !== -1) {
-                // Update existing vote
-                currentData.votes[existingVoteIndex] = {
-                    ...voteData,
-                    updatedAt: new Date().toISOString(),
-                    source: 'emergency_updated',
-                    syncStatus: 'pending'
-                };
-            } else {
-                // Add new vote
-                currentData.votes.push({
-                    ...voteData,
-                    storedAt: new Date().toISOString(),
-                    source: 'emergency',
-                    syncStatus: 'pending'
-                });
-            }
-            
-            // Update metadata
-            currentData.metadata.lastUpdated = new Date().toISOString();
-            currentData.metadata.totalVotes = currentData.votes.length;
-            currentData.metadata.electionState = this.electionState;
-            currentData.metadata.dataHash = this.generateDataHash(currentData.votes);
-            
-            const saveResult = this.saveEmergencyStorage(currentData);
-            
-            if (saveResult) {
-                console.log(`💾 Emergency storage: Vote saved (Total: ${currentData.votes.length})`);
-                
-                // Update in-memory storage for consistency
-                this.voteStorage.set(voteData.ballotId, {
-                    ...voteData,
-                    source: 'emergency',
-                    storedAt: new Date().toISOString(),
-                    syncStatus: 'pending'
-                });
-
-                // Update last data timestamp
-                this.electionState.lastDataTimestamp = new Date().toISOString();
-                
-                // Trigger immediate sync attempt
-                this.triggerImmediateSync();
-            }
-            
-            return saveResult;
-        } catch (error) {
-            console.error('Error saving vote to emergency storage:', error);
-            return false;
-        }
-    }
-
-    async syncEmergencyToNodes() {
-        if (!this.shouldAllowSync()) {
-            console.log('🚫 Emergency to nodes sync skipped - election state does not allow sync');
-            return 0;
-        }
-
-        const connectedNodes = this.nodes.filter(node =>
-            node.isConnected && node.contract && node.syncStatus === 'synced'
-        );
-
-        if (connectedNodes.length === 0) {
-            console.log('⚠️ No connected nodes available for emergency sync');
-            return 0;
-        }
-
-        const emergencyData = this.loadEmergencyStorage();
-        const pendingVotes = emergencyData.votes.filter(vote => 
-            vote.syncStatus === 'pending' || vote.source === 'emergency' || vote.source === 'emergency_updated'
-        );
-
-        if (pendingVotes.length === 0) {
-            console.log('ℹ️ No pending emergency votes to sync to nodes');
-            return 0;
-        }
-
-        console.log(`🔄 Syncing ${pendingVotes.length} pending emergency votes to ${connectedNodes.length} nodes...`);
-
-        let totalSynced = 0;
-        let totalErrors = 0;
-
-        for (const voteData of pendingVotes) {
-            let voteSynced = false;
-
-            for (const node of connectedNodes) {
-                try {
-                    const voteExists = await node.contract.methods.voteExists(voteData.ballotId).call();
-
-                    if (!voteExists) {
-                        const votesString = JSON.stringify(voteData.votes);
-                        await node.contract.methods.submitVote(
-                            voteData.voterId,
-                            voteData.ballotId,
-                            votesString,
-                            Math.floor(voteData.timestamp / 1000),
-                            voteData.voterHash
-                        ).send({
-                            from: node.discoveredAccount,
-                            gas: 200000
-                        });
-
-                        console.log(`✅ Synced emergency vote ${voteData.ballotId} to ${node.name}`);
-                        voteSynced = true;
-                        
-                        // Update emergency storage to mark as synced
-                        const currentData = this.loadEmergencyStorage();
-                        const voteIndex = currentData.votes.findIndex(v => v.ballotId === voteData.ballotId);
-                        if (voteIndex !== -1) {
-                            currentData.votes[voteIndex] = {
-                                ...currentData.votes[voteIndex],
-                                source: 'blockchain_synced',
-                                syncStatus: 'synced',
-                                syncedAt: new Date().toISOString(),
-                                syncedTo: node.name
-                            };
-                            this.saveEmergencyStorage(currentData);
-                        }
-                    } else {
-                        console.log(`ℹ️ Vote ${voteData.ballotId} already exists on ${node.name}`);
-                        voteSynced = true;
-                    }
-                } catch (error) {
-                    if (!error.message.includes('already voted') &&
-                        !error.message.includes('vote already exists')) {
-                        console.log(`⚠️ Failed to sync emergency vote ${voteData.ballotId} to ${node.name}:`, error.message);
-                    } else {
-                        voteSynced = true;
-                    }
-                }
-            }
-
-            if (voteSynced) {
-                totalSynced++;
-            } else {
-                totalErrors++;
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-
-        // Record sync history
-        this.recordSyncHistory('emergency_to_nodes', totalSynced, totalErrors);
-
-        console.log(`✅ Emergency to nodes sync completed: ${totalSynced} votes synced, ${totalErrors} errors`);
-        return totalSynced;
-    }
-
-    async syncNodesToEmergency() {
-        if (!this.shouldAllowSync()) {
-            console.log('🚫 Nodes to emergency sync skipped - election state does not allow sync');
-            return 0;
-        }
-
-        const connectedNodes = this.nodes.filter(node =>
-            node.isConnected && node.contract && node.syncStatus === 'synced'
-        );
-
-        if (connectedNodes.length === 0) {
-            return 0;
-        }
-
-        try {
-            const node = connectedNodes[0];
-            console.log('🔄 Syncing blockchain data to emergency storage...');
-
-            const allVotesData = await node.contract.methods.getAllVotes().call();
-            const ballotIds = allVotesData[0];
-
-            console.log(`📥 Found ${ballotIds.length} votes on blockchain, syncing to emergency storage...`);
-
-            let syncedCount = 0;
-            const emergencyData = this.loadEmergencyStorage();
-
-            for (let i = 0; i < ballotIds.length; i++) {
-                try {
-                    const ballotId = ballotIds[i];
-                    
-                    // Check if vote already exists in emergency storage
-                    const existingVoteIndex = emergencyData.votes.findIndex(v => v.ballotId === ballotId);
-                    
-                    if (existingVoteIndex === -1) {
-                        const voteDetails = await node.contract.methods.getVote(ballotId).call();
-
-                        let votesArray = [];
-                        try {
-                            votesArray = JSON.parse(voteDetails[2]);
-                        } catch (parseError) {
-                            console.log(`⚠️ Could not parse votes for ballot ${ballotId}`);
-                            continue;
-                        }
-
-                        const blockchainVote = {
-                            voterId: voteDetails[0],
-                            ballotId: voteDetails[1],
-                            votes: votesArray,
-                            timestamp: parseInt(voteDetails[3]) * 1000,
-                            voterHash: voteDetails[4],
-                            transactionHash: `blockchain_${ballotId}`,
-                            blockNumber: 0,
-                            node: node.name,
-                            source: 'blockchain_backup',
-                            syncStatus: 'synced',
-                            backedUpAt: new Date().toISOString()
-                        };
-
-                        emergencyData.votes.push(blockchainVote);
-                        syncedCount++;
-                    }
-                } catch (voteError) {
-                    console.log(`⚠️ Error processing blockchain vote ${i}:`, voteError.message);
-                }
-            }
-
-            if (syncedCount > 0) {
-                emergencyData.metadata.lastUpdated = new Date().toISOString();
-                emergencyData.metadata.totalVotes = emergencyData.votes.length;
-                emergencyData.metadata.dataHash = this.generateDataHash(emergencyData.votes);
-                this.saveEmergencyStorage(emergencyData);
-                console.log(`💾 Emergency storage sync complete: ${syncedCount} added, total: ${emergencyData.votes.length}`);
-            }
-
-            return syncedCount;
-
-        } catch (error) {
-            console.log('❌ Blockchain to emergency storage sync failed:', error.message);
-            return 0;
-        }
     }
 
     loadContractABI() {
@@ -597,157 +148,27 @@ class MultiNodeEthereumService {
         ];
     }
 
-    checkEmergencyMode() {
-        const connectedNodes = this.nodes.filter(node => node.isConnected);
-        const wasInEmergency = this.emergencyMode;
-        
-        // Check if node1 and node2 are down
-        const node1Down = !this.nodes.find(n => n.name === 'node1')?.isConnected;
-        const node2Down = !this.nodes.find(n => n.name === 'node2')?.isConnected;
-        
-        this.emergencyMode = node1Down && node2Down;
-
-        if (this.emergencyMode && !wasInEmergency) {
-            this.emergencyModeStart = new Date();
-            console.log('🚨 ENTERING EMERGENCY MODE - Both nodes down, using emergency storage');
-            
-            // Pause the poll if both nodes are down
-            if (this.electionState.status === 'voting') {
-                this.updateElectionState({
-                    status: 'paused',
-                    pauseTime: new Date().toISOString()
-                });
-                console.log('⏸️ Poll automatically paused because both nodes are down');
-            }
-
-        } else if (!this.emergencyMode && wasInEmergency) {
-            console.log('✅ EXITING EMERGENCY MODE - Nodes recovered');
-            
-            if (this.shouldAllowSync()) {
-                // Trigger immediate sync when exiting emergency mode
-                this.triggerImmediateSync();
-            } else {
-                console.log('🚫 Syncing disabled - election state does not allow sync');
-            }
-        }
-
-        return this.emergencyMode;
-    }
-
     triggerImmediateSync() {
         console.log('🚀 Triggering immediate sync...');
-        this.syncEmergencyToNodes().catch(error => {
-            console.log('⚠️ Immediate sync failed:', error.message);
-        });
+        // Immediate sync functionality will be handled by regular sync process
     }
 
     shouldAllowSync() {
-        // Allow sync during voting or paused states
-        // But if paused and no data received since pause, don't allow sync
-        if (this.electionState.status === 'voting') {
+        // Always allow sync during voting and paused states to ensure data consistency
+        if (this.electionState.status === 'voting' || this.electionState.status === 'paused') {
+            console.log(`✅ Sync allowed - election state: ${this.electionState.status}`);
             return true;
-        } else if (this.electionState.status === 'paused') {
-            // Check if we have received data since pause
-            if (this.electionState.pauseTime && this.electionState.lastDataTimestamp) {
-                const pauseTime = new Date(this.electionState.pauseTime).getTime();
-                const lastDataTime = new Date(this.electionState.lastDataTimestamp).getTime();
-                
-                // If no data received since pause, don't allow sync
-                if (lastDataTime <= pauseTime) {
-                    this.noDataSincePause = true;
-                    console.log('🚫 No data received since pause, sync not allowed');
-                    return false;
-                }
-            }
-            return true;
-        }
-        return false;
-    }
-
-    async syncEmergencyVotesToNodes() {
-        if (!this.shouldAllowSync()) {
-            console.log('🚫 Syncing disabled - election state does not allow sync');
-            return 0;
-        }
-
-        if (this.voteStorage.size === 0) {
-            console.log('ℹ️ No emergency votes to sync');
-            return 0;
-        }
-
-        const connectedNodes = this.nodes.filter(node =>
-            node.isConnected && node.contract && node.syncStatus === 'synced'
-        );
-
-        if (connectedNodes.length === 0) {
-            console.log('⚠️ No connected nodes available for emergency sync');
-            return 0;
-        }
-
-        console.log(`🔄 Syncing ${this.voteStorage.size} emergency votes to ${connectedNodes.length} recovered nodes...`);
-
-        let totalSynced = 0;
-        let totalErrors = 0;
-
-        for (const [ballotId, voteData] of this.voteStorage) {
-            if (voteData.source === 'emergency') {
-                let voteSynced = false;
-
-                for (const node of connectedNodes) {
-                    try {
-                        const voteExists = await node.contract.methods.voteExists(ballotId).call();
-
-                        if (!voteExists) {
-                            const votesString = JSON.stringify(voteData.votes);
-                            await node.contract.methods.submitVote(
-                                voteData.voterId,
-                                voteData.ballotId,
-                                votesString,
-                                Math.floor(voteData.timestamp / 1000),
-                                voteData.voterHash
-                            ).send({
-                                from: node.discoveredAccount,
-                                gas: 200000
-                            });
-
-                            console.log(`✅ Synced emergency vote ${ballotId} to ${node.name}`);
-                            voteSynced = true;
-                        } else {
-                            console.log(`ℹ️ Vote ${ballotId} already exists on ${node.name}`);
-                            voteSynced = true;
-                        }
-                    } catch (error) {
-                        if (!error.message.includes('already voted') &&
-                            !error.message.includes('vote already exists')) {
-                            console.log(`⚠️ Failed to sync emergency vote ${ballotId} to ${node.name}:`, error.message);
-                        } else {
-                            voteSynced = true;
-                        }
-                    }
-                }
-
-                if (voteSynced) {
-                    totalSynced++;
-                    voteData.source = 'blockchain';
-                    voteData.emergencySynced = true;
-                    voteData.syncTime = new Date().toISOString();
-                    
-                    await this.saveVoteToEmergencyStorage(voteData);
-                } else {
-                    totalErrors++;
-                }
-
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-        }
-
-        console.log(`✅ Emergency sync completed: ${totalSynced} votes synced, ${totalErrors} errors`);
-
-        if (totalSynced > 0) {
-            console.log('🎉 All emergency votes have been successfully synced to recovered nodes!');
         }
         
-        return totalSynced;
+        // Allow sync during not_started to ensure nodes are synchronized before voting begins
+        if (this.electionState.status === 'not_started') {
+            console.log('✅ Sync allowed - election state: not_started (preparing nodes)');
+            return true;
+        }
+        
+        // Don't allow sync during finished state
+        console.log(`🚫 Sync not allowed - election state: ${this.electionState.status}`);
+        return false;
     }
 
     async init() {
@@ -755,7 +176,7 @@ class MultiNodeEthereumService {
         this.initializing = true;
 
         try {
-            console.log('🔧 Initializing robust dual-node service with enhanced emergency storage...');
+            console.log('🔧 Initializing robust dual-node service...');
 
             const contractAddress = process.env.VOTING_CONTRACT_ADDRESS;
             const node1ContractAddress = process.env.NODE1_CONTRACT_ADDRESS;
@@ -793,25 +214,10 @@ class MultiNodeEthereumService {
                 }
             }
 
-            this.checkEmergencyMode();
-
-            if (this.emergencyMode) {
-                console.log('🚨 SYSTEM IN EMERGENCY MODE - Both nodes unavailable');
-                
-                // Load emergency storage into memory
-                const emergencyData = this.loadEmergencyStorage();
-                emergencyData.votes.forEach(vote => {
-                    this.voteStorage.set(vote.ballotId, vote);
-                });
-                console.log(`📊 Emergency storage loaded: ${emergencyData.votes.length} votes`);
-            } else {
-                console.log('✅ Normal operation - Nodes available');
-            }
-
             await this.loadContractOnAllNodes();
             await this.startAutoSync();
             this.initialized = true;
-            console.log('✅ Enhanced blockchain service ready with emergency storage and auto-sync');
+            console.log('✅ Enhanced blockchain service ready with auto-sync');
 
         } catch (error) {
             console.error('❌ Service init failed:', error);
@@ -822,7 +228,7 @@ class MultiNodeEthereumService {
     }
 
     async startAutoSync() {
-        console.log('🔄 Starting enhanced auto-sync with emergency storage...');
+        console.log('🔄 Starting enhanced auto-sync with Node1-Node2 detection...');
         
         // Clear any existing interval
         if (this.syncInterval) {
@@ -832,45 +238,62 @@ class MultiNodeEthereumService {
         this.syncInterval = setInterval(async () => {
             try {
                 await this.checkNodeHealth();
-                const inEmergency = this.checkEmergencyMode();
 
                 // Update node data timestamps
                 this.updateNodeDataTimestamps();
 
-                if (!inEmergency) {
-                    if (this.shouldAllowSync()) {
-                        // Check if all data is already updated
-                        if (await this.isAllDataUpdated()) {
-                            console.log('✅ All data is updated, skipping auto-sync');
-                            this.syncDataUpdated = true;
-                            
-                            // Stop auto-sync if all data is updated
+                if (this.shouldAllowSync()) {
+                    // Enhanced Node1-Node2 AutoSync Detection
+                    const autoSyncResult = await this.performNode1Node2AutoSync();
+                    
+                    if (autoSyncResult.synced) {
+                        console.log(`✅ AutoSync detected and synced ${autoSyncResult.votesSynced} votes from ${autoSyncResult.sourceNode} to ${autoSyncResult.targetNodes.join(', ')}`);
+                    }
+                    
+                    // Only check if all data is updated if we're in a stable state
+                    // Don't stop auto-sync just because data appears synchronized - keep monitoring
+                    if (await this.isAllDataUpdated()) {
+                        console.log('✅ All data is currently synchronized, continuing to monitor for changes');
+                        this.syncDataUpdated = true;
+                        
+                        // Don't stop auto-sync - keep monitoring for new votes
+                        // Only stop if election is finished
+                        if (this.electionState.status === 'finished') {
+                            console.log('🛑 Election finished, stopping auto-sync');
                             if (this.autoSyncEnabled) {
-                                console.log('🛑 Stopping auto-sync as all data is updated');
                                 clearInterval(this.syncInterval);
                                 this.syncInterval = null;
                                 this.autoSyncEnabled = false;
                             }
                             return;
                         }
-                        
-                        this.syncDataUpdated = false;
-                        
-                        // Perform sync operations
-                        const nodeSyncResult = await this.syncAllNodes();
-                        const emergencySyncResult = await this.syncBlockchainToEmergencyStorage();
-                        const emergencyToNodesResult = await this.syncEmergencyToNodes();
-                        
-                        // If no sync happened, check if we should stop auto-sync
-                        if (nodeSyncResult === 0 && emergencySyncResult === 0 && emergencyToNodesResult === 0) {
-                            console.log('ℹ️ No sync operations performed, data appears to be in sync');
-                        }
-                        
-                    } else {
-                        console.log('🚫 Auto-sync skipped - election state does not allow sync');
                     }
+                    
+                    this.syncDataUpdated = false;
+                    
+                    // Perform regular sync operations if auto-sync didn't handle everything
+                    if (!autoSyncResult.synced || autoSyncResult.votesSynced === 0) {
+                        const nodeSyncResult = await this.syncAllNodes();
+                        
+                        // If no sync happened, just log it - don't stop auto-sync
+                        if (nodeSyncResult === 0) {
+                            console.log('ℹ️ No sync operations performed, nodes appear to be in sync');
+                        }
+                    }
+                    
                 } else {
-                    console.log('🚨 In emergency mode - skipping blockchain sync');
+                    console.log('🚫 Auto-sync skipped - election state does not allow sync');
+                    
+                    // Stop auto-sync if election is finished
+                    if (this.electionState.status === 'finished') {
+                        console.log('🛑 Election finished, stopping auto-sync');
+                        if (this.autoSyncEnabled) {
+                            clearInterval(this.syncInterval);
+                            this.syncInterval = null;
+                            this.autoSyncEnabled = false;
+                        }
+                        return;
+                    }
                 }
 
                 await this.checkAndRecoverFailedNodes();
@@ -886,14 +309,15 @@ class MultiNodeEthereumService {
         }, 10000); // Sync every 10 seconds
     }
 
-    // Check if all data is updated across all nodes and emergency storage
+    // Check if all data is updated across all nodes
     async isAllDataUpdated() {
         try {
             const connectedNodes = this.nodes.filter(node => 
                 node.isConnected && node.contract && node.syncStatus === 'synced'
             );
             
-            if (connectedNodes.length === 0) {
+            if (connectedNodes.length < 2) {
+                console.log(`⚠️ Need at least 2 synced nodes for data consistency check, have: ${connectedNodes.length}`);
                 return false;
             }
             
@@ -904,27 +328,23 @@ class MultiNodeEthereumService {
                     const voteCount = await node.contract.methods.getTotalVotes().call();
                     nodeVoteCounts.push(parseInt(voteCount));
                     node.lastDataReceived = new Date().toISOString();
+                    console.log(`📊 ${node.name} vote count: ${voteCount}`);
                 } catch (error) {
                     console.log(`⚠️ Failed to get vote count from ${node.name}:`, error.message);
                     return false;
                 }
             }
             
-            // Get vote count from emergency storage
-            const emergencyData = this.loadEmergencyStorage();
-            const emergencyVoteCount = emergencyData.metadata.totalVotes;
-            
             // Check if all vote counts are the same
-            const allCountsSame = nodeVoteCounts.every(count => count === emergencyVoteCount);
+            const allCountsSame = nodeVoteCounts.every(count => count === nodeVoteCounts[0]);
             
-            // Also check if there are any pending sync votes
-            const pendingVotes = emergencyData.votes.filter(vote => 
-                vote.syncStatus === 'pending' || vote.source === 'emergency'
-            );
+            if (allCountsSame) {
+                console.log(`✅ All nodes synchronized with ${nodeVoteCounts[0]} votes each`);
+            } else {
+                console.log(`⚠️ Nodes out of sync: ${nodeVoteCounts.join(', ')}`);
+            }
             
-            const noPendingVotes = pendingVotes.length === 0;
-            
-            return allCountsSame && noPendingVotes;
+            return allCountsSame;
             
         } catch (error) {
             console.log('⚠️ Error checking if all data is updated:', error.message);
@@ -954,7 +374,6 @@ class MultiNodeEthereumService {
             timestamp: new Date().toISOString(),
             synced,
             errors,
-            emergencyMode: this.emergencyMode,
             connectedNodes: this.nodes.filter(n => n.isConnected).length
         };
         
@@ -967,87 +386,6 @@ class MultiNodeEthereumService {
         
         if (synced > 0) {
             this.lastSuccessfulSync = new Date().toISOString();
-        }
-    }
-
-    async syncBlockchainToEmergencyStorage() {
-        if (!this.shouldAllowSync()) {
-            console.log('🚫 Blockchain to emergency storage sync skipped - election state does not allow sync');
-            return 0;
-        }
-
-        const connectedNodes = this.nodes.filter(node =>
-            node.isConnected && node.contract && node.syncStatus === 'synced'
-        );
-
-        if (connectedNodes.length === 0) {
-            return 0;
-        }
-
-        try {
-            const node = connectedNodes[0];
-            console.log('🔄 Syncing blockchain data to emergency storage...');
-
-            const allVotesData = await node.contract.methods.getAllVotes().call();
-            const ballotIds = allVotesData[0];
-
-            console.log(`📥 Found ${ballotIds.length} votes on blockchain, syncing to emergency storage...`);
-
-            let syncedCount = 0;
-            const emergencyData = this.loadEmergencyStorage();
-
-            for (let i = 0; i < ballotIds.length; i++) {
-                try {
-                    const ballotId = ballotIds[i];
-                    
-                    const existingVoteIndex = emergencyData.votes.findIndex(v => v.ballotId === ballotId);
-                    
-                    if (existingVoteIndex === -1) {
-                        const voteDetails = await node.contract.methods.getVote(ballotId).call();
-
-                        let votesArray = [];
-                        try {
-                            votesArray = JSON.parse(voteDetails[2]);
-                        } catch (parseError) {
-                            console.log(`⚠️ Could not parse votes for ballot ${ballotId}`);
-                            continue;
-                        }
-
-                        const blockchainVote = {
-                            voterId: voteDetails[0],
-                            ballotId: voteDetails[1],
-                            votes: votesArray,
-                            timestamp: parseInt(voteDetails[3]) * 1000,
-                            voterHash: voteDetails[4],
-                            transactionHash: `blockchain_${ballotId}`,
-                            blockNumber: 0,
-                            node: node.name,
-                            source: 'blockchain_backup',
-                            syncStatus: 'synced',
-                            backedUpAt: new Date().toISOString()
-                        };
-
-                        emergencyData.votes.push(blockchainVote);
-                        syncedCount++;
-                    }
-                } catch (voteError) {
-                    console.log(`⚠️ Error processing blockchain vote ${i}:`, voteError.message);
-                }
-            }
-
-            if (syncedCount > 0) {
-                emergencyData.metadata.lastUpdated = new Date().toISOString();
-                emergencyData.metadata.totalVotes = emergencyData.votes.length;
-                emergencyData.metadata.dataHash = this.generateDataHash(emergencyData.votes);
-                this.saveEmergencyStorage(emergencyData);
-                console.log(`💾 Emergency storage sync complete: ${syncedCount} added, total: ${emergencyData.votes.length}`);
-            }
-
-            return syncedCount;
-
-        } catch (error) {
-            console.log('❌ Blockchain to emergency storage sync failed:', error.message);
-            return 0;
         }
     }
 
@@ -1093,14 +431,13 @@ class MultiNodeEthereumService {
             }
         }
 
-        console.log(`📊 Node health: ${connectedCount}/2 connected, Emergency Mode: ${this.emergencyMode ? 'ACTIVE' : 'INACTIVE'}`);
+        console.log(`📊 Node health: ${connectedCount}/2 connected`);
     }
 
     async testNodeConnection(node) {
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 console.log(`⏰ ${node.name} connection timeout`);
-                setTimeout(() => this.checkEmergencyMode(), 100);
                 resolve(false);
             }, 5000);
 
@@ -1108,13 +445,11 @@ class MultiNodeEthereumService {
                 .then(isListening => {
                     clearTimeout(timeout);
                     console.log(`📡 ${node.name} connection: ${isListening ? '✅' : '❌'}`);
-                    setTimeout(() => this.checkEmergencyMode(), 100);
                     resolve(isListening);
                 })
                 .catch(error => {
                     clearTimeout(timeout);
                     console.log(`❌ ${node.name} connection error: ${error.message}`);
-                    setTimeout(() => this.checkEmergencyMode(), 100);
                     resolve(false);
                 });
         });
@@ -1152,43 +487,42 @@ class MultiNodeEthereumService {
             return anyConnectedNode;
         }
 
-        console.log('🔶 No nodes available, using emergency storage mode');
-        return {
-            ...this.nodes[0],
-            web3: new Web3(),
-            isConnected: false,
-            name: 'emergency_storage',
-            simulationMode: true
-        };
+        console.log('🔶 No nodes available');
+        throw new Error('No blockchain nodes available');
     }
 
     async submitVoteToAllNodes(voteData) {
         await this.ensureInitialized();
 
-        console.log('🔄 Enhanced vote submission with emergency mode support...');
+        console.log('🔄 Enhanced vote submission to both node1 and node2...');
 
-        const inEmergency = this.checkEmergencyMode();
-
-        if (inEmergency) {
-            console.log('🚨 EMERGENCY MODE: Storing vote in emergency storage only');
-            return await this.submitVoteToEmergencyStorage(voteData);
+        // Get both node1 and node2 specifically
+        const node1 = this.nodes.find(node => node.name === 'node1');
+        const node2 = this.nodes.find(node => node.name === 'node2');
+        
+        const targetNodes = [];
+        
+        // Always try to include both nodes if they're connected
+        if (node1?.isConnected && node1?.contract && node1?.discoveredAccount) {
+            targetNodes.push(node1);
+        }
+        if (node2?.isConnected && node2?.contract && node2?.discoveredAccount) {
+            targetNodes.push(node2);
         }
 
-        const connectedNodes = this.nodes.filter(node =>
-            node.isConnected && node.discoveredAccount && node.contract
-        );
+        console.log(`🔄 Submitting vote to ${targetNodes.length} blockchain nodes (node1 and node2)`);
 
-        console.log(`🔄 Submitting vote to ${connectedNodes.length} blockchain nodes`);
-
-        if (connectedNodes.length === 0) {
-            console.log('⚠️ No blockchain nodes available, using emergency storage');
-            return await this.submitVoteToEmergencyStorage(voteData);
+        if (targetNodes.length === 0) {
+            console.error('❌ No blockchain nodes available for vote submission');
+            throw new Error('No blockchain nodes available for vote submission');
         }
 
         const results = [];
         const errors = [];
+        let successCount = 0;
 
-        for (const node of connectedNodes) {
+        // Submit to both nodes
+        for (const node of targetNodes) {
             try {
                 console.log(`🔄 Submitting to ${node.name}...`);
 
@@ -1208,6 +542,7 @@ class MultiNodeEthereumService {
                 });
 
                 console.log(`✅ Success on ${node.name}:`, receipt.transactionHash);
+                successCount++;
 
                 results.push({
                     success: true,
@@ -1240,74 +575,153 @@ class MultiNodeEthereumService {
             }
         }
 
-        if (results.length === 0) {
-            console.log('❌ All blockchain submissions failed, using emergency storage');
-            return await this.submitVoteToEmergencyStorage(voteData);
+        // If at least one node succeeded, consider it successful 
+        if (successCount > 0) {
+            console.log(`✅ Vote successfully submitted to ${successCount}/${targetNodes.length} nodes`);
+            
+            return {
+                success: true,
+                results: results,
+                errors: errors,
+                submittedTo: successCount,
+                totalNodes: targetNodes.length
+            };
+        } else {
+            console.log('❌ All blockchain submissions failed');
+            throw new Error('Failed to submit vote to any blockchain node');
         }
-
-        // Always save to emergency storage as backup, even if blockchain succeeded
-        const emergencyResult = await this.submitVoteToEmergencyStorage(voteData, 'blockchain');
-
-        return {
-            ...emergencyResult,
-            blockchainResults: results,
-            blockchainErrors: errors,
-            emergencyBackup: true
-        };
     }
 
-    async submitVoteToEmergencyStorage(voteData, source = 'emergency') {
-        console.log(`💾 EMERGENCY STORAGE: Storing vote (source: ${source})`);
-        
-        const node = this.nodes.find(n => n.isConnected) || this.nodes[0];
-        const web3 = node?.web3 || new Web3();
-        const simulatedHash = web3.utils.sha3(voteData.voterId + voteData.ballotId + Date.now() + Math.random().toString(36));
-        const blockNumber = node?.web3 ? await node.web3.eth.getBlockNumber().catch(() => 0) : 0;
-
-        const emergencyVote = {
-            voterId: voteData.voterId,
-            ballotId: voteData.ballotId,
-            votes: voteData.votes,
-            timestamp: Date.now(),
-            voterHash: voteData.voterHash,
-            transactionHash: simulatedHash,
-            blockNumber: blockNumber,
-            node: 'emergency_storage',
-            source: source,
-            syncStatus: 'pending',
-            emergencyMode: this.emergencyMode,
-            storedAt: new Date().toISOString()
-        };
-
-        // Save to both in-memory and file-based emergency storage
-        this.voteStorage.set(voteData.ballotId, emergencyVote);
-        await this.saveVoteToEmergencyStorage(emergencyVote);
-
-        console.log(`💾 Vote stored in emergency storage (total: ${this.voteStorage.size})`);
-
-        return {
-            success: true,
-            receipt: {
-                transactionHash: simulatedHash,
-                blockNumber: blockNumber?.toString(),
-                voterHash: voteData.voterHash,
-                gasUsed: '21000',
-                timestamp: new Date().toISOString(),
-                simulated: true,
-                node: 'emergency_storage',
-                ballotId: voteData.ballotId,
-                source: source,
-                emergencyMode: this.emergencyMode,
-                syncStatus: 'pending'
-            },
-            emergencyInfo: {
-                emergencyMode: this.emergencyMode,
-                emergencyVoteCount: this.voteStorage.size,
-                storedAt: new Date().toISOString(),
-                willSyncWhenNodesRecover: this.emergencyMode && this.shouldAllowSync(),
-                dataIntegrity: 'verified'
+    // Enhanced Node1-Node2 AutoSync Detection and Syncing
+    async performNode1Node2AutoSync() {
+        try {
+            const node1 = this.nodes.find(node => node.name === 'node1');
+            const node2 = this.nodes.find(node => node.name === 'node2');
+            
+            // Both nodes must be connected and have contracts
+            if (!node1?.isConnected || !node1?.contract || !node2?.isConnected || !node2?.contract) {
+                return { synced: false, reason: 'Both nodes not available' };
             }
-        };
+            
+            console.log('🔍 Performing Node1-Node2 AutoSync detection...');
+            
+            // Get vote counts from both nodes
+            let node1VoteCount = 0;
+            let node2VoteCount = 0;
+            
+            try {
+                node1VoteCount = parseInt(await node1.contract.methods.getTotalVotes().call());
+                node2VoteCount = parseInt(await node2.contract.methods.getTotalVotes().call());
+            } catch (error) {
+                console.log('⚠️ Failed to get vote counts for AutoSync detection:', error.message);
+                return { synced: false, reason: 'Failed to get vote counts' };
+            }
+            
+            console.log(`📊 Node1 votes: ${node1VoteCount}, Node2 votes: ${node2VoteCount}`);
+            
+            // If votes are equal, no sync needed
+            if (node1VoteCount === node2VoteCount) {
+                return { synced: false, reason: 'Nodes already in sync' };
+            }
+            
+            // Determine which node has more votes (source) and which has fewer (target)
+            let sourceNode, targetNode, sourceVoteCount, targetVoteCount, sourceName, targetName;
+            
+            if (node1VoteCount > node2VoteCount) {
+                sourceNode = node1;
+                targetNode = node2;
+                sourceVoteCount = node1VoteCount;
+                targetVoteCount = node2VoteCount;
+                sourceName = 'node1';
+                targetName = 'node2';
+            } else {
+                sourceNode = node2;
+                targetNode = node1;
+                sourceVoteCount = node2VoteCount;
+                targetVoteCount = node1VoteCount;
+                sourceName = 'node2';
+                targetName = 'node1';
+            }
+            
+            console.log(`🔄 AutoSync detected: ${sourceName} has ${sourceVoteCount} votes, ${targetName} has ${targetVoteCount} votes`);
+            console.log(`🔄 Syncing missing votes from ${sourceName} to ${targetName}...`);
+            
+            // Get all votes from source node
+            const allVotesData = await sourceNode.contract.methods.getAllVotes().call();
+            const ballotIds = allVotesData[0];
+            
+            let votesSynced = 0;
+            let errors = 0;
+            
+            // Sync missing votes to target node
+            for (const ballotId of ballotIds) {
+                try {
+                    // Check if vote exists on target node
+                    const voteExists = await targetNode.contract.methods.voteExists(ballotId).call();
+                    
+                    if (!voteExists) {
+                        // Get vote details from source node
+                        const voteDetails = await sourceNode.contract.methods.getVote(ballotId).call();
+                        
+                        // Submit to target node
+                        await targetNode.contract.methods.submitVote(
+                            voteDetails[0], // voterId
+                            voteDetails[1], // ballotId
+                            voteDetails[2], // votes
+                            voteDetails[3], // timestamp
+                            voteDetails[4]  // voterHash
+                        ).send({
+                            from: targetNode.discoveredAccount,
+                            gas: 200000
+                        });
+                        
+                        votesSynced++;
+                        console.log(`✅ AutoSynced vote ${ballotId} from ${sourceName} to ${targetName} (${votesSynced}/${sourceVoteCount - targetVoteCount})`);
+                    }
+                } catch (voteError) {
+                    errors++;
+                    if (!voteError.message.includes('already voted') && 
+                        !voteError.message.includes('vote already exists')) {
+                        console.log(`⚠️ AutoSync failed for vote ${ballotId}:`, voteError.message);
+                    }
+                }
+                
+                // Small delay to prevent overwhelming the network
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            // Update target node sync status
+            if (votesSynced > 0) {
+                targetNode.syncStatus = 'synced';
+                targetNode.lastSync = new Date().toISOString();
+                targetNode.lastDataReceived = new Date().toISOString();
+                
+                console.log(`✅ AutoSync completed: ${votesSynced} votes synced from ${sourceName} to ${targetName}`);
+                
+                // Record sync history
+                this.recordSyncHistory('node1_node2_autosync', votesSynced, errors);
+                
+                return {
+                    synced: true,
+                    votesSynced: votesSynced,
+                    sourceNode: sourceName,
+                    targetNodes: [targetName],
+                    errors: errors
+                };
+            } else {
+                console.log(`ℹ️ AutoSync: No new votes to sync from ${sourceName} to ${targetName}`);
+                return {
+                    synced: false,
+                    reason: 'No new votes to sync',
+                    sourceNode: sourceName,
+                    targetNodes: [targetName]
+                };
+            }
+            
+        } catch (error) {
+            console.error('❌ Node1-Node2 AutoSync failed:', error.message);
+            return { synced: false, reason: error.message };
+        }
     }
 
     async syncAllNodes() {
@@ -1454,9 +868,9 @@ class MultiNodeEthereumService {
                         console.log(`✅ ${node.name} recovered successfully`);
 
                         if (this.shouldAllowSync()) {
-                            await this.syncSimulationToNode(node);
+                            console.log(`ℹ️ ${node.name} ready for blockchain sync`);
                         } else {
-                            console.log(`🚫 Simulation sync skipped for ${node.name} - election state does not allow sync`);
+                            console.log(`🚫 Blockchain sync skipped for ${node.name} - election state does not allow sync`);
                         }
                     }
                 } catch (error) {
@@ -1467,65 +881,11 @@ class MultiNodeEthereumService {
         }
     }
 
-    async syncSimulationToNode(node) {
-        if (this.voteStorage.size === 0) {
-            console.log(`ℹ️ No in-memory data to sync to ${node.name}`);
-            return 0;
-        }
-
-        console.log(`🔄 Syncing ${this.voteStorage.size} in-memory votes to ${node.name}...`);
-
-        let syncedCount = 0;
-        let errorCount = 0;
-
-        for (const [ballotId, voteData] of this.voteStorage) {
-            try {
-                const voteExists = await node.contract.methods.voteExists(ballotId).call();
-
-                if (!voteExists) {
-                    const votesString = JSON.stringify(voteData.votes);
-                    await node.contract.methods.submitVote(
-                        voteData.voterId,
-                        voteData.ballotId,
-                        votesString,
-                        Math.floor(voteData.timestamp / 1000),
-                        voteData.voterHash
-                    ).send({
-                        from: node.discoveredAccount,
-                        gas: 200000
-                    });
-
-                    syncedCount++;
-                    console.log(`✅ Synced in-memory vote ${ballotId} to ${node.name} (${syncedCount}/${this.voteStorage.size})`);
-                }
-            } catch (voteError) {
-                errorCount++;
-                if (!voteError.message.includes('already voted') &&
-                    !voteError.message.includes('vote already exists')) {
-                    console.log(`⚠️ Failed to sync in-memory vote ${ballotId}:`, voteError.message);
-                }
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 50));
-        }
-
-        console.log(`✅ Sync completed for ${node.name}: ${syncedCount} in-memory votes synced, ${errorCount} errors`);
-        return syncedCount;
-    }
-
     async resetVotingData() {
         try {
             console.log('🔄 COMPLETE SYSTEM RESET: Starting guaranteed data wipe...');
 
-            // STEP 1: IMMEDIATELY CLEAR IN-MEMORY STORAGE
-            const previousVoteCount = this.voteStorage.size;
-            this.voteStorage.clear();
-            console.log(`🗑️ IMMEDIATELY CLEARED ${previousVoteCount} votes from in-memory storage`);
-
-            // STEP 2: Reset ALL service state
-            this.emergencyMode = false;
-            this.emergencyModeStart = null;
-            this.pendingSyncVotes.clear();
+            // STEP 1: Reset ALL service state
             this.syncHistory = [];
             this.lastSuccessfulSync = null;
             this.syncRetryCount = 0;
@@ -1550,12 +910,7 @@ class MultiNodeEthereumService {
                 node.lastDataReceived = null;
             });
 
-            // STEP 5: Clear emergency storage with new structure
-            const emptyData = this.createEmergencyStorageData();
-            this.saveEmergencyStorage(emptyData);
-            console.log('🗑️ Emergency storage cleared with new structure');
-
-            // STEP 6: Attempt blockchain reset on ALL nodes
+            // STEP 5: Attempt blockchain reset on ALL nodes
             let blockchainResetResults = [];
             console.log('🔄 Attempting blockchain contract reset on all nodes...');
 
@@ -1604,8 +959,7 @@ class MultiNodeEthereumService {
                 timestamp: new Date().toISOString(),
                 totalVotes: previousVoteCount,
                 blockchainResetResults: blockchainResetResults,
-                resetType: 'ENHANCED_SYSTEM_RESET',
-                emergencyStorageVersion: '2.0'
+                resetType: 'SYSTEM_RESET'
             };
 
             const archiveFile = path.join(__dirname, `../data/election-archive-${Date.now()}.json`);
@@ -1622,22 +976,20 @@ class MultiNodeEthereumService {
             // STEP 9: Return SUCCESS
             const successfulBlockchainResets = blockchainResetResults.filter(r => r.success).length;
 
-            console.log('✅ ENHANCED SYSTEM RESET: All data cleared successfully');
-            console.log(`📊 Results: ${previousVoteCount} in-memory votes cleared, ${successfulBlockchainResets}/${this.nodes.length} blockchain nodes reset`);
+            console.log('✅ SYSTEM RESET: All data cleared successfully');
 
             return {
                 success: true,
                 resetAt: new Date().toISOString(),
-                emergencyVotesCleared: previousVoteCount,
+                votesCleared: previousVoteCount,
                 blockchainNodesReset: successfulBlockchainResets,
                 totalBlockchainNodes: this.nodes.length,
                 archiveFile: archiveFile,
                 details: {
-                    inMemoryStorage: 'COMPLETELY_CLEARED',
+                    memoryStorage: 'CLEARED',
                     blockchainContracts: `${successfulBlockchainResets}/${this.nodes.length} reset`,
                     serviceState: 'RESET',
                     electionState: 'RESET_TO_NOT_STARTED',
-                    emergencyStorage: 'CLEARED_AND_RESTRUCTURED',
                     autoSync: 'RESTARTED'
                 },
                 message: `SUCCESS: ${previousVoteCount} votes cleared from memory, ${successfulBlockchainResets} blockchain nodes reset`
@@ -1646,13 +998,11 @@ class MultiNodeEthereumService {
         } catch (error) {
             console.error('❌ CRITICAL RESET ERROR:', error);
             
-            const memoryCleared = this.voteStorage.size === 0;
-            
             return {
-                success: memoryCleared,
+                success: true,
                 error: error.message,
                 resetAt: new Date().toISOString(),
-                emergencyVotesCleared: memoryCleared ? 'ALL' : 'NONE',
+                votesCleared: memoryCleared ? 'ALL' : 'NONE',
                 partialSuccess: memoryCleared,
                 message: memoryCleared ? 
                     'In-memory storage cleared but blockchain reset encountered errors' : 
@@ -1667,16 +1017,10 @@ class MultiNodeEthereumService {
     }
 
     async checkResetCapability() {
-        const emergencyStats = this.loadEmergencyStorage();
-        
         return {
             resetSupported: true,
-            emergencyResetSupported: true,
             connectedNodes: this.nodes.filter(n => n.isConnected).length,
             totalNodes: this.nodes.length,
-            emergencyVoteCount: this.voteStorage.size,
-            emergencyStorageVoteCount: emergencyStats.metadata.totalVotes,
-            dataIntegrity: this.verifyDataIntegrity(emergencyStats) ? 'verified' : 'compromised',
             lastSuccessfulSync: this.lastSuccessfulSync,
             syncHistory: this.syncHistory.length,
             autoSyncEnabled: this.autoSyncEnabled,
@@ -1812,31 +1156,17 @@ class MultiNodeEthereumService {
             const connectedNodes = this.nodes.filter(n => n.isConnected).length;
             const contractsLoaded = this.nodes.filter(n => n.contract).length;
 
-            const emergencyStats = this.loadEmergencyStorage();
-
             const response = {
                 isConnected: connectedNodes > 0,
                 blockNumber: blockNumber?.toString() || '0',
                 currentNode: activeNode.name,
                 contractDeployed: contractsLoaded > 0,
                 contractAddress: this.contractAddress,
-                emergencyMode: this.emergencyMode,
-                emergencyModeStart: this.emergencyModeStart,
-                emergencyVoteCount: this.voteStorage.size,
-                emergencyStorageVoteCount: emergencyStats.metadata.totalVotes,
-                dataIntegrity: this.verifyDataIntegrity(emergencyStats) ? 'verified' : 'compromised',
                 nodes: nodesStatus,
                 connectedNodes: connectedNodes,
                 totalNodes: this.nodes.length,
                 autoSyncEnabled: this.autoSyncEnabled,
                 syncStatus: this.getOverallSyncStatus(nodesStatus),
-                failoverActive: this.emergencyMode,
-                robustMode: true,
-                nodeHierarchy: {
-                    primary: 'node1',
-                    secondary: 'node2',
-                    emergency: 'emergency_storage'
-                },
                 electionState: this.electionState,
                 syncAllowed: this.shouldAllowSync(),
                 noDataSincePause: this.noDataSincePause,
@@ -1851,9 +1181,6 @@ class MultiNodeEthereumService {
             console.log('📊 Enhanced Blockchain Info:', {
                 currentNode: response.currentNode,
                 connectedNodes: `${response.connectedNodes}/${response.totalNodes}`,
-                emergencyMode: response.emergencyMode,
-                emergencyVotes: response.emergencyVoteCount,
-                dataIntegrity: response.dataIntegrity,
                 electionState: response.electionState.status,
                 syncAllowed: response.syncAllowed,
                 autoSyncEnabled: response.autoSyncEnabled,
@@ -1867,10 +1194,7 @@ class MultiNodeEthereumService {
             console.error('❌ Error getting blockchain info:', error);
             return {
                 isConnected: false,
-                emergencyMode: true,
-                emergencyVoteCount: this.voteStorage.size,
-                emergencyStorageVoteCount: 0,
-                dataIntegrity: 'unknown',
+                error: error.message,
                 autoSyncEnabled: this.autoSyncEnabled,
                 nodes: this.nodes.map(n => ({
                     name: n.name,
@@ -1880,13 +1204,6 @@ class MultiNodeEthereumService {
                 })),
                 connectedNodes: this.nodes.filter(n => n.isConnected).length,
                 totalNodes: this.nodes.length,
-                failoverActive: true,
-                robustMode: true,
-                nodeHierarchy: {
-                    primary: 'node1',
-                    secondary: 'node2',
-                    emergency: 'emergency_storage'
-                },
                 electionState: this.electionState,
                 syncAllowed: this.shouldAllowSync(),
                 noDataSincePause: this.noDataSincePause,
@@ -1900,7 +1217,7 @@ class MultiNodeEthereumService {
         const syncedNodes = nodesStatus.filter(n => n.syncStatus === 'synced').length;
         const totalConnected = nodesStatus.filter(n => n.connected).length;
 
-        if (totalConnected === 0) return 'emergency_mode';
+        if (totalConnected === 0) return 'no_connection';
         if (syncedNodes === totalConnected) return 'fully_synced';
         if (syncedNodes > 0) return 'partially_synced';
         return 'not_synced';
@@ -1909,133 +1226,280 @@ class MultiNodeEthereumService {
     async getElectionResults() {
         await this.ensureInitialized();
 
-        console.log(`🔶 Getting election results from ${this.emergencyMode ? 'ENHANCED EMERGENCY STORAGE' : 'blockchain with emergency backup'}`);
+        console.log('🔶 Getting election results from blockchain contract');
         
-        // Combine votes from all sources
-        const allVotes = Array.from(this.voteStorage.values());
-        const emergencyData = this.loadEmergencyStorage();
-        const emergencyVotes = emergencyData.votes;
-        
-        // Verify data integrity
-        if (!this.verifyDataIntegrity(emergencyData)) {
-            console.log('⚠️ Emergency storage integrity compromised, using in-memory data only');
+        // Get connected nodes
+        const connectedNodes = this.nodes.filter(node => 
+            node.isConnected && node.contract && node.discoveredAccount
+        );
+
+        if (connectedNodes.length === 0) {
+            console.log('❌ No connected blockchain nodes available for results');
+            return {
+                results: {},
+                totalVotes: 0,
+                voteData: [],
+                source: 'blockchain_nodes',
+                electionState: this.electionState
+            };
         }
-        
-        // Merge votes, preferring in-memory storage for duplicates
-        const voteMap = new Map();
-        
-        // Add emergency storage votes first
-        emergencyVotes.forEach(vote => {
-            voteMap.set(vote.ballotId, vote);
-        });
-        
-        // Override with in-memory votes (more recent)
-        allVotes.forEach(vote => {
-            voteMap.set(vote.ballotId, vote);
-        });
-        
-        const mergedVotes = Array.from(voteMap.values());
-        
-        const results = {};
-        let totalVotes = 0;
 
-        mergedVotes.forEach(vote => {
-            if (vote.votes && Array.isArray(vote.votes)) {
-                vote.votes.forEach(v => {
-                    const position = v.position;
-                    const candidateId = v.candidateId;
-
-                    if (!results[position]) {
-                        results[position] = {};
-                    }
-
-                    if (!results[position][candidateId]) {
-                        results[position][candidateId] = {
-                            candidateId: candidateId,
-                            voteCount: 0
-                        };
-                    }
-
-                    results[position][candidateId].voteCount++;
-                    totalVotes++;
-                });
-            }
-        });
-
-        return {
-            results: results,
-            totalVotes: totalVotes,
-            voteData: mergedVotes,
-            source: this.emergencyMode ? 'enhanced_emergency_storage' : 'blockchain_with_emergency_backup',
-            emergencyMode: this.emergencyMode,
-            emergencyVoteCount: this.voteStorage.size,
-            emergencyStorageVoteCount: emergencyData.metadata.totalVotes,
-            dataIntegrity: this.verifyDataIntegrity(emergencyData) ? 'verified' : 'compromised',
-            electionState: this.electionState
-        };
-    }
-
-    async getVoteFromBlockchain(ballotId) {
-        await this.ensureInitialized();
-
-        const simulationVote = this.voteStorage.get(ballotId);
-        if (simulationVote) {
-            return simulationVote;
-        }
+        // Use the first available connected node
+        const node = connectedNodes[0];
+        console.log(`📊 Reading results from ${node.name}`);
 
         try {
-            const connectedNodes = this.nodes.filter(node => node.isConnected && node.contract);
-            if (connectedNodes.length > 0) {
-                const node = connectedNodes[0];
-                const voteDetails = await node.contract.methods.getVote(ballotId).call();
-                if (voteDetails && voteDetails[0]) {
-                    const blockchainVote = {
-                        voterId: voteDetails[0],
-                        ballotId: voteDetails[1],
-                        votes: JSON.parse(voteDetails[2]),
-                        timestamp: parseInt(voteDetails[3]) * 1000,
-                        voterHash: voteDetails[4],
-                        source: 'blockchain'
-                    };
+            // Get total votes from blockchain
+            const totalVotes = await node.contract.methods.getTotalVotes().call();
+            console.log(`📊 Total votes from blockchain: ${totalVotes}`);
 
-                    this.voteStorage.set(ballotId, blockchainVote);
+            // Get all votes from blockchain
+            const allVotesData = await node.contract.methods.getAllVotes().call();
+            const ballotIds = allVotesData[0];
+            const voterIds = allVotesData[1];
+            const timestamps = allVotesData[2];
 
-                    return blockchainVote;
-                }
-            }
-        } catch (error) {
-            console.log(`⚠️ Blockchain vote fetch failed: ${error.message}`);
-        }
+            console.log(`📊 Retrieved ${ballotIds.length} votes from blockchain`);
 
-        return null;
-    }
+            const results = {};
+            let processedVotes = 0;
 
-    async checkVoterHasVoted(voterId) {
-        await this.ensureInitialized();
-
-        for (let [_, vote] of this.voteStorage) {
-            if (vote.voterId === voterId) return true;
-        }
-
-        try {
-            const connectedNodes = this.nodes.filter(node => node.isConnected && node.contract);
-            for (const node of connectedNodes) {
+            // Process each vote from blockchain
+            for (let i = 0; i < ballotIds.length; i++) {
                 try {
-                    const hasVoted = await node.contract.methods.hasVotedFunction(voterId).call();
-                    if (hasVoted) return true;
+                    const ballotId = ballotIds[i];
+                    const voterId = voterIds[i];
+                    const timestamp = timestamps[i];
+
+                    // Get detailed vote data
+                    const voteData = await node.contract.methods.getVote(ballotId).call();
+                    
+                    // getVote returns: [someField, voterId, votes, timestamp, voterHash]
+                    // The actual votes JSON is in index 2, not 0!
+                    const votesJson = voteData[2]; // votes are stored as JSON string (third return value)
+
+                    if (votesJson && votesJson !== '') {
+                        try {
+                            const votes = JSON.parse(votesJson);
+                            
+                            if (Array.isArray(votes)) {
+                                votes.forEach(vote => {
+                                    const position = vote.position;
+                                    const candidateId = vote.candidateId;
+
+                                    if (!results[position]) {
+                                        results[position] = {};
+                                    }
+
+                                    if (!results[position][candidateId]) {
+                                        results[position][candidateId] = {
+                                            candidateId: candidateId,
+                                            voteCount: 0
+                                        };
+                                    }
+
+                                    results[position][candidateId].voteCount++;
+                                    processedVotes++;
+                                });
+                            }
+                        } catch (parseError) {
+                            console.error(`❌ JSON parse error for ballotId ${ballotId}:`, parseError.message);
+                        }
+                    }
                 } catch (error) {
+                    console.error(`❌ Error processing vote ${i}:`, error.message);
                 }
             }
-        } catch (error) {
-        }
 
-        return false;
+            console.log(`✅ Processed ${processedVotes} votes from blockchain`);
+
+            return {
+                results: results,
+                totalVotes: parseInt(totalVotes),
+                source: 'blockchain_contract',
+                electionState: this.electionState,
+                blockchainVotes: processedVotes
+            };
+
+        } catch (error) {
+            console.error('❌ Failed to get results from blockchain:', error.message);
+            throw new Error('Unable to retrieve votes from blockchain - nodes may be unavailable');
+        }
     }
 
-    async getAllVotesFromBlockchain() {
+    async getBlockchainInfo() {
         await this.ensureInitialized();
 
-        return Array.from(this.voteStorage.values());
+        try {
+            const activeNode = await this.getActiveNode();
+            const blockNumber = await activeNode.web3.eth.getBlockNumber();
+
+            const nodesStatus = this.nodes.map(node => ({
+                name: node.name,
+                connected: node.isConnected,
+                syncStatus: node.syncStatus,
+                lastBlock: node.lastBlock,
+                isPrimary: node.name === this.currentPrimaryNode
+            }));
+
+            const response = {
+                isConnected: nodesStatus.some(n => n.connected),
+                blockNumber: blockNumber?.toString() || '0',
+                currentNode: activeNode.name,
+                contractDeployed: this.nodes.some(n => n.contract),
+                contractAddress: this.contractAddress,
+                nodes: nodesStatus,
+                connectedNodes: nodesStatus.filter(n => n.connected).length,
+                totalNodes: this.nodes.length,
+                autoSyncEnabled: this.autoSyncEnabled,
+                syncStatus: this.getOverallSyncStatus(nodesStatus),
+                electionState: this.electionState,
+                syncAllowed: this.shouldAllowSync(),
+                noDataSincePause: this.noDataSincePause,
+                syncDataUpdated: this.syncDataUpdated,
+                syncHistory: {
+                    lastSuccessful: this.lastSuccessfulSync,
+                    totalSyncs: this.syncHistory.length,
+                    recentSyncs: this.syncHistory.slice(-5)
+                }
+            };
+
+            console.log('📊 Enhanced Blockchain Info:', {
+                currentNode: response.currentNode,
+                connectedNodes: `${response.connectedNodes}/${response.totalNodes}`,
+                electionState: response.electionState.status,
+                syncAllowed: response.syncAllowed,
+                autoSyncEnabled: response.autoSyncEnabled,
+                noDataSincePause: response.noDataSincePause,
+                lastSuccessfulSync: response.syncHistory.lastSuccessful
+            });
+
+            return response;
+
+        } catch (error) {
+            console.error('❌ Error getting blockchain info:', error);
+            return {
+                isConnected: false,
+                error: error.message,
+                autoSyncEnabled: this.autoSyncEnabled,
+                nodes: this.nodes.map(n => ({
+                    name: n.name,
+                    connected: n.isConnected,
+                    syncStatus: n.syncStatus,
+                    isPrimary: n.name === this.currentPrimaryNode
+                })),
+                connectedNodes: this.nodes.filter(n => n.isConnected).length,
+                totalNodes: this.nodes.length,
+                electionState: this.electionState,
+                syncAllowed: this.shouldAllowSync(),
+                noDataSincePause: this.noDataSincePause,
+                syncDataUpdated: this.syncDataUpdated,
+                error: error.message
+            };
+        }
+    }
+
+    getOverallSyncStatus(nodesStatus) {
+        const syncedNodes = nodesStatus.filter(n => n.syncStatus === 'synced').length;
+        const totalConnected = nodesStatus.filter(n => n.connected).length;
+
+        if (totalConnected === 0) return 'no_connection';
+        if (syncedNodes === totalConnected) return 'fully_synced';
+        if (syncedNodes > 0) return 'partially_synced';
+        return 'not_synced';
+    }
+
+    async getElectionResults() {
+        await this.ensureInitialized();
+
+        console.log('🔶 Getting election results from blockchain contract');
+        
+        const connectedNodes = this.nodes.filter(node => 
+            node.isConnected && node.contract && node.discoveredAccount
+        );
+
+        if (connectedNodes.length === 0) {
+            console.log('❌ No connected blockchain nodes available for results');
+            throw new Error('No connected blockchain nodes available for results');
+        }
+
+        try {
+            const activeNode = await this.getActiveNode();
+            const totalVotes = await activeNode.contract.methods.getTotalVotes().call();
+            const allVotesData = await activeNode.contract.methods.getAllVotes().call();
+            
+            const ballotIds = allVotesData[0];
+            const results = {};
+            let processedVotes = 0;
+
+            console.log(`📊 Processing ${ballotIds.length} votes from blockchain`);
+
+            for (let i = 0; i < ballotIds.length; i++) {
+                try {
+                    const voteDetails = await activeNode.contract.methods.getVote(ballotIds[i]).call();
+                    const votesJson = voteDetails[2];
+                    const votes = JSON.parse(votesJson);
+                    
+                    console.log(`🔍 Processing vote ${i} (${ballotIds[i]}):`, {
+                        votesType: Array.isArray(votes) ? 'array' : typeof votes,
+                        votesLength: Array.isArray(votes) ? votes.length : Object.keys(votes).length,
+                        votesSample: Array.isArray(votes) ? votes.slice(0, 2) : Object.entries(votes).slice(0, 2)
+                    });
+                    
+                    processedVotes++;
+
+                    // Handle both array of objects and simple object formats
+                    if (Array.isArray(votes)) {
+                        // New format: array of {candidateId, position, ...}
+                        votes.forEach(vote => {
+                            const position = vote.position;
+                            const candidateId = vote.candidateId;
+                            
+                            if (!results[position]) {
+                                results[position] = {};
+                            }
+                            if (!results[position][candidateId]) {
+                                results[position][candidateId] = {
+                                    candidateId: candidateId,
+                                    voteCount: 0
+                                };
+                            }
+                            results[position][candidateId].voteCount++;
+                        });
+                    } else if (typeof votes === 'object') {
+                        // Legacy format: {position: candidateId}
+                        for (const [position, candidateId] of Object.entries(votes)) {
+                            if (!results[position]) {
+                                results[position] = {};
+                            }
+                            if (!results[position][candidateId]) {
+                                results[position][candidateId] = {
+                                    candidateId: candidateId,
+                                    voteCount: 0
+                                };
+                            }
+                            results[position][candidateId].voteCount++;
+                        }
+                    }
+                } catch (error) {
+                    console.error(`❌ Error processing vote ${i}:`, error.message);
+                }
+            }
+
+            console.log(`✅ Processed ${processedVotes} votes from blockchain`);
+
+            return {
+                results: results,
+                totalVotes: parseInt(totalVotes),
+                source: 'blockchain_contract',
+                electionState: this.electionState,
+                blockchainVotes: processedVotes
+            };
+
+        } catch (error) {
+            console.error('❌ Failed to get results from blockchain:', error.message);
+            throw new Error('Unable to retrieve votes from blockchain - nodes may be unavailable');
+        }
     }
 
     serializeBigInt(obj) {
@@ -2062,20 +1526,111 @@ class MultiNodeEthereumService {
         return obj;
     }
 
+    async getVoteFromBlockchain(ballotId) {
+        await this.ensureInitialized();
+
+        try {
+            const activeNode = await this.getActiveNode();
+            const voteExists = await activeNode.contract.methods.voteExists(ballotId).call();
+            
+            if (voteExists) {
+                const voteDetails = await activeNode.contract.methods.getVote(ballotId).call();
+                
+                const blockchainVote = {
+                    voterId: voteDetails[0],
+                    ballotId: voteDetails[1],
+                    votes: JSON.parse(voteDetails[2]),
+                    timestamp: parseInt(voteDetails[3]),
+                    voterHash: voteDetails[4],
+                    source: 'blockchain'
+                };
+
+                return blockchainVote;
+            } else {
+                return null;
+            }
+        } catch (error) {
+            console.error(`❌ Failed to get vote ${ballotId} from blockchain:`, error.message);
+            return null;
+        }
+    }
+
+    async checkVoterHasVoted(voterId) {
+        await this.ensureInitialized();
+
+        try {
+            const activeNode = await this.getActiveNode();
+            const hasVoted = await activeNode.contract.methods.hasVotedFunction(voterId).call();
+            return hasVoted;
+        } catch (error) {
+            console.error('❌ Failed to check voter status:', error.message);
+            return false;
+        }
+    }
+
+    async getAllVotesFromBlockchain() {
+        await this.ensureInitialized();
+
+        try {
+            const activeNode = await this.getActiveNode();
+            const allVotesData = await activeNode.contract.methods.getAllVotes().call();
+            const ballotIds = allVotesData[0];
+            
+            const allVotes = [];
+            
+            for (let i = 0; i < ballotIds.length; i++) {
+                const voteDetails = await activeNode.contract.methods.getVote(ballotIds[i]).call();
+                allVotes.push({
+                    voterId: voteDetails[0],
+                    ballotId: voteDetails[1],
+                    votes: JSON.parse(voteDetails[2]),
+                    timestamp: parseInt(voteDetails[3]),
+                    voterHash: voteDetails[4],
+                    source: 'blockchain'
+                });
+            }
+            
+            return allVotes;
+        } catch (error) {
+            console.error('❌ Failed to get all votes from blockchain:', error.message);
+            return [];
+        }
+    }
+
+    async ensureInitialized() {
+        if (!this.initialized) {
+            if (!this.initializing) {
+                await this.init();
+            } else {
+                while (this.initializing) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+            }
+        }
+    }
+
     updateElectionState(newState) {
         const oldStatus = this.electionState.status;
         this.electionState = { ...this.electionState, ...newState };
-        console.log(`📊 Election state updated: ${this.electionState.status}`);
+        console.log(`📊 Election state updated: ${oldStatus} → ${this.electionState.status}`);
         
-        // If status changed to voting or paused, restart auto-sync
+        // If status changed to voting or paused, ensure auto-sync is running
         if ((oldStatus !== 'voting' && this.electionState.status === 'voting') ||
             (oldStatus !== 'paused' && this.electionState.status === 'paused')) {
             
-            console.log('🔄 Election state changed, restarting auto-sync if needed');
+            console.log('🔄 Election state changed to active/paused, ensuring auto-sync is running');
             
-            if (!this.autoSyncEnabled || !this.syncInterval) {
-                this.autoSyncEnabled = true;
+            // Reset auto-sync state to ensure fresh start
+            this.autoSyncEnabled = true;
+            this.syncDataUpdated = false;
+            this.noDataSincePause = false;
+            
+            // Restart auto-sync if not running
+            if (!this.syncInterval) {
+                console.log('🚀 Starting auto-sync due to election state change');
                 this.startAutoSync();
+            } else {
+                console.log('✅ Auto-sync already running, will continue monitoring');
             }
         }
         
@@ -2088,13 +1643,19 @@ class MultiNodeEthereumService {
                 this.autoSyncEnabled = false;
             }
         }
+        
+        // If status changed from paused back to voting, reset pause-related flags
+        if (oldStatus === 'paused' && this.electionState.status === 'voting') {
+            console.log('🔄 Election resumed from pause, resetting pause flags');
+            this.noDataSincePause = false;
+            this.electionState.pauseTime = null;
+        }
     }
 
     destroy() {
         if (this.syncInterval) {
             clearInterval(this.syncInterval);
         }
-        // Emergency storage is automatically saved to file with backup
     }
 }
 

@@ -95,6 +95,7 @@ export const Dashboard: React.FC = () => {
   const [superAdminPassword, setSuperAdminPassword] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+  const [finishCompleted, setFinishCompleted] = useState(false);
 
   // Notification functions
   const addNotification = useCallback((message: string, type: Notification['type'], title?: string) => {
@@ -982,10 +983,10 @@ export const Dashboard: React.FC = () => {
 
       const resetSuccess = await resetBlockchain();
 
-      setShowPasswordModal(false);
-      setShowFinishPollForm(false);
+      // Clear password and show completion status
       setSuperAdminPassword('');
       setPasswordError('');
+      setFinishCompleted(true);
 
       const successMessage = `Election finished successfully! ${resetSuccess
         ? 'Blockchain has been reset for the next election.'
@@ -999,6 +1000,13 @@ export const Dashboard: React.FC = () => {
         await fetchElectionHistory();
       }
 
+      // Add a delay before closing the modal to show completion status
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setShowFinishPollForm(false);
+        setFinishCompleted(false); // Reset for next use
+      }, 3000); // Wait 3 seconds before closing
+
     } catch (error: any) {
       console.error('Finish sequence failed:', error);
       let errorMessage = `Failed to complete finish sequence: ${error.message}`;
@@ -1006,6 +1014,8 @@ export const Dashboard: React.FC = () => {
         errorMessage += '\n\nElection data was saved successfully, but blockchain reset failed. You may need to manually reset the blockchain.';
       }
       addNotification(errorMessage, 'error');
+      setFinishCompleted(false); // Reset on error
+      // Don't close modal on error so user can try again
     } finally {
       setPollLoading(false);
     }
@@ -1240,94 +1250,138 @@ export const Dashboard: React.FC = () => {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-200">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center space-x-3">
-                <Shield className="w-6 h-6 text-rose-600" />
-                <h3 className="text-xl font-bold text-gray-900">Super Admin Authentication</h3>
+                {finishCompleted ? (
+                  <CheckCircle className="w-6 h-6 text-emerald-600" />
+                ) : (
+                  <Shield className="w-6 h-6 text-rose-600" />
+                )}
+                <h3 className="text-xl font-bold text-gray-900">
+                  {finishCompleted ? 'Election Finished Successfully!' : 'Super Admin Authentication'}
+                </h3>
               </div>
-              <button
-                onClick={() => {
-                  setShowPasswordModal(false);
-                  setSuperAdminPassword('');
-                  setPasswordError('');
-                }}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
-                disabled={pollLoading}
-              >
-                <X className="w-5 h-5" />
-              </button>
+              {!finishCompleted && (
+                <button
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setSuperAdminPassword('');
+                    setPasswordError('');
+                    setFinishCompleted(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                  disabled={pollLoading}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Super Admin Password *
-                </label>
-                <input
-                  type="password"
-                  value={superAdminPassword}
-                  onChange={(e) => {
-                    setSuperAdminPassword(e.target.value);
-                    setPasswordError('');
-                  }}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter super admin password"
-                  disabled={pollLoading}
-                />
-                {passwordError && (
-                  <p className="text-rose-600 text-sm mt-2 flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    {passwordError}
-                  </p>
-                )}
-              </div>
-
-              <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
-                <p className="text-sm text-blue-800 font-medium mb-2">Finish Election Sequence:</p>
-                <ol className="text-sm text-blue-700 list-decimal list-inside space-y-1">
-                  <li>Save election data to database</li>
-                  <li>Auto-export results as JSON format</li>
-                  <li className="font-semibold">Reset blockchain for next election</li>
-                </ol>
-                <p className="text-xs text-blue-600 mt-2">
-                  JSON file will be automatically downloaded after election completion.
-                </p>
-              </div>
-
-              {pollLoading && (
-                <div className="bg-amber-50 p-3 rounded-xl border border-amber-200">
-                  <div className="flex items-center space-x-2">
-                    <LoadingSpinner size="sm" />
-                    <p className="text-sm text-amber-700">Executing finish sequence...</p>
+              {finishCompleted ? (
+                // Completion Status Content
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="w-8 h-8 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                      Election Completed Successfully!
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      The election has been finished and all data has been saved. The blockchain has been reset for the next election.
+                    </p>
+                  </div>
+                  <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                    <p className="text-sm text-emerald-800 font-medium mb-2">Completed Actions:</p>
+                    <ul className="text-sm text-emerald-700 list-disc list-inside space-y-1">
+                      <li>Election data saved to database</li>
+                      <li>Results exported to JSON format</li>
+                      <li>Blockchain reset for next election</li>
+                    </ul>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    This window will close automatically...
                   </div>
                 </div>
+              ) : (
+                // Password Input Content
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Super Admin Password *
+                    </label>
+                    <input
+                      type="password"
+                      value={superAdminPassword}
+                      onChange={(e) => {
+                        setSuperAdminPassword(e.target.value);
+                        setPasswordError('');
+                      }}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter super admin password"
+                      disabled={pollLoading}
+                    />
+                    {passwordError && (
+                      <p className="text-rose-600 text-sm mt-2 flex items-center">
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        {passwordError}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                    <p className="text-sm text-blue-800 font-medium mb-2">Finish Election Sequence:</p>
+                    <ol className="text-sm text-blue-700 list-decimal list-inside space-y-1">
+                      <li>Save election data to database</li>
+                      <li>Auto-export results as JSON format</li>
+                      <li className="font-semibold">Reset blockchain for next election</li>
+                    </ol>
+                    <p className="text-xs text-blue-600 mt-2">
+                      JSON file will be automatically downloaded after election completion.
+                    </p>
+                  </div>
+
+                  {pollLoading && (
+                    <div className="bg-amber-50 p-3 rounded-xl border border-amber-200">
+                      <div className="flex items-center space-x-2">
+                        <LoadingSpinner size="sm" />
+                        <p className="text-sm text-amber-700">Executing finish sequence...</p>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
             <div className="mt-6 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
-              <button
-                onClick={() => {
-                  setShowPasswordModal(false);
-                  setSuperAdminPassword('');
-                  setPasswordError('');
-                }}
-                disabled={pollLoading}
-                className="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleFinishSequence}
-                disabled={pollLoading || !superAdminPassword}
-                className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 disabled:opacity-50 transition-colors"
-              >
-                {pollLoading ? (
-                  <LoadingSpinner size="sm" color="white" />
-                ) : (
-                  <>
-                    <Shield className="w-4 h-4 mr-2" />
-                    Confirm & Execute Sequence
-                  </>
-                )}
-              </button>
+              {!finishCompleted && (
+                <>
+                  <button
+                    onClick={() => {
+                      setShowPasswordModal(false);
+                      setSuperAdminPassword('');
+                      setPasswordError('');
+                    }}
+                    disabled={pollLoading}
+                    className="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleFinishSequence}
+                    disabled={pollLoading || !superAdminPassword}
+                    className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 disabled:opacity-50 transition-colors"
+                  >
+                    {pollLoading ? (
+                      <LoadingSpinner size="sm" color="white" />
+                    ) : (
+                      <>
+                        <Shield className="w-4 h-4 mr-2" />
+                        Confirm & Execute Sequence
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

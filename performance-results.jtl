@@ -1,0 +1,1001 @@
+timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
+1769830607578,100,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,1,5,http://localhost:5000/api/voting/results,97,0,60
+1769830607578,99,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,1,5,http://localhost:5000/api/health,87,0,60
+1769830607579,98,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,387,1,5,http://localhost:5000/api/voting/cast-blockchain,86,0,59
+1769830607578,100,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,1,5,http://localhost:5000/api/poll/status,87,0,60
+1769830607578,99,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,5,http://localhost:5000/api/blockchain-status,87,0,60
+1769830607683,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,387,1,5,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830607683,11,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,1,5,http://localhost:5000/api/health,11,0,0
+1769830607683,13,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,5,http://localhost:5000/api/blockchain-status,12,0,0
+1769830607690,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,387,1,5,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830607683,17,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,1,5,http://localhost:5000/api/poll/status,17,0,0
+1769830607695,12,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,1,5,http://localhost:5000/api/health,11,0,0
+1769830607696,12,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,5,http://localhost:5000/api/blockchain-status,12,0,0
+1769830607697,14,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,387,1,5,http://localhost:5000/api/voting/cast-blockchain,13,0,0
+1769830607701,10,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,1,5,http://localhost:5000/api/poll/status,10,0,0
+1769830607712,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,387,1,5,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830607712,11,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,1,5,http://localhost:5000/api/poll/status,11,0,0
+1769830607719,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,387,1,5,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607708,17,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,1,5,http://localhost:5000/api/health,17,0,0
+1769830607709,17,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,5,http://localhost:5000/api/blockchain-status,17,0,0
+1769830607725,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,387,1,5,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830607726,5,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,1,5,http://localhost:5000/api/health,5,0,0
+1769830607724,8,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,1,5,http://localhost:5000/api/poll/status,8,0,0
+1769830607730,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,387,1,5,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830607727,10,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,5,http://localhost:5000/api/blockchain-status,10,0,0
+1769830607732,5,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,1,5,http://localhost:5000/api/health,5,0,0
+1769830607683,66,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,1,5,http://localhost:5000/api/voting/results,66,0,0
+1769830607734,16,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,387,1,5,http://localhost:5000/api/voting/cast-blockchain,16,0,0
+1769830607738,14,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,1,5,http://localhost:5000/api/health,14,0,0
+1769830607738,16,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,5,http://localhost:5000/api/blockchain-status,16,0,0
+1769830607733,21,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,1,5,http://localhost:5000/api/poll/status,21,0,0
+1769830607751,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,5,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607756,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,5,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607753,9,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,6,http://localhost:5000/api/health,9,0,0
+1769830607761,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607755,10,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,1,6,http://localhost:5000/api/poll/status,10,0,0
+1769830607763,6,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,6,http://localhost:5000/api/health,6,0,0
+1769830607766,8,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,8,0,0
+1769830607755,22,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,6,http://localhost:5000/api/blockchain-status,22,0,0
+1769830607775,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607766,15,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,1,6,http://localhost:5000/api/poll/status,15,0,0
+1769830607780,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607770,14,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,7,http://localhost:5000/api/health,14,0,0
+1769830607785,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607785,10,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,7,http://localhost:5000/api/health,9,0,0
+1769830607781,14,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,2,7,http://localhost:5000/api/poll/status,13,0,0
+1769830607778,21,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,7,http://localhost:5000/api/blockchain-status,21,0,0
+1769830607790,9,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,9,0,0
+1769830607796,5,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,7,http://localhost:5000/api/health,5,0,0
+1769830607800,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830607802,5,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,7,http://localhost:5000/api/health,5,0,0
+1769830607784,26,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,2,7,http://localhost:5000/api/poll/status,26,0,2
+1769830607807,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830607800,11,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,7,http://localhost:5000/api/blockchain-status,11,0,0
+1769830607811,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607763,55,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,7,http://localhost:5000/api/health,55,0,3
+1769830607816,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830607808,15,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,7,http://localhost:5000/api/health,15,0,0
+1769830607751,73,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,1,7,http://localhost:5000/api/voting/results,73,0,0
+1769830607819,11,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,7,http://localhost:5000/api/health,10,0,0
+1769830607822,13,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,13,0,0
+1769830607824,12,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,7,http://localhost:5000/api/health,12,0,0
+1769830607812,27,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,7,http://localhost:5000/api/blockchain-status,27,0,0
+1769830607796,45,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,2,7,http://localhost:5000/api/poll/status,45,0,0
+1769830607836,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830607811,32,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,2,7,http://localhost:5000/api/poll/status,32,0,0
+1769830607838,7,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,7,http://localhost:5000/api/health,7,0,0
+1769830607831,16,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,7,http://localhost:5000/api/health,16,0,0
+1769830607846,5,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,7,http://localhost:5000/api/health,5,0,0
+1769830607844,8,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,2,7,http://localhost:5000/api/poll/status,8,0,0
+1769830607842,13,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,13,0,0
+1769830607848,11,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,7,http://localhost:5000/api/health,11,0,0
+1769830607857,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-1,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607840,21,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,7,http://localhost:5000/api/blockchain-status,21,0,0
+1769830607853,12,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,2,6,http://localhost:5000/api/poll/status,11,0,0
+1769830607842,24,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,2,6,http://localhost:5000/api/poll/status,24,0,0
+1769830607853,14,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,6,http://localhost:5000/api/health,14,0,0
+1769830607868,9,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,7,http://localhost:5000/api/health,9,0,0
+1769830607878,3,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,7,http://localhost:5000/api/health,3,0,0
+1769830607824,63,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,2,8,http://localhost:5000/api/voting/results,63,0,0
+1769830607860,31,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,8,http://localhost:5000/api/health,31,0,0
+1769830607883,12,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,12,0,0
+1769830607888,12,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,387,1,8,http://localhost:5000/api/voting/cast-blockchain,12,0,3
+1769830607862,38,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,8,http://localhost:5000/api/blockchain-status,38,0,0
+1769830607865,37,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,2,8,http://localhost:5000/api/poll/status,36,0,0
+1769830607896,11,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,11,0,0
+1769830607867,43,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,2,8,http://localhost:5000/api/poll/status,43,0,0
+1769830607901,13,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,387,1,8,http://localhost:5000/api/voting/cast-blockchain,12,0,0
+1769830607914,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,387,1,8,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607901,23,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,8,http://localhost:5000/api/blockchain-status,23,0,0
+1769830607908,22,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,21,0,0
+1769830607892,42,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,8,http://localhost:5000/api/health,42,0,0
+1769830607902,34,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,2,8,http://localhost:5000/api/poll/status,34,0,0
+1769830607930,8,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,8,0,0
+1769830607911,27,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,2,8,http://localhost:5000/api/poll/status,27,0,0
+1769830607919,20,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,387,1,8,http://localhost:5000/api/voting/cast-blockchain,20,0,0
+1769830607925,15,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,8,http://localhost:5000/api/blockchain-status,15,0,0
+1769830607940,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,387,1,8,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830607938,9,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,9,0,0
+1769830607944,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,387,1,8,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830607947,6,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,6,0,0
+1769830607950,7,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,387,1,8,http://localhost:5000/api/voting/cast-blockchain,7,0,0
+1769830607941,17,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,8,http://localhost:5000/api/blockchain-status,17,0,0
+1769830607954,5,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,5,0,0
+1769830607958,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,387,1,8,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830607935,26,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,8,http://localhost:5000/api/health,26,0,0
+1769830607962,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,387,1,8,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830607937,28,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,2,8,http://localhost:5000/api/poll/status,28,0,0
+1769830607960,6,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,6,0,0
+1769830607966,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,8,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830607967,5,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,5,0,0
+1769830607970,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,8,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830607973,5,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,5,0,0
+1769830607975,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,8,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607888,92,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,2,8,http://localhost:5000/api/voting/results,92,0,0
+1769830607959,23,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,8,http://localhost:5000/api/blockchain-status,23,0,0
+1769830607979,8,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,7,0,0
+1769830607980,8,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,8,http://localhost:5000/api/voting/cast-blockchain,8,0,0
+1769830607988,4,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,4,0,0
+1769830607989,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,8,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607983,12,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,8,http://localhost:5000/api/blockchain-status,12,0,0
+1769830607994,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,8,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830607993,6,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,6,0,0
+1769830607998,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,8,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607938,66,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,2,8,http://localhost:5000/api/poll/status,66,0,0
+1769830608004,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,8,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830607962,48,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,8,http://localhost:5000/api/health,47,0,0
+1769830608009,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,8,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830607966,48,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,2,8,http://localhost:5000/api/poll/status,48,0,0
+1769830608000,19,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,19,0,0
+1769830607996,25,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,8,http://localhost:5000/api/blockchain-status,25,0,0
+1769830608014,9,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,8,http://localhost:5000/api/voting/cast-blockchain,9,0,0
+1769830608024,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,8,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830608021,10,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,10,0,0
+1769830608028,9,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,8,http://localhost:5000/api/voting/cast-blockchain,8,0,0
+1769830608022,17,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,1,8,http://localhost:5000/api/blockchain-status,17,0,0
+1769830608037,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,9,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830608041,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,9,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830607981,63,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,2,9,http://localhost:5000/api/voting/results,63,0,0
+1769830608032,19,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,9,http://localhost:5000/api/health,19,0,0
+1769830608045,9,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,9,http://localhost:5000/api/voting/cast-blockchain,9,0,0
+1769830608055,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-2,text,false,,762,389,1,9,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830608005,58,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,2,8,http://localhost:5000/api/poll/status,57,0,0
+1769830608010,55,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,8,http://localhost:5000/api/health,55,0,0
+1769830608052,15,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,15,0,0
+1769830608040,29,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,29,0,0
+1769830608016,57,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,2,8,http://localhost:5000/api/poll/status,57,0,0
+1769830608067,11,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,11,0,0
+1769830608070,13,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,13,0,0
+1769830608084,8,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,8,0,0
+1769830608080,18,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,18,0,0
+1769830608064,38,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,2,8,http://localhost:5000/api/poll/status,38,0,0
+1769830608066,37,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,8,http://localhost:5000/api/health,37,0,0
+1769830608045,61,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,2,8,http://localhost:5000/api/voting/results,61,0,0
+1769830608093,14,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,14,0,0
+1769830608099,10,Health Check,200,OK,Health Check Tests - 200 Requests 1-1,text,true,,1092,126,2,8,http://localhost:5000/api/health,10,0,0
+1769830608075,35,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,2,8,http://localhost:5000/api/poll/status,34,0,0
+1769830608043,77,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,7,http://localhost:5000/api/blockchain-status,76,0,5
+1769830608108,12,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,7,http://localhost:5000/api/blockchain-status,11,0,0
+1769830608103,23,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,2,7,http://localhost:5000/api/poll/status,23,0,0
+1769830608120,7,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,7,http://localhost:5000/api/blockchain-status,7,0,0
+1769830608108,25,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,2,7,http://localhost:5000/api/voting/results,25,0,0
+1769830608127,10,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,7,http://localhost:5000/api/blockchain-status,10,0,0
+1769830608137,7,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,7,http://localhost:5000/api/blockchain-status,7,0,0
+1769830608126,21,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,2,7,http://localhost:5000/api/poll/status,21,0,0
+1769830608120,35,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,35,0,0
+1769830608145,13,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,13,0,0
+1769830607878,280,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,2,8,http://localhost:5000/api/voting/results,280,0,2
+1769830608105,56,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,8,http://localhost:5000/api/health,56,0,0
+1769830608148,16,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,2,8,http://localhost:5000/api/poll/status,16,0,0
+1769830608158,10,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,9,0,0
+1769830608134,41,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,2,9,http://localhost:5000/api/voting/results,41,0,0
+1769830608169,9,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,9,0,0
+1769830608179,9,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,8,0,0
+1769830608110,78,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,78,0,0
+1769830608162,28,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,9,http://localhost:5000/api/health,28,0,0
+1769830608156,39,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,39,0,0
+1769830608188,9,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,9,0,0
+1769830608156,46,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,2,9,http://localhost:5000/api/health,46,0,2
+1769830608165,39,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,39,0,0
+1769830608172,37,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,37,0,3
+1769830608176,33,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,2,9,http://localhost:5000/api/voting/results,33,0,0
+1769830608198,13,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,13,0,0
+1769830608211,8,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,8,0,0
+1769830608191,48,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,9,http://localhost:5000/api/health,47,0,0
+1769830608188,53,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,53,0,0
+1769830608220,21,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,21,0,0
+1769830608209,36,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,2,9,http://localhost:5000/api/voting/results,36,0,0
+1769830608241,6,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,6,0,0
+1769830608205,45,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,45,0,0
+1769830608209,46,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,46,0,0
+1769830608240,17,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,9,http://localhost:5000/api/health,17,0,0
+1769830608203,56,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,2,9,http://localhost:5000/api/health,56,0,0
+1769830608248,11,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,11,0,0
+1769830608196,67,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,67,0,0
+1769830608260,7,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,7,0,0
+1769830608241,30,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,30,0,0
+1769830608251,24,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,24,0,0
+1769830608246,30,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,2,9,http://localhost:5000/api/voting/results,30,0,0
+1769830608256,23,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,23,0,0
+1769830608268,11,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,11,0,0
+1769830608259,21,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,2,9,http://localhost:5000/api/health,21,0,0
+1769830608258,27,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,9,http://localhost:5000/api/health,27,0,0
+1769830608279,7,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,7,0,0
+1769830608288,7,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,7,0,0
+1769830608272,24,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,24,0,0
+1769830608275,25,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,25,0,0
+1769830608296,7,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,7,0,0
+1769830608279,24,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,24,0,0
+1769830608281,24,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,2,9,http://localhost:5000/api/health,24,0,0
+1769830608286,25,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,9,http://localhost:5000/api/health,25,0,0
+1769830608276,36,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,2,9,http://localhost:5000/api/voting/results,36,0,0
+1769830608264,57,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,57,0,0
+1769830608303,20,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,20,0,0
+1769830608324,8,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,8,0,0
+1769830608297,35,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,35,0,0
+1769830608332,10,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,10,0,0
+1769830608300,47,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,47,0,0
+1769830608304,45,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,45,0,0
+1769830608343,8,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,8,0,0
+1769830608306,45,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,2,9,http://localhost:5000/api/health,45,0,0
+1769830608313,41,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,2,9,http://localhost:5000/api/voting/results,41,0,0
+1769830608312,43,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,9,http://localhost:5000/api/health,43,0,0
+1769830608352,8,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,7,0,0
+1769830608332,34,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,34,0,0
+1769830608360,11,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,10,0,0
+1769830608348,23,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,23,0,0
+1769830608352,21,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,2,9,http://localhost:5000/api/health,21,0,0
+1769830608349,26,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,26,0,0
+1769830608322,59,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,10,http://localhost:5000/api/blockchain-status,59,0,0
+1769830608355,30,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,11,http://localhost:5000/api/health,29,0,0
+1769830608371,21,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,11,http://localhost:5000/api/blockchain-status,21,0,0
+1769830608386,7,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,387,1,11,http://localhost:5000/api/voting/cast-blockchain,7,0,4
+1769830608355,39,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,3,11,http://localhost:5000/api/voting/results,39,0,0
+1769830608394,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,387,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830608367,32,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,11,http://localhost:5000/api/poll/status,32,0,0
+1769830608398,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,387,1,11,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830608393,17,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-1,text,true,,1613,137,2,11,http://localhost:5000/api/blockchain-status,17,0,0
+1769830608405,7,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,387,1,10,http://localhost:5000/api/voting/cast-blockchain,7,0,0
+1769830608371,48,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,3,10,http://localhost:5000/api/poll/status,48,0,0
+1769830608413,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,387,1,10,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830608374,48,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,2,10,http://localhost:5000/api/health,48,0,0
+1769830608420,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,387,1,10,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830608376,50,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,10,http://localhost:5000/api/poll/status,50,0,0
+1769830608426,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,387,1,10,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830608385,47,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,10,http://localhost:5000/api/health,47,0,0
+1769830608158,277,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,10,http://localhost:5000/api/voting/results,277,0,0
+1769830608432,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,387,1,10,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830608436,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,387,1,10,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830608394,50,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,3,10,http://localhost:5000/api/voting/results,50,0,0
+1769830608440,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830608447,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830608400,54,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,10,http://localhost:5000/api/poll/status,54,0,0
+1769830608451,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830608457,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830608461,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830608466,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830608471,9,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,9,0,0
+1769830608424,56,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,2,10,http://localhost:5000/api/health,56,0,0
+1769830608426,57,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,10,http://localhost:5000/api/poll/status,57,0,0
+1769830608480,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830608487,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830608382,112,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,1,10,http://localhost:5000/api/blockchain-status,112,0,0
+1769830608493,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830608432,69,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,10,http://localhost:5000/api/health,69,0,0
+1769830608498,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830608444,59,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,3,10,http://localhost:5000/api/voting/results,59,0,0
+1769830608420,84,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,3,10,http://localhost:5000/api/poll/status,84,0,0
+1769830608502,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830608455,55,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,10,http://localhost:5000/api/poll/status,55,0,0
+1769830608507,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830608511,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830608517,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830608484,36,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,10,http://localhost:5000/api/poll/status,36,0,0
+1769830608520,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-3,text,false,,762,389,1,10,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830608501,28,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,2,9,http://localhost:5000/api/health,28,0,0
+1769830608504,32,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,3,9,http://localhost:5000/api/voting/results,32,0,0
+1769830608505,33,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,33,0,0
+1769830608480,60,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,2,9,http://localhost:5000/api/health,60,0,0
+1769830608511,32,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,9,http://localhost:5000/api/poll/status,32,0,0
+1769830608495,53,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,1,9,http://localhost:5000/api/blockchain-status,53,0,0
+1769830608520,34,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,10,http://localhost:5000/api/poll/status,34,0,0
+1769830608529,29,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,3,10,http://localhost:5000/api/health,29,0,0
+1769830608538,29,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,3,10,http://localhost:5000/api/voting/results,28,0,0
+1769830608539,28,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,3,10,http://localhost:5000/api/poll/status,28,0,0
+1769830608541,28,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,10,http://localhost:5000/api/health,28,0,0
+1769830608544,29,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,4,11,http://localhost:5000/api/poll/status,29,0,0
+1769830608555,32,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,4,11,http://localhost:5000/api/poll/status,32,0,0
+1769830608567,24,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,3,11,http://localhost:5000/api/voting/results,24,0,0
+1769830608558,33,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,3,11,http://localhost:5000/api/health,33,0,0
+1769830608568,29,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,4,11,http://localhost:5000/api/poll/status,28,0,0
+1769830608553,47,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,11,http://localhost:5000/api/health,47,0,2
+1769830608574,29,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,4,11,http://localhost:5000/api/poll/status,29,0,0
+1769830608549,60,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,1,11,http://localhost:5000/api/blockchain-status,60,0,0
+1769830608378,235,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,11,http://localhost:5000/api/voting/results,234,0,2
+1769830608592,23,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,3,11,http://localhost:5000/api/voting/results,23,0,0
+1769830608572,45,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,4,11,http://localhost:5000/api/poll/status,45,0,2
+1769830608588,31,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,4,11,http://localhost:5000/api/poll/status,31,0,0
+1769830608592,31,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,3,11,http://localhost:5000/api/health,31,0,0
+1769830608597,39,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,4,11,http://localhost:5000/api/poll/status,39,0,0
+1769830608600,43,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,11,http://localhost:5000/api/health,43,0,0
+1769830608616,28,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,3,11,http://localhost:5000/api/voting/results,28,0,0
+1769830608603,45,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,4,11,http://localhost:5000/api/poll/status,45,0,0
+1769830608436,217,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,11,http://localhost:5000/api/voting/results,217,0,0
+1769830608617,46,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,4,11,http://localhost:5000/api/poll/status,46,0,0
+1769830608620,48,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,4,11,http://localhost:5000/api/poll/status,48,0,0
+1769830608624,48,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,3,11,http://localhost:5000/api/health,48,0,0
+1769830608569,111,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,11,http://localhost:5000/api/health,111,0,0
+1769830608637,45,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,4,11,http://localhost:5000/api/poll/status,45,0,0
+1769830608645,37,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,3,11,http://localhost:5000/api/voting/results,37,0,0
+1769830608644,45,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,11,http://localhost:5000/api/health,45,0,0
+1769830608610,110,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,12,http://localhost:5000/api/blockchain-status,110,0,0
+1769830608683,44,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,3,12,http://localhost:5000/api/voting/results,44,0,0
+1769830608649,84,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,4,12,http://localhost:5000/api/poll/status,84,0,0
+1769830608664,89,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,4,12,http://localhost:5000/api/poll/status,89,0,0
+1769830608669,91,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,4,12,http://localhost:5000/api/poll/status,91,0,0
+1769830608673,93,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,3,12,http://localhost:5000/api/health,93,0,0
+1769830608728,46,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,3,12,http://localhost:5000/api/voting/results,46,0,0
+1769830608681,101,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,12,http://localhost:5000/api/health,101,0,0
+1769830608683,101,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,4,12,http://localhost:5000/api/poll/status,101,0,0
+1769830608690,99,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,12,http://localhost:5000/api/health,99,0,0
+1769830608754,68,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,4,12,http://localhost:5000/api/poll/status,68,0,0
+1769830608760,68,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,4,12,http://localhost:5000/api/poll/status,68,0,0
+1769830608774,54,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,3,12,http://localhost:5000/api/voting/results,54,0,0
+1769830608767,65,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,3,12,http://localhost:5000/api/health,65,0,0
+1769830608720,119,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,12,http://localhost:5000/api/blockchain-status,119,0,0
+1769830608734,118,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,4,12,http://localhost:5000/api/poll/status,118,0,0
+1769830608782,73,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,12,http://localhost:5000/api/health,73,0,0
+1769830608785,73,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,4,12,http://localhost:5000/api/poll/status,73,0,0
+1769830608790,77,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,12,http://localhost:5000/api/health,77,0,0
+1769830608829,38,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,3,12,http://localhost:5000/api/voting/results,38,0,0
+1769830608823,67,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,4,14,http://localhost:5000/api/poll/status,67,0,0
+1769830608882,10,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,387,1,14,http://localhost:5000/api/voting/cast-blockchain,10,0,3
+1769830608829,65,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,4,14,http://localhost:5000/api/poll/status,65,0,0
+1769830608892,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,387,1,14,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830608833,65,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,3,14,http://localhost:5000/api/health,65,0,0
+1769830608897,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,387,1,14,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830608710,194,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,14,http://localhost:5000/api/blockchain-status,194,0,2
+1769830608901,13,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,387,1,14,http://localhost:5000/api/voting/cast-blockchain,13,0,0
+1769830608852,65,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,4,14,http://localhost:5000/api/poll/status,65,0,0
+1769830608914,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,387,1,14,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830608918,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,387,1,14,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830608855,72,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,14,http://localhost:5000/api/health,72,0,0
+1769830608868,64,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,14,http://localhost:5000/api/voting/results,64,0,0
+1769830608858,77,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,4,14,http://localhost:5000/api/poll/status,77,0,0
+1769830608868,69,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,14,http://localhost:5000/api/health,69,0,0
+1769830608923,14,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,387,1,14,http://localhost:5000/api/voting/cast-blockchain,14,0,0
+1769830608937,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,387,1,14,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830608941,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,387,1,14,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830608891,54,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,4,14,http://localhost:5000/api/poll/status,54,0,0
+1769830608895,56,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,4,14,http://localhost:5000/api/poll/status,56,0,0
+1769830608899,57,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,3,14,http://localhost:5000/api/health,56,0,0
+1769830608945,14,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,13,0,0
+1769830608959,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830608613,350,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,4,15,http://localhost:5000/api/voting/results,350,0,0
+1769830608964,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830608840,138,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,16,http://localhost:5000/api/blockchain-status,138,0,0
+1769830608970,9,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,16,http://localhost:5000/api/voting/cast-blockchain,9,0,0
+1769830608979,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,16,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830608933,54,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,16,http://localhost:5000/api/voting/results,54,0,0
+1769830608918,75,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,5,16,http://localhost:5000/api/poll/status,75,0,0
+1769830608927,69,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,4,16,http://localhost:5000/api/health,69,0,0
+1769830608936,65,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,5,16,http://localhost:5000/api/poll/status,65,0,0
+1769830608983,23,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,16,http://localhost:5000/api/voting/cast-blockchain,23,0,0
+1769830608937,73,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,4,16,http://localhost:5000/api/health,73,0,0
+1769830609006,13,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,16,http://localhost:5000/api/voting/cast-blockchain,13,0,0
+1769830609020,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,16,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830609026,15,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,16,http://localhost:5000/api/voting/cast-blockchain,15,0,0
+1769830608978,70,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,16,http://localhost:5000/api/poll/status,70,0,3
+1769830609041,16,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,16,http://localhost:5000/api/voting/cast-blockchain,16,0,0
+1769830608988,78,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,16,http://localhost:5000/api/voting/results,78,0,0
+1769830608945,123,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,5,16,http://localhost:5000/api/poll/status,122,0,0
+1769830609058,21,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,16,http://localhost:5000/api/voting/cast-blockchain,21,0,0
+1769830608956,124,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,4,16,http://localhost:5000/api/health,124,0,0
+1769830609080,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,16,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830608952,147,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,5,16,http://localhost:5000/api/poll/status,147,0,0
+1769830609086,23,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,16,http://localhost:5000/api/voting/cast-blockchain,23,0,0
+1769830608653,459,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,4,16,http://localhost:5000/api/voting/results,459,0,0
+1769830608905,209,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,16,http://localhost:5000/api/blockchain-status,209,0,0
+1769830609111,7,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,16,http://localhost:5000/api/voting/cast-blockchain,7,0,0
+1769830608959,170,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,4,16,http://localhost:5000/api/health,170,0,6
+1769830608993,142,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,5,16,http://localhost:5000/api/poll/status,141,0,0
+1769830609119,16,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,16,http://localhost:5000/api/voting/cast-blockchain,15,0,0
+1769830608997,143,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,4,16,http://localhost:5000/api/health,143,0,0
+1769830609002,143,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,5,16,http://localhost:5000/api/poll/status,143,0,0
+1769830609135,10,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-4,text,false,,762,389,1,16,http://localhost:5000/api/voting/cast-blockchain,10,0,0
+1769830609049,98,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,98,0,0
+1769830609148,5,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,5,0,0
+1769830609010,144,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,4,15,http://localhost:5000/api/health,144,0,0
+1769830609067,91,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,15,http://localhost:5000/api/voting/results,91,0,0
+1769830609068,112,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,112,0,0
+1769830609080,107,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,4,15,http://localhost:5000/api/health,107,0,0
+1769830609100,99,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,99,0,0
+1769830609154,57,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,57,0,0
+1769830608978,252,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,15,http://localhost:5000/api/blockchain-status,252,0,0
+1769830609158,76,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,15,http://localhost:5000/api/voting/results,76,0,0
+1769830609211,23,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,23,0,0
+1769830609129,115,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,4,15,http://localhost:5000/api/health,115,0,0
+1769830609235,10,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,10,0,0
+1769830609135,111,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,111,0,0
+1769830609140,110,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,4,15,http://localhost:5000/api/health,110,0,0
+1769830609246,4,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,4,0,0
+1769830609155,99,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,4,15,http://localhost:5000/api/health,99,0,0
+1769830609145,110,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,110,0,0
+1769830609250,5,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,5,0,0
+1769830609256,5,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,5,0,0
+1769830609262,6,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,6,0,0
+1769830609235,34,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,15,http://localhost:5000/api/voting/results,34,0,0
+1769830609181,91,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,91,0,0
+1769830609188,87,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,4,15,http://localhost:5000/api/health,87,0,0
+1769830609269,6,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,6,0,0
+1769830609275,4,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,4,0,0
+1769830609199,80,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,80,0,0
+1769830609280,4,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,4,0,0
+1769830609115,173,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,15,http://localhost:5000/api/blockchain-status,173,0,0
+1769830609284,5,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,5,0,0
+1769830609245,47,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,4,15,http://localhost:5000/api/health,47,0,0
+1769830609246,47,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,47,0,0
+1769830609269,27,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,15,http://localhost:5000/api/voting/results,27,0,0
+1769830609250,48,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,4,15,http://localhost:5000/api/health,48,0,0
+1769830609290,10,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,10,0,0
+1769830609300,6,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,6,0,0
+1769830609254,52,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,4,15,http://localhost:5000/api/health,52,0,0
+1769830609256,52,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,52,0,0
+1769830609307,3,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,3,0,0
+1769830609311,4,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,4,0,0
+1769830609316,4,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,4,0,0
+1769830609321,4,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,4,0,0
+1769830609297,30,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,15,http://localhost:5000/api/voting/results,30,0,0
+1769830609272,57,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,57,0,0
+1769830609325,5,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,5,0,0
+1769830609275,57,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,4,15,http://localhost:5000/api/health,57,0,0
+1769830609330,5,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,5,0,0
+1769830609280,59,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,59,0,0
+1769830609336,6,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,6,0,0
+1769830609231,113,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,15,http://localhost:5000/api/blockchain-status,113,0,0
+1769830609342,7,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,7,0,0
+1769830609350,6,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,6,0,0
+1769830609327,36,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,15,http://localhost:5000/api/voting/results,36,0,0
+1769830609356,7,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,7,0,0
+1769830609364,4,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,4,0,0
+1769830609292,81,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,4,15,http://localhost:5000/api/health,81,0,0
+1769830609368,6,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,6,0,0
+1769830609294,81,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,81,0,0
+1769830609299,79,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,4,15,http://localhost:5000/api/health,79,0,0
+1769830609375,4,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,15,http://localhost:5000/api/poll/status,4,0,0
+1769830609307,75,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,4,16,http://localhost:5000/api/health,75,0,0
+1769830609379,5,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,16,http://localhost:5000/api/poll/status,5,0,0
+1769830609384,6,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,5,16,http://localhost:5000/api/poll/status,6,0,0
+1769830609308,82,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-1,text,true,,882,131,5,16,http://localhost:5000/api/poll/status,82,0,0
+1769830609384,10,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,387,1,15,http://localhost:5000/api/voting/cast-blockchain,10,0,3
+1769830609364,34,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,15,http://localhost:5000/api/voting/results,34,0,0
+1769830609394,9,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,387,1,15,http://localhost:5000/api/voting/cast-blockchain,9,0,0
+1769830609329,76,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,76,0,0
+1769830609390,16,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,16,0,0
+1769830609333,75,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,4,15,http://localhost:5000/api/health,75,0,0
+1769830609403,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,387,1,15,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830609339,73,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,73,0,0
+1769830609409,7,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,387,1,15,http://localhost:5000/api/voting/cast-blockchain,7,0,0
+1769830608881,537,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,4,15,http://localhost:5000/api/voting/results,537,0,2
+1769830609416,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,387,1,15,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830609288,138,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,15,http://localhost:5000/api/blockchain-status,137,0,0
+1769830609406,21,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,21,0,0
+1769830609373,58,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,4,15,http://localhost:5000/api/health,58,0,0
+1769830609423,8,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,387,1,15,http://localhost:5000/api/voting/cast-blockchain,8,0,0
+1769830609431,8,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,387,1,15,http://localhost:5000/api/voting/cast-blockchain,8,0,0
+1769830609375,70,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,70,0,0
+1769830609378,71,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,4,15,http://localhost:5000/api/health,71,0,0
+1769830609441,8,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,387,1,15,http://localhost:5000/api/voting/cast-blockchain,8,0,0
+1769830609398,51,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,15,http://localhost:5000/api/voting/results,51,0,0
+1769830609427,25,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,25,0,0
+1769830609449,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,387,1,15,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830609383,77,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,4,15,http://localhost:5000/api/health,77,0,0
+1769830609454,9,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,9,0,0
+1769830609452,16,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,16,0,0
+1769830609464,9,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,8,0,0
+1769830609344,131,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,15,http://localhost:5000/api/blockchain-status,131,0,0
+1769830609473,8,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,8,0,0
+1769830609406,78,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,78,0,0
+1769830609468,16,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,16,0,0
+1769830609481,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830609409,78,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,4,15,http://localhost:5000/api/health,78,0,0
+1769830609487,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609413,77,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,77,0,0
+1769830609485,7,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,7,0,0
+1769830609490,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830609449,45,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,15,http://localhost:5000/api/voting/results,45,0,0
+1769830609431,67,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,4,15,http://localhost:5000/api/health,67,0,0
+1769830609494,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830609113,387,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,4,15,http://localhost:5000/api/voting/results,387,0,0
+1769830609492,9,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,9,0,0
+1769830609445,58,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,58,0,0
+1769830609499,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830609449,59,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,4,15,http://localhost:5000/api/health,59,0,0
+1769830609505,8,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,8,0,0
+1769830609502,15,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,15,0,0
+1769830609461,58,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,4,15,http://localhost:5000/api/health,58,0,0
+1769830609514,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830609495,32,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,15,http://localhost:5000/api/voting/results,31,0,0
+1769830609521,7,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,7,0,0
+1769830609528,9,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,15,http://localhost:5000/api/voting/cast-blockchain,9,0,0
+1769830609485,54,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,54,0,0
+1769830609517,24,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-5,text,true,,882,131,4,15,http://localhost:5000/api/poll/status,24,0,0
+1769830609487,59,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,4,14,http://localhost:5000/api/health,59,0,0
+1769830609537,10,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,14,http://localhost:5000/api/voting/cast-blockchain,10,0,0
+1769830608964,588,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,4,14,http://localhost:5000/api/voting/results,588,0,0
+1769830609548,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,14,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830609553,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,14,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830609559,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-5,text,false,,762,389,1,14,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609527,36,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,14,http://localhost:5000/api/voting/results,36,0,0
+1769830609426,139,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,13,http://localhost:5000/api/blockchain-status,139,0,0
+1769830609491,75,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,13,http://localhost:5000/api/poll/status,75,0,0
+1769830609498,70,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,4,13,http://localhost:5000/api/health,70,0,0
+1769830609503,68,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,13,http://localhost:5000/api/poll/status,68,0,0
+1769830609509,66,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,4,13,http://localhost:5000/api/health,66,0,0
+1769830609475,107,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,13,http://localhost:5000/api/blockchain-status,107,0,0
+1769830609564,25,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,13,http://localhost:5000/api/voting/results,25,0,0
+1769830609540,54,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,3,13,http://localhost:5000/api/poll/status,54,0,0
+1769830609547,50,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,4,13,http://localhost:5000/api/health,50,0,0
+1769830609519,80,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,4,13,http://localhost:5000/api/health,80,0,0
+1769830609567,41,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,13,http://localhost:5000/api/poll/status,41,0,0
+1769830609568,44,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,4,13,http://localhost:5000/api/health,44,0,0
+1769830609590,23,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,13,http://localhost:5000/api/voting/results,23,0,0
+1769830609576,40,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,4,13,http://localhost:5000/api/health,40,0,0
+1769830609571,62,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,13,http://localhost:5000/api/poll/status,62,0,0
+1769830609595,41,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,3,13,http://localhost:5000/api/poll/status,41,0,0
+1769830609614,25,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,13,http://localhost:5000/api/voting/results,25,0,0
+1769830609597,42,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,4,13,http://localhost:5000/api/health,42,0,0
+1769830609600,40,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,4,13,http://localhost:5000/api/health,40,0,0
+1769830609565,77,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,13,http://localhost:5000/api/blockchain-status,77,0,0
+1769830609612,33,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,4,13,http://localhost:5000/api/health,33,0,0
+1769830609617,34,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,4,13,http://localhost:5000/api/health,34,0,0
+1769830609639,19,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,13,http://localhost:5000/api/voting/results,19,0,0
+1769830609582,76,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,13,http://localhost:5000/api/blockchain-status,76,0,0
+1769830609609,60,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,13,http://localhost:5000/api/poll/status,60,0,0
+1769830609634,40,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,13,http://localhost:5000/api/poll/status,40,0,0
+1769830609636,39,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,3,13,http://localhost:5000/api/poll/status,39,0,0
+1769830609639,40,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,4,13,http://localhost:5000/api/health,40,0,0
+1769830609641,40,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,4,13,http://localhost:5000/api/health,40,0,0
+1769830609658,29,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,13,http://localhost:5000/api/voting/results,29,0,0
+1769830609646,53,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,4,13,http://localhost:5000/api/health,53,0,0
+1769830609652,52,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,4,13,http://localhost:5000/api/health,52,0,0
+1769830609419,292,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,4,13,http://localhost:5000/api/voting/results,292,0,0
+1769830609688,34,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,13,http://localhost:5000/api/voting/results,34,0,0
+1769830609669,54,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,13,http://localhost:5000/api/poll/status,54,0,0
+1769830609674,54,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,13,http://localhost:5000/api/poll/status,54,0,0
+1769830609676,54,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,3,13,http://localhost:5000/api/poll/status,54,0,0
+1769830609679,59,Health Check,200,OK,Health Check Tests - 200 Requests 1-2,text,true,,1092,126,4,13,http://localhost:5000/api/health,59,0,0
+1769830609681,61,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,12,http://localhost:5000/api/health,61,0,0
+1769830609723,24,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,12,http://localhost:5000/api/voting/results,24,0,0
+1769830609643,107,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,12,http://localhost:5000/api/blockchain-status,107,0,0
+1769830609658,93,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,12,http://localhost:5000/api/blockchain-status,93,0,0
+1769830609699,57,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,12,http://localhost:5000/api/health,57,0,0
+1769830609705,56,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,12,http://localhost:5000/api/health,56,0,0
+1769830609500,281,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,4,12,http://localhost:5000/api/voting/results,281,0,0
+1769830609748,41,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,12,http://localhost:5000/api/voting/results,41,0,0
+1769830609724,80,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,12,http://localhost:5000/api/poll/status,80,0,0
+1769830609728,81,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,12,http://localhost:5000/api/poll/status,81,0,0
+1769830609790,21,Get Results,200,OK,Results Tests - 200 Requests 4-1,text,true,,1955,134,4,12,http://localhost:5000/api/voting/results,21,0,0
+1769830609743,76,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,11,http://localhost:5000/api/health,76,0,0
+1769830609553,273,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,11,http://localhost:5000/api/voting/results,273,0,0
+1769830609730,103,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,3,11,http://localhost:5000/api/poll/status,103,0,0
+1769830609762,72,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,11,http://localhost:5000/api/health,72,0,0
+1769830609750,90,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,11,http://localhost:5000/api/blockchain-status,90,0,0
+1769830609805,38,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,11,http://localhost:5000/api/poll/status,38,0,0
+1769830609757,87,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,11,http://localhost:5000/api/health,87,0,0
+1769830609809,36,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,11,http://localhost:5000/api/poll/status,36,0,0
+1769830609820,29,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,11,http://localhost:5000/api/health,29,0,0
+1769830609752,99,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,11,http://localhost:5000/api/blockchain-status,99,0,0
+1769830609833,26,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,3,11,http://localhost:5000/api/poll/status,26,0,0
+1769830609835,26,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,11,http://localhost:5000/api/health,26,0,0
+1769830609843,27,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,3,11,http://localhost:5000/api/poll/status,27,0,0
+1769830609845,27,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,11,http://localhost:5000/api/health,27,0,0
+1769830609846,28,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-2,text,true,,882,131,3,11,http://localhost:5000/api/poll/status,28,0,0
+1769830609849,28,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,10,http://localhost:5000/api/health,28,0,0
+1769830609859,23,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,23,0,0
+1769830609861,23,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,11,http://localhost:5000/api/health,23,0,0
+1769830609884,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,387,1,11,http://localhost:5000/api/voting/cast-blockchain,5,0,3
+1769830609840,51,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,11,http://localhost:5000/api/blockchain-status,51,0,0
+1769830609890,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,387,1,11,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830609852,41,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,11,http://localhost:5000/api/blockchain-status,40,0,0
+1769830609893,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,387,1,11,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830609871,26,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,2,11,http://localhost:5000/api/poll/status,26,0,0
+1769830609895,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,387,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609872,27,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,11,http://localhost:5000/api/health,27,0,0
+1769830609898,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,387,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609877,27,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,11,http://localhost:5000/api/health,27,0,0
+1769830609902,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,387,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609905,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,387,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609909,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,387,1,11,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830609712,201,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,11,http://localhost:5000/api/voting/results,201,0,0
+1769830609911,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,387,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609914,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830609883,35,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,2,11,http://localhost:5000/api/poll/status,35,0,0
+1769830609916,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609884,36,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,11,http://localhost:5000/api/health,36,0,0
+1769830609919,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609923,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830609898,30,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,2,11,http://localhost:5000/api/poll/status,30,0,0
+1769830609926,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609900,30,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,11,http://localhost:5000/api/health,30,0,0
+1769830609929,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609905,29,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,11,http://localhost:5000/api/health,29,0,0
+1769830609932,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609935,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609939,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830609918,29,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,2,11,http://localhost:5000/api/poll/status,29,0,0
+1769830609920,29,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,11,http://localhost:5000/api/health,29,0,0
+1769830609945,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830609892,61,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,11,http://localhost:5000/api/blockchain-status,61,0,0
+1769830609893,62,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,11,http://localhost:5000/api/blockchain-status,62,0,0
+1769830609951,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830609928,30,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,2,11,http://localhost:5000/api/poll/status,30,0,0
+1769830609955,7,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,7,0,0
+1769830609962,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609931,38,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,11,http://localhost:5000/api/health,38,0,0
+1769830609965,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830609935,38,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,11,http://localhost:5000/api/health,38,0,0
+1769830609971,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830609781,195,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,11,http://localhost:5000/api/voting/results,195,0,0
+1769830609975,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-6,text,false,,762,389,1,11,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830609947,40,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,40,0,0
+1769830609949,42,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,10,http://localhost:5000/api/health,41,0,0
+1769830609958,45,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,45,0,0
+1769830609970,36,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,10,http://localhost:5000/api/health,36,0,0
+1769830609974,35,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,10,http://localhost:5000/api/health,35,0,0
+1769830609954,58,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,10,http://localhost:5000/api/blockchain-status,58,0,0
+1769830609827,186,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,10,http://localhost:5000/api/voting/results,186,0,0
+1769830609987,28,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,28,0,0
+1769830609991,26,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,10,http://localhost:5000/api/health,26,0,0
+1769830609955,68,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,10,http://localhost:5000/api/blockchain-status,68,0,0
+1769830610003,28,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,28,0,0
+1769830610009,26,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,10,http://localhost:5000/api/health,26,0,0
+1769830610015,30,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,30,0,0
+1769830610006,40,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,10,http://localhost:5000/api/health,40,0,0
+1769830610018,29,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,10,http://localhost:5000/api/health,29,0,0
+1769830610032,20,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,20,0,0
+1769830610036,24,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,10,http://localhost:5000/api/health,24,0,0
+1769830610012,55,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,10,http://localhost:5000/api/blockchain-status,55,0,0
+1769830610045,30,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,30,0,0
+1769830610046,30,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,10,http://localhost:5000/api/health,30,0,0
+1769830610048,30,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,10,http://localhost:5000/api/health,30,0,0
+1769830610024,60,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,10,http://localhost:5000/api/blockchain-status,60,0,0
+1769830610053,34,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,34,0,0
+1769830610060,34,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,10,http://localhost:5000/api/health,33,0,0
+1769830609913,182,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,10,http://localhost:5000/api/voting/results,182,0,0
+1769830610075,28,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,28,0,0
+1769830610077,28,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,10,http://localhost:5000/api/health,28,0,0
+1769830610079,28,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,10,http://localhost:5000/api/health,28,0,0
+1769830610067,46,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,10,http://localhost:5000/api/blockchain-status,46,0,0
+1769830609976,139,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,10,http://localhost:5000/api/voting/results,139,0,0
+1769830610088,28,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,28,0,0
+1769830610094,27,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,10,http://localhost:5000/api/health,27,0,0
+1769830610103,25,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,25,0,0
+1769830610105,25,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,10,http://localhost:5000/api/health,25,0,0
+1769830610107,24,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,10,http://localhost:5000/api/health,24,0,0
+1769830610085,48,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,10,http://localhost:5000/api/blockchain-status,48,0,0
+1769830610117,23,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,23,0,0
+1769830610122,23,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,10,http://localhost:5000/api/health,23,0,0
+1769830610013,136,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,10,http://localhost:5000/api/voting/results,136,0,0
+1769830610129,22,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,22,0,0
+1769830610130,22,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,10,http://localhost:5000/api/health,22,0,0
+1769830610131,23,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,10,http://localhost:5000/api/health,23,0,0
+1769830610114,43,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,10,http://localhost:5000/api/blockchain-status,43,0,0
+1769830610140,25,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-3,text,true,,882,131,2,10,http://localhost:5000/api/poll/status,25,0,0
+1769830610145,24,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,9,http://localhost:5000/api/health,24,0,0
+1769830610133,40,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,40,0,0
+1769830610151,26,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,1,9,http://localhost:5000/api/poll/status,26,0,0
+1769830610153,26,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,9,http://localhost:5000/api/health,26,0,0
+1769830610154,26,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,9,http://localhost:5000/api/health,26,0,0
+1769830610169,26,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,3,9,http://localhost:5000/api/health,26,0,0
+1769830610157,45,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,9,http://localhost:5000/api/blockchain-status,45,0,0
+1769830610178,28,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,1,9,http://localhost:5000/api/poll/status,28,0,0
+1769830610179,29,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,3,9,http://localhost:5000/api/health,29,0,0
+1769830610181,29,Health Check,200,OK,Health Check Tests - 200 Requests 1-3,text,true,,1092,126,3,9,http://localhost:5000/api/health,29,0,0
+1769830610095,118,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,8,http://localhost:5000/api/voting/results,118,0,0
+1769830610195,32,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,2,8,http://localhost:5000/api/health,31,0,0
+1769830610174,58,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,58,0,0
+1769830610207,30,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,1,8,http://localhost:5000/api/poll/status,30,0,0
+1769830610209,29,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,2,8,http://localhost:5000/api/health,29,0,0
+1769830610115,127,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,8,http://localhost:5000/api/voting/results,127,0,0
+1769830610227,20,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,2,8,http://localhost:5000/api/health,20,0,0
+1769830610202,48,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,48,0,0
+1769830610237,18,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,1,8,http://localhost:5000/api/poll/status,18,0,0
+1769830610239,18,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,2,8,http://localhost:5000/api/health,18,0,0
+1769830610248,19,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,2,8,http://localhost:5000/api/health,19,0,0
+1769830610232,38,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,38,0,0
+1769830610256,18,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,1,8,http://localhost:5000/api/poll/status,18,0,0
+1769830610257,19,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,2,8,http://localhost:5000/api/health,19,0,0
+1769830610251,32,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,32,0,0
+1769830610149,136,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,8,http://localhost:5000/api/voting/results,136,0,0
+1769830610267,22,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,2,8,http://localhost:5000/api/health,22,0,0
+1769830610275,20,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,1,8,http://localhost:5000/api/poll/status,20,0,0
+1769830610276,21,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,2,8,http://localhost:5000/api/health,21,0,0
+1769830610271,33,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,33,0,0
+1769830610289,21,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,2,8,http://localhost:5000/api/health,21,0,0
+1769830610214,100,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,8,http://localhost:5000/api/voting/results,100,0,0
+1769830610296,19,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,1,8,http://localhost:5000/api/poll/status,19,0,0
+1769830610297,19,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,2,8,http://localhost:5000/api/health,19,0,0
+1769830610283,36,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,36,0,0
+1769830610310,20,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,2,8,http://localhost:5000/api/health,20,0,0
+1769830610304,30,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,30,0,0
+1769830610242,94,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,8,http://localhost:5000/api/voting/results,94,0,0
+1769830610315,23,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,1,8,http://localhost:5000/api/poll/status,23,0,0
+1769830610316,24,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,2,8,http://localhost:5000/api/health,24,0,0
+1769830610330,21,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,2,8,http://localhost:5000/api/health,21,0,0
+1769830610320,36,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,36,0,0
+1769830610339,20,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,1,8,http://localhost:5000/api/poll/status,20,0,0
+1769830610340,20,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1092,126,2,8,http://localhost:5000/api/health,20,0,0
+1769830610351,21,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1092,126,2,8,http://localhost:5000/api/health,21,0,0
+1769830610334,42,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,42,0,0
+1769830610359,26,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,1,9,http://localhost:5000/api/poll/status,26,0,0
+1769830610361,25,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1093,126,2,9,http://localhost:5000/api/health,25,0,0
+1769830610383,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,387,1,9,http://localhost:5000/api/voting/cast-blockchain,5,0,2
+1769830610285,105,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,9,http://localhost:5000/api/voting/results,105,0,0
+1769830610388,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,387,1,9,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830610391,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,387,1,9,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830610396,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,387,1,9,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830610372,29,Health Check,200,OK,Health Check Tests - 200 Requests 1-4,text,true,,1093,126,2,9,http://localhost:5000/api/health,29,0,0
+1769830610400,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,387,1,8,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830610404,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,387,1,8,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830610356,53,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,8,http://localhost:5000/api/blockchain-status,53,0,0
+1769830610408,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,387,1,8,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830610385,31,Poll Status,200,OK,Poll Status Tests - 200 Requests 3-4,text,true,,882,131,1,8,http://localhost:5000/api/poll/status,31,0,0
+1769830610412,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,387,1,7,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830610387,31,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1093,126,1,7,http://localhost:5000/api/health,31,0,0
+1769830610419,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,387,1,7,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830610422,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830610377,51,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,7,http://localhost:5000/api/blockchain-status,51,0,0
+1769830610426,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830610431,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830610437,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830610442,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830610314,135,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,7,http://localhost:5000/api/voting/results,135,0,0
+1769830610445,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830610419,34,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1093,126,1,7,http://localhost:5000/api/health,34,0,0
+1769830610450,6,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,6,0,0
+1769830610410,50,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,7,http://localhost:5000/api/blockchain-status,50,0,0
+1769830610456,12,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,12,0,0
+1769830610469,9,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,9,0,0
+1769830610478,12,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,12,0,0
+1769830610490,7,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,7,0,0
+1769830610336,161,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,7,http://localhost:5000/api/voting/results,161,0,0
+1769830610454,45,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1093,126,1,7,http://localhost:5000/api/health,45,0,0
+1769830610497,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830610503,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830610429,80,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,7,http://localhost:5000/api/blockchain-status,80,0,0
+1769830610507,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830610512,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830610516,7,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-7,text,false,,762,389,1,7,http://localhost:5000/api/voting/cast-blockchain,7,0,0
+1769830610461,62,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,7,http://localhost:5000/api/blockchain-status,62,0,0
+1769830610500,28,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1093,126,1,6,http://localhost:5000/api/health,28,0,0
+1769830610391,156,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,6,http://localhost:5000/api/voting/results,156,0,0
+1769830610529,20,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1093,126,1,6,http://localhost:5000/api/health,20,0,0
+1769830610509,43,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,6,http://localhost:5000/api/blockchain-status,42,0,0
+1769830610523,33,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,6,http://localhost:5000/api/blockchain-status,33,0,0
+1769830610549,14,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1093,126,1,6,http://localhost:5000/api/health,14,0,0
+1769830610449,126,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,6,http://localhost:5000/api/voting/results,126,0,0
+1769830610563,13,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1093,126,1,6,http://localhost:5000/api/health,13,0,0
+1769830610552,29,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,6,http://localhost:5000/api/blockchain-status,29,0,0
+1769830610557,25,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,6,http://localhost:5000/api/blockchain-status,25,0,0
+1769830610497,87,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,6,http://localhost:5000/api/voting/results,87,0,0
+1769830610577,22,Health Check,200,OK,Health Check Tests - 200 Requests 1-5,text,true,,1093,126,1,6,http://localhost:5000/api/health,22,0,0
+1769830610581,28,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,28,0,0
+1769830610582,32,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,32,0,0
+1769830610547,73,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,5,http://localhost:5000/api/voting/results,73,0,0
+1769830610609,29,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,29,0,0
+1769830610614,26,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,26,0,0
+1769830610576,76,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,5,http://localhost:5000/api/voting/results,76,0,0
+1769830610639,19,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,19,0,0
+1769830610640,19,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,19,0,0
+1769830610585,76,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,5,http://localhost:5000/api/voting/results,76,0,0
+1769830610658,16,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,16,0,0
+1769830610660,18,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,18,0,0
+1769830610620,63,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,5,http://localhost:5000/api/voting/results,63,0,0
+1769830610675,22,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,22,0,0
+1769830610678,20,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,20,0,0
+1769830610652,61,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,5,http://localhost:5000/api/voting/results,61,0,0
+1769830610698,18,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,17,0,0
+1769830610661,60,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,5,http://localhost:5000/api/voting/results,59,0,0
+1769830610698,28,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,28,0,0
+1769830610716,53,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,53,0,0
+1769830610684,90,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,5,http://localhost:5000/api/voting/results,90,0,0
+1769830610726,51,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,51,0,0
+1769830610770,22,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,22,0,0
+1769830610777,21,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,21,0,0
+1769830610713,89,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,5,http://localhost:5000/api/voting/results,89,0,0
+1769830610792,19,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,19,0,0
+1769830610722,90,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,5,http://localhost:5000/api/voting/results,90,0,0
+1769830610799,21,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,21,0,0
+1769830610811,17,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,17,0,0
+1769830610774,56,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,5,http://localhost:5000/api/voting/results,56,0,0
+1769830610821,21,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,21,0,0
+1769830610829,24,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,24,0,0
+1769830610802,54,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,5,http://localhost:5000/api/voting/results,54,0,0
+1769830610843,21,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,21,0,0
+1769830610813,54,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,5,http://localhost:5000/api/voting/results,54,0,0
+1769830610853,22,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,22,0,0
+1769830610864,19,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,6,http://localhost:5000/api/blockchain-status,19,0,0
+1769830610830,59,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,6,http://localhost:5000/api/voting/results,59,0,0
+1769830610885,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,387,1,6,http://localhost:5000/api/voting/cast-blockchain,4,0,1
+1769830610889,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,387,1,6,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830610891,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,387,1,6,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830610894,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,387,1,6,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830610876,23,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,6,http://localhost:5000/api/blockchain-status,23,0,0
+1769830610896,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,387,1,6,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830610899,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,387,1,6,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830610903,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,387,1,6,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830610906,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,387,1,6,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830610884,25,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,6,http://localhost:5000/api/blockchain-status,25,0,0
+1769830610909,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,387,1,6,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830610912,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830610915,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830610899,22,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,6,http://localhost:5000/api/blockchain-status,22,0,0
+1769830610920,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830610857,66,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,6,http://localhost:5000/api/voting/results,66,0,0
+1769830610923,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830610925,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830610928,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830610931,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830610868,69,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,6,http://localhost:5000/api/voting/results,69,0,0
+1769830610935,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830610910,31,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,6,http://localhost:5000/api/blockchain-status,31,0,0
+1769830610939,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,5,0,0
+1769830610944,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830610947,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830610952,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830610921,37,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,6,http://localhost:5000/api/blockchain-status,37,0,0
+1769830610955,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830610958,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830610961,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830610964,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-8,text,false,,762,389,1,6,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830610889,108,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,5,http://localhost:5000/api/voting/results,108,0,0
+1769830610942,63,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,62,0,0
+1769830610958,58,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-2,text,true,,1613,137,2,5,http://localhost:5000/api/blockchain-status,58,0,0
+1769830611005,35,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,1,4,http://localhost:5000/api/blockchain-status,35,0,0
+1769830610923,119,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,119,0,0
+1769830610938,115,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,115,0,0
+1769830611041,20,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,1,4,http://localhost:5000/api/blockchain-status,20,0,0
+1769830610998,66,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,66,0,0
+1769830611061,13,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,1,4,http://localhost:5000/api/blockchain-status,13,0,0
+1769830611074,14,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,1,4,http://localhost:5000/api/blockchain-status,14,0,0
+1769830611042,47,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,47,0,0
+1769830611054,48,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,48,0,0
+1769830611064,41,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,41,0,0
+1769830611088,25,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,1,4,http://localhost:5000/api/blockchain-status,25,0,0
+1769830611113,15,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,1,4,http://localhost:5000/api/blockchain-status,15,0,0
+1769830611129,26,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,1,4,http://localhost:5000/api/blockchain-status,26,0,0
+1769830611090,67,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,67,0,0
+1769830611102,58,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,58,0,0
+1769830611105,69,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,69,0,0
+1769830611155,25,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,1,4,http://localhost:5000/api/blockchain-status,25,0,0
+1769830611180,22,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,1,4,http://localhost:5000/api/blockchain-status,22,0,0
+1769830611158,59,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,59,0,0
+1769830611203,21,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,1,4,http://localhost:5000/api/blockchain-status,21,0,0
+1769830611161,65,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,65,0,0
+1769830611174,54,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,54,0,0
+1769830611225,18,Blockchain Status,200,OK,Blockchain Status Tests - 150 Requests 2-3,text,true,,1613,137,1,4,http://localhost:5000/api/blockchain-status,18,0,0
+1769830611218,54,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,54,0,0
+1769830611226,50,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,50,0,0
+1769830611228,60,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,60,0,0
+1769830611272,46,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,46,0,0
+1769830611276,46,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,45,0,0
+1769830611288,38,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,38,0,0
+1769830611318,46,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,46,0,0
+1769830611322,49,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,49,0,0
+1769830611326,51,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,51,0,0
+1769830611380,7,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,387,1,4,http://localhost:5000/api/voting/cast-blockchain,7,0,4
+1769830611388,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,387,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611391,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,387,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611394,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,387,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611397,8,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,387,1,4,http://localhost:5000/api/voting/cast-blockchain,8,0,0
+1769830611405,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,387,1,4,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830611409,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,387,1,4,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830611413,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,387,1,4,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830611417,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,387,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611420,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611424,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611427,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611364,67,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,67,0,0
+1769830611429,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830611433,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611371,68,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,68,0,0
+1769830611437,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830611442,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611377,67,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,67,0,0
+1769830611444,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611447,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611451,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611454,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611458,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611460,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611463,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611466,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611469,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-9,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611432,62,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,62,0,0
+1769830611439,59,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,59,0,0
+1769830611445,57,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,57,0,0
+1769830611494,34,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,34,0,0
+1769830611498,33,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,33,0,0
+1769830611503,35,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,35,0,0
+1769830611529,47,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,47,0,0
+1769830611532,48,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,48,0,0
+1769830611538,51,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,51,0,0
+1769830611577,43,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,43,0,0
+1769830611581,42,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,42,0,0
+1769830611589,38,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,38,0,0
+1769830611620,42,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,42,0,0
+1769830611624,44,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,44,0,0
+1769830611628,45,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,45,0,0
+1769830611662,42,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,42,0,0
+1769830611669,38,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,38,0,0
+1769830611674,37,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,37,0,0
+1769830611704,41,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,41,0,0
+1769830611708,42,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,42,0,0
+1769830611711,44,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,44,0,0
+1769830611745,39,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,39,0,0
+1769830611751,37,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,37,0,0
+1769830611755,37,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,37,0,0
+1769830611785,41,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,41,0,0
+1769830611789,40,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,40,0,0
+1769830611793,41,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,41,0,0
+1769830611826,35,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,35,0,0
+1769830611830,35,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,35,0,0
+1769830611835,35,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,35,0,0
+1769830611878,5,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,5,0,2
+1769830611884,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611887,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611890,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611892,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611895,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611898,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611861,40,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,40,0,0
+1769830611901,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611866,39,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,39,0,0
+1769830611904,1,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,389,1,4,http://localhost:5000/api/voting/cast-blockchain,1,0,0
+1769830611905,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611871,38,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,38,0,0
+1769830611907,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611910,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611913,4,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,4,0,0
+1769830611917,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611920,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611923,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611925,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611928,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611931,3,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,3,0,0
+1769830611935,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611938,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611940,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611901,41,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,41,0,0
+1769830611943,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611905,45,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,4,http://localhost:5000/api/voting/results,45,0,0
+1769830611946,8,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,8,0,0
+1769830611954,2,Submit Vote,400,Bad Request,Vote Submission Tests - 250 Requests 5-10,text,false,,762,391,1,4,http://localhost:5000/api/voting/cast-blockchain,2,0,0
+1769830611909,50,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,50,0,0
+1769830611943,49,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,49,0,0
+1769830611950,50,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,50,0,0
+1769830611959,44,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,44,0,0
+1769830611992,46,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,46,0,0
+1769830612000,42,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,42,0,0
+1769830612003,42,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,42,0,0
+1769830612039,36,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,36,0,0
+1769830612042,36,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,36,0,0
+1769830612046,37,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,37,0,0
+1769830612076,34,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,34,0,0
+1769830612078,36,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,36,0,0
+1769830612083,35,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,35,0,0
+1769830612110,36,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,36,0,0
+1769830612114,36,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,36,0,0
+1769830612119,35,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,35,0,0
+1769830612146,39,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,39,0,0
+1769830612151,39,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,39,0,0
+1769830612154,45,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,45,0,0
+1769830612185,43,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,43,0,0
+1769830612190,42,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,42,0,0
+1769830612199,39,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,39,0,0
+1769830612228,50,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,50,0,0
+1769830612233,51,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,51,0,0
+1769830612238,52,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,52,0,0
+1769830612279,54,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,54,0,0
+1769830612285,54,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,54,0,0
+1769830612291,50,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,50,0,0
+1769830612333,52,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,52,0,0
+1769830612340,50,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,50,0,0
+1769830612342,53,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,53,0,0
+1769830612386,47,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,47,0,0
+1769830612390,45,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,45,0,0
+1769830612395,43,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,43,0,0
+1769830612434,45,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,45,0,0
+1769830612436,48,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,48,0,0
+1769830612438,50,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,50,0,0
+1769830612478,38,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,38,0,0
+1769830612483,37,Get Results,200,OK,Results Tests - 200 Requests 4-2,text,true,,1955,134,3,3,http://localhost:5000/api/voting/results,37,0,0
+1769830612488,36,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,2,2,http://localhost:5000/api/voting/results,36,0,0
+1769830612517,27,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,2,2,http://localhost:5000/api/voting/results,27,0,0
+1769830612524,28,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,2,2,http://localhost:5000/api/voting/results,28,0,0
+1769830612544,30,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,2,2,http://localhost:5000/api/voting/results,30,0,0
+1769830612552,31,Get Results,200,OK,Results Tests - 200 Requests 4-3,text,true,,1955,134,2,2,http://localhost:5000/api/voting/results,31,0,0
+1769830612575,22,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,1,1,http://localhost:5000/api/voting/results,22,0,0
+1769830612597,18,Get Results,200,OK,Results Tests - 200 Requests 4-4,text,true,,1955,134,1,1,http://localhost:5000/api/voting/results,18,0,0

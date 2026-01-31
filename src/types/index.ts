@@ -338,7 +338,6 @@ export interface MultiNodeStatus {
 // UPDATED: Added currentNode property to BlockchainStatus interface
 export interface BlockchainStatus {
   isConnected: boolean;
-  emergencyMode: boolean;
   contractDeployed: boolean;
   contractAddress: string;
   node: string;
@@ -348,9 +347,6 @@ export interface BlockchainStatus {
   autoSyncEnabled: boolean;
   syncStatus: string;
   nodes: NodeStatus[];
-  emergencyVoteCount: number;
-  failoverActive: boolean;
-  robustMode: boolean;
   nodeHierarchy: {
     primary: string;
     secondary: string;

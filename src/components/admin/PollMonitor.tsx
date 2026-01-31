@@ -13,10 +13,8 @@ import {
   Shield,
   Menu,
   X,
-  HardDrive,
-  Cloud,
-  RotateCw, 
-  PauseCircle,
+  Activity,
+  PauseCircle
 } from 'lucide-react';
 import { PollSettings, Position } from '../../types';
 import { api } from '../../utils/api';
@@ -36,6 +34,7 @@ interface Candidate {
   position_name?: string;
   vote_count?: number;
   display_order?: number;
+  image_url?: string;
 }
 
 interface VoteResult {
@@ -50,31 +49,17 @@ interface NodeStatus {
   account: string;
   blockNumber: number;
   isPrimary: boolean;
-  syncStatus: string;
-  lastSync: string | null;
-  lastDataReceived: string | null;
 }
 
 interface BlockchainStatus {
   isConnected: boolean;
-  emergencyMode: boolean;
   contractDeployed: boolean;
   contractAddress: string;
   node: string;
   blockNumber: number;
   totalNodes: number;
   connectedNodes: number;
-  autoSyncEnabled: boolean;
-  syncStatus: string;
   nodes: NodeStatus[];
-  emergencyVoteCount: number;
-  failoverActive: boolean;
-  robustMode: boolean;
-  nodeHierarchy: {
-    primary: string;
-    secondary: string;
-    emergency: 'emergency_storage'
-  };
   currentNode: string;
   electionState: {
     status: string;
@@ -83,9 +68,6 @@ interface BlockchainStatus {
     finishTime: string | null;
     lastDataTimestamp: string | null;
   };
-  syncAllowed: boolean;
-  noDataSincePause: boolean;
-  syncDataUpdated: boolean;
 }
 
 export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) => {
@@ -106,11 +88,11 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
 
   const checkBlockchainStatus = useCallback(async (): Promise<boolean> => {
     try {
-      console.log('🔍 Checking enhanced blockchain status with auto-sync...');
+      console.log('🔍 Checking blockchain status...');
       const response = await api.get('/voting/enhanced-blockchain-status');
 
       if (response.success) {
-        // Filter to only include node1 and node2 (not emergency storage)
+        // Filter to only include node1 and node2
         const filteredNodes = response.nodes.filter((node: any) =>
           node.name === 'node1' || node.name === 'node2'
         );
@@ -140,7 +122,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
 
         // Update current node based on actual connection status
         let actualCurrentNode = 'none';
-        const connectedNode = filteredNodes.find((node: any) => node.connected && node.name !== 'emergency_storage');
+        const connectedNode = filteredNodes.find((node: any) => node.connected);
         if (connectedNode) {
           actualCurrentNode = connectedNode.name;
         } else if (response.currentNode) {
@@ -148,35 +130,23 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
         }
         setCurrentNode(actualCurrentNode);
 
-        // Update the blockchain status with enhanced data
+        // Update the blockchain status with clean data
         const updatedBlockchainStatus: BlockchainStatus = {
           ...response,
           nodes: filteredNodes,
-          totalNodes: 2, // Only node1 and node2 now
+          totalNodes: 2, // Only node1 and node2
           connectedNodes: filteredNodes.filter((node: any) => node.connected).length,
-          // Ensure currentNode is set based on actual connection
-          currentNode: actualCurrentNode,
-          syncAllowed: response.syncAllowed || false,
-          noDataSincePause: response.noDataSincePause || false,
-          syncDataUpdated: response.syncDataUpdated || false
+          currentNode: actualCurrentNode
         };
 
         setBlockchainStatus(updatedBlockchainStatus);
 
-        console.log('✅ Enhanced blockchain status:', {
+        console.log('✅ Blockchain status:', {
           connected: updatedBlockchainStatus.isConnected,
           contractDeployed: updatedBlockchainStatus.contractDeployed,
           connectedNodes: `${updatedBlockchainStatus.connectedNodes}/${updatedBlockchainStatus.totalNodes}`,
-          syncStatus: updatedBlockchainStatus.syncStatus,
-          autoSyncEnabled: updatedBlockchainStatus.autoSyncEnabled,
-          failoverActive: updatedBlockchainStatus.failoverActive,
-          emergencyVoteCount: updatedBlockchainStatus.emergencyVoteCount,
-          nodeHierarchy: updatedBlockchainStatus.nodeHierarchy,
           currentNode: updatedBlockchainStatus.currentNode,
-          electionState: updatedBlockchainStatus.electionState,
-          syncAllowed: updatedBlockchainStatus.syncAllowed,
-          noDataSincePause: updatedBlockchainStatus.noDataSincePause,
-          syncDataUpdated: updatedBlockchainStatus.syncDataUpdated
+          electionState: updatedBlockchainStatus.electionState
         });
 
         return true;
@@ -256,26 +226,100 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
 
   const fetchVotesFromBlockchain = useCallback(async (): Promise<{ voteResults: VoteResult[], totalVotes: number }> => {
     try {
-      console.log('⛓️ Fetching vote counts from blockchain/emergency storage...');
-      const response = await api.get('/voting/results');
+      console.log('⛓️ Fetching vote counts from blockchain with failover logic...');
+      
+      // First, get blockchain status to determine which nodes are available
+      let blockchainStatus;
+      try {
+        const statusResponse = await api.get('/blockchain-status');
+        blockchainStatus = statusResponse;
+      } catch (error) {
+        console.error('❌ Failed to get blockchain status:', error);
+        blockchainStatus = { success: false, nodes: [] };
+      }
+
+      // Determine which nodes are available
+      const availableNodes = blockchainStatus.nodes?.filter((node: any) => node.connected) || [];
+      console.log('📊 Available blockchain nodes:', availableNodes.map((n: any) => n.name));
+
+      let response = null;
+      let nodeUsed = 'unknown';
+
+      // Try node1 first if available
+      const node1 = availableNodes.find((node: any) => node.name === 'node1');
+      if (node1) {
+        try {
+          console.log('🔄 Trying to fetch votes from node1...');
+          response = await api.get('/voting/results?node=node1');
+          nodeUsed = 'node1';
+          console.log('✅ Successfully fetched votes from node1');
+        } catch (error) {
+          console.error('❌ Failed to fetch from node1:', (error as Error).message);
+        }
+      }
+
+      // If node1 failed or unavailable, try node2
+      if (!response && availableNodes.length > 0) {
+        const node2 = availableNodes.find((node: any) => node.name === 'node2');
+        if (node2) {
+          try {
+            console.log('🔄 Trying to fetch votes from node2...');
+            response = await api.get('/voting/results?node=node2');
+            nodeUsed = 'node2';
+            console.log('✅ Successfully fetched votes from node2 (fallback)');
+          } catch (error: any) {
+            console.error('❌ Failed to fetch from node2:', error.message);
+          }
+        }
+      }
+
+      // If both nodes failed, try without node parameter (default behavior)
+      if (!response) {
+        try {
+          console.log('🔄 Trying default endpoint...');
+          response = await api.get('/voting/results');
+          nodeUsed = 'default';
+          console.log('✅ Successfully fetched votes from default endpoint');
+        } catch (error: any) {
+          console.error('❌ All fetch attempts failed:', error.message);
+        }
+      }
 
       let voteResults: VoteResult[] = [];
       let totalVotesCount = 0;
 
       if (response && response.success) {
-        // Get total votes from blockchain/emergency storage response (same as dashboard)
+        // Get total votes from blockchain response
         totalVotesCount = response.totalVotes || 0;
 
-        console.log('📊 Vote results from blockchain/emergency:', {
+        console.log('📊 Vote results from blockchain:', {
           totalVotes: totalVotesCount,
           source: response.source,
-          emergencyMode: response.emergencyMode,
+          nodeUsed: nodeUsed,
+          blockchainVotes: response.blockchainVotes,
           hasCandidates: !!response.candidates,
           candidatesCount: response.candidates?.length
         });
 
-        // Process candidate vote counts
-        if (response.candidates && Array.isArray(response.candidates)) {
+        // Process candidate vote counts from blockchain results
+        if (response.results && typeof response.results === 'object') {
+          console.log('🔍 Processing blockchain results structure...');
+          Object.entries(response.results).forEach(([, candidates]) => {
+            if (candidates && typeof candidates === 'object') {
+              Object.values(candidates).forEach((candidate: any) => {
+                if (candidate && candidate.candidateId && candidate.voteCount !== undefined) {
+                  voteResults.push({
+                    candidateId: candidate.candidateId.toString(),
+                    voteCount: candidate.voteCount
+                  });
+                }
+              });
+            }
+          });
+          console.log(`✅ Loaded ${voteResults.length} votes from blockchain results structure (${nodeUsed})`);
+        }
+        // Fallback to candidates array if results structure not available
+        else if (response.candidates && Array.isArray(response.candidates)) {
           response.candidates.forEach((candidate: any) => {
             if (candidate.id && candidate.vote_count !== undefined) {
               voteResults.push({
@@ -284,7 +328,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
               });
             }
           });
-          console.log(`✅ Loaded ${voteResults.length} votes from ${response.source}`);
+          console.log(`✅ Loaded ${voteResults.length} votes from candidates array (${nodeUsed})`);
         }
 
         // If no candidates array, try to extract from resultsByPosition
@@ -302,7 +346,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
               });
             }
           });
-          console.log(`✅ Loaded ${voteResults.length} votes from resultsByPosition`);
+          console.log(`✅ Loaded ${voteResults.length} votes from resultsByPosition (${nodeUsed})`);
         }
 
         // If still no votes, try to calculate from raw vote data
@@ -328,13 +372,14 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
           
           // Recalculate total votes from raw data
           totalVotesCount = Object.values(voteCounts).reduce((sum, count) => sum + count, 0);
-          console.log(`✅ Calculated ${voteResults.length} votes from raw data`);
+          console.log(`✅ Calculated ${voteResults.length} votes from raw data (${nodeUsed})`);
         }
 
         console.log(`✅ Final vote processing:`, {
           totalVotes: totalVotesCount,
           candidatesWithVotes: voteResults.length,
-          source: response.source
+          source: response.source,
+          nodeUsed: nodeUsed
         });
       }
 
@@ -354,13 +399,9 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
 
       const blockchainHealthy = await checkBlockchainStatus();
 
-      console.log('📡 Fetching data from enhanced DUAL-NODE system...', {
+      console.log('📡 Fetching data from clean system...', {
         blockchainHealthy,
-        currentNode,
-        failoverActive: blockchainStatus?.failoverActive,
-        nodeHierarchy: blockchainStatus?.nodeHierarchy,
-        autoSyncEnabled: blockchainStatus?.autoSyncEnabled,
-        syncAllowed: blockchainStatus?.syncAllowed
+        currentNode
       });
 
       const [candidatesPromise, votesPromise, settingsResponse, positionsPromise] = await Promise.allSettled([
@@ -420,12 +461,8 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
           blockchain: voteResults.length
         },
         blockchainStatus: blockchainStatus,
-        failoverActive: blockchainStatus?.failoverActive,
-        nodeHierarchy: blockchainStatus?.nodeHierarchy,
-        autoSyncEnabled: blockchainStatus?.autoSyncEnabled,
-        syncAllowed: blockchainStatus?.syncAllowed,
-        noDataSincePause: blockchainStatus?.noDataSincePause,
-        syncDataUpdated: blockchainStatus?.syncDataUpdated
+        connectedNodes: `${blockchainStatus?.connectedNodes}/${blockchainStatus?.totalNodes}`,
+        currentNode: blockchainStatus?.currentNode
       });
 
     } catch (error: any) {
@@ -448,16 +485,8 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
         blockchainStatus: {
           connected: blockchainStatus?.isConnected,
           contract: blockchainStatus?.contractDeployed,
-          syncStatus: blockchainStatus?.syncStatus,
-          autoSyncEnabled: blockchainStatus?.autoSyncEnabled,
-          failover: blockchainStatus?.failoverActive,
-          emergencyVotes: blockchainStatus?.emergencyVoteCount,
-          nodeHierarchy: blockchainStatus?.nodeHierarchy,
           currentNode: blockchainStatus?.currentNode,
-          electionState: blockchainStatus?.electionState,
-          syncAllowed: blockchainStatus?.syncAllowed,
-          noDataSincePause: blockchainStatus?.noDataSincePause,
-          syncDataUpdated: blockchainStatus?.syncDataUpdated
+          electionState: blockchainStatus?.electionState
         }
       });
     }
@@ -510,20 +539,11 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
           connectedNodes: blockchainStatus?.connectedNodes,
           totalNodes: blockchainStatus?.totalNodes,
           currentNode: blockchainStatus?.currentNode,
-          syncStatus: blockchainStatus?.syncStatus,
-          autoSyncEnabled: blockchainStatus?.autoSyncEnabled,
-          failoverActive: blockchainStatus?.failoverActive,
-          emergencyVoteCount: blockchainStatus?.emergencyVoteCount,
-          robustMode: blockchainStatus?.robustMode,
-          nodeHierarchy: blockchainStatus?.nodeHierarchy,
-          electionState: blockchainStatus?.electionState,
-          syncAllowed: blockchainStatus?.syncAllowed,
-          noDataSincePause: blockchainStatus?.noDataSincePause,
-          syncDataUpdated: blockchainStatus?.syncDataUpdated
+          electionState: blockchainStatus?.electionState
         },
         dataSources: {
           candidates: 'MySQL Database',
-          votes: 'ENHANCED DUAL-NODE BLOCKCHAIN (Auto-sync enabled)',
+          votes: 'Blockchain Storage (Persistent)',
           timestamp: new Date().toISOString()
         }
       };
@@ -540,7 +560,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      showToast('success', 'Votes exported successfully with enhanced blockchain data');
+      showToast('success', 'Votes exported successfully from blockchain storage');
     } catch (error) {
       console.error('Export failed:', error);
       showToast('error', 'Failed to export votes');
@@ -652,22 +672,11 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
     );
   };
 
-  // Get sync status text
-  const getSyncStatusText = () => {
-    if (!blockchainStatus?.syncAllowed) {
-      return blockchainStatus?.electionState?.status === 'finished' ? 'Sync Disabled (Election Finished)' : 'Sync Not Allowed';
-    }
-    if (blockchainStatus?.syncDataUpdated) return 'Auto-sync: Data Updated';
-    if (blockchainStatus?.noDataSincePause) return 'Auto-sync: No Data Since Pause';
-    if (blockchainStatus?.autoSyncEnabled) return 'Auto-sync: Active';
-    return 'Auto-sync: Inactive';
-  };
-
   // Get election state indicator
   const getElectionStateIcon = () => {
     const status = blockchainStatus?.electionState?.status;
     switch (status) {
-      case 'voting': return { icon: Cloud, color: 'text-emerald-500', text: 'Voting Active' };
+      case 'voting': return { icon: Activity, color: 'text-emerald-500', text: 'Voting Active' };
       case 'paused': return { icon: PauseCircle, color: 'text-amber-500', text: 'Paused' };
       case 'finished': return { icon: Shield, color: 'text-rose-500', text: 'Finished' };
       default: return { icon: AlertTriangle, color: 'text-gray-500', text: 'Not Started' };
@@ -679,24 +688,13 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
       <div className="flex items-center justify-center h-96 rounded-2xl bg-white/80 backdrop-blur-sm">
         <div className="text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-gray-600 font-medium">Loading enhanced DUAL-NODE poll monitor...</p>
+          <p className="mt-4 text-gray-600 font-medium">Loading poll monitor...</p>
         </div>
       </div>
     );
   }
 
   const electionStateInfo = getElectionStateIcon();
-
-  // Get sync status variant for StatusPill
-  const getSyncStatusVariant = () => {
-    if (!blockchainStatus?.syncAllowed) {
-      return 'warning';
-    }
-    if (blockchainStatus?.syncDataUpdated) return 'success';
-    if (blockchainStatus?.noDataSincePause) return 'default';
-    if (blockchainStatus?.autoSyncEnabled) return 'info';
-    return 'default';
-  };
 
   // Mobile-optimized ControlButtons component
   const ControlButtons = () => (
@@ -754,7 +752,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
     </div>
   );
 
-  // Modern candidate card - mobile optimized
+  // Modern candidate card - mobile optimized with image support
   const CandidateCard = ({ candidate, totalVotes }: {
     candidate: Candidate,
     totalVotes: number
@@ -766,7 +764,23 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
       <div className="bg-white rounded-xl p-3 border-2 border-gray-100 transition-all duration-300">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2 flex-1 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center flex-shrink-0">
+            {/* Candidate Image or Fallback Icon */}
+            {candidate.image_url ? (
+              <img 
+                src={candidate.image_url} 
+                alt={candidate.name}
+                className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+                onError={(e) => {
+                  // Fallback to icon if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center flex-shrink-0" 
+                 style={{ display: candidate.image_url ? 'none' : 'flex' }}>
               <Users className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
@@ -819,10 +833,10 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                   </h1>
                   <div className="flex flex-wrap gap-1 mt-1">
                     <span className="px-2 py-1 bg-purple-500/10 text-purple-700 rounded-full text-xs font-medium border border-purple-200">
-                      Enhanced Dual-Node Blockchain
+                      Blockchain Storage
                     </span>
                     <span className="px-2 py-1 bg-blue-500/10 text-blue-700 rounded-full text-xs font-medium border border-blue-200">
-                      Auto-sync: {blockchainStatus?.autoSyncEnabled ? 'ON' : 'OFF'}
+                      Persistent Votes
                     </span>
                     {isReadOnly && (
                       <span className="px-2 py-1 bg-blue-500/10 text-blue-700 rounded-full text-xs font-medium border border-blue-200">
@@ -860,11 +874,6 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                   variant={blockchainStatus?.isConnected ? 'success' : 'error'}
                 />
                 <StatusPill
-                  icon={RotateCw}
-                  text={getSyncStatusText()}
-                  variant={getSyncStatusVariant()}
-                />
-                <StatusPill
                   icon={Server}
                   text={`${blockchainStatus?.connectedNodes || 0}/${blockchainStatus?.totalNodes || 0} Nodes Connected`}
                   variant={blockchainStatus?.connectedNodes === blockchainStatus?.totalNodes ? 'success' : 
@@ -892,11 +901,6 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                       variant={blockchainStatus?.isConnected ? 'success' : 'error'}
                     />
                     <StatusPill
-                      icon={RotateCw}
-                      text={getSyncStatusText()}
-                      variant={getSyncStatusVariant()}
-                    />
-                    <StatusPill
                       icon={Server}
                       text={`${blockchainStatus?.connectedNodes || 0}/${blockchainStatus?.totalNodes || 0} Nodes Connected`}
                       variant={blockchainStatus?.connectedNodes === blockchainStatus?.totalNodes ? 'success' : 
@@ -919,7 +923,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
             value={totalVotes || 0}
             icon={Vote}
             color="blue"
-            trend="Blockchain"
+            trend="Persistent"
           />
           <StatCard
             title="Candidates"
@@ -929,11 +933,11 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
             trend="MySQL"
           />
           <StatCard
-            title="Active Storage"
-            value={blockchainStatus?.emergencyVoteCount || 0}
-            icon={HardDrive}
+            title="Connected Nodes"
+            value={`${blockchainStatus?.connectedNodes || 0}/${blockchainStatus?.totalNodes || 0}`}
+            icon={Server}
             color="purple"
-            trend="Encrypted"
+            trend={blockchainStatus?.connectedNodes === blockchainStatus?.totalNodes ? 'All Online' : 'Partial'}
           />
           <StatCard
             title="Current Node"
@@ -991,11 +995,8 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
               <span className="bg-gray-500/10 text-gray-600 px-2 py-1 rounded-full">
                 Node: {currentNode || 'none'}
               </span>
-              <span className={`px-2 py-1 rounded-full ${blockchainStatus?.autoSyncEnabled ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-500/10 text-gray-600'}`}>
-                Auto-sync: {blockchainStatus?.autoSyncEnabled ? 'ON' : 'OFF'}
-              </span>
-              <span className={`px-2 py-1 rounded-full ${blockchainStatus?.syncAllowed ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
-                Sync: {blockchainStatus?.syncAllowed ? 'Allowed' : 'Blocked'}
+              <span className={`px-2 py-1 rounded-full ${blockchainStatus?.isConnected ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'}`}>
+                {blockchainStatus?.isConnected ? 'Connected' : 'Offline'}
               </span>
             </div>
           </div>
@@ -1021,10 +1022,10 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                   </h1>
                   <div className="flex flex-wrap gap-1 mt-1">
                     <span className="px-2 py-1 bg-purple-500/10 text-purple-700 rounded-full text-xs">
-                      Auto-sync: {blockchainStatus?.autoSyncEnabled ? 'ON' : 'OFF'}
+                      Blockchain Storage
                     </span>
                     <span className="px-2 py-1 bg-blue-500/10 text-blue-700 rounded-full text-xs">
-                      Node: {currentNode}
+                      Node: {currentNode || 'none'}
                     </span>
                   </div>
                 </div>
