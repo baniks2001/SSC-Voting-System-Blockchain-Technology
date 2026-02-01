@@ -265,53 +265,63 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin, onToggleAdmin }) 
   // Error Screen
   if (showErrorScreen) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6">
-        <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-6 sm:p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-2xl bg-red-500/10 flex items-center justify-center">
-            <AlertCircle className="w-8 h-8 sm:w-10 sm:h-10 text-red-600" />
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-3">
-            {errorDetails.title}
-          </h2>
-          <p className="text-gray-600 text-base sm:text-lg mb-6 leading-relaxed">
-            {errorDetails.message}
-          </p>
-          
-          {isLocked && (
-            <div className="mb-4 px-4 py-3 bg-orange-500/10 border border-orange-200 text-orange-800 rounded-xl">
-              <div className="flex items-center justify-center space-x-2">
-                <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="font-semibold">Try again in: {lockTimeRemaining}s</span>
-              </div>
-            </div>
-          )}
+      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Background Image - More Visible */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: 'url(/background.jpg)',
+            filter: 'brightness(0.8) contrast(1.1)'
+          }}
+        />
+        
+        {/* Light overlay */}
+        <div className="absolute inset-0 bg-black/20" />
+        
+        {/* Subtle animated background elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-72 h-72 bg-red-500/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+        </div>
 
-          <button
-            onClick={handleTryAgain}
-            disabled={isLocked}
-            className={`w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 sm:py-4 px-6 rounded-xl font-semibold hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 text-base sm:text-lg ${
-              isLocked ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            {isLocked ? `Try Again in ${lockTimeRemaining}s` : 'Try Again'}
-          </button>
-          
-          {isAdmin && (
-            <button
-              onClick={() => {
-                setShowErrorScreen(false);
-                onToggleAdmin();
-              }}
-              disabled={isLocked}
-              className={`w-full mt-4 text-center text-sm transition-colors duration-200 ${
-                isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              ← Back to Student Login
-            </button>
-          )}
+        <div className="relative z-10 max-w-md w-full">
+          <div className="bg-transparent backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 p-8 sm:p-10 text-center">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-red-500/20 flex items-center justify-center border border-red-400/30">
+              <AlertCircle className="w-10 h-10 text-red-300" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-4">
+              {errorDetails.title}
+            </h2>
+            <p className="text-gray-200 text-lg mb-6 leading-relaxed">
+              {errorDetails.message}
+            </p>
+            
+            {isLocked && (
+              <div className="mb-6 px-4 py-3 bg-orange-500/20 border border-orange-400/30 text-orange-100 rounded-xl backdrop-blur-sm">
+                <div className="flex items-center justify-center space-x-3">
+                  <svg className="w-5 h-5 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-semibold">Try again in: {lockTimeRemaining}s</span>
+                </div>
+              </div>
+            )}
+
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setShowErrorScreen(false);
+                  onToggleAdmin();
+                }}
+                disabled={isLocked}
+                className={`w-full mt-4 text-center text-sm transition-colors duration-200 ${
+                  isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-gray-200 hover:text-white'
+                }`}
+              >
+                ← Back to Student Login
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -320,183 +330,246 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin, onToggleAdmin }) 
   const isFormDisabled = loading || (!isAdmin && !isVotingAccessible) || isLocked;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Image - More Visible */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/background.jpg)',
+          filter: 'brightness(0.8) contrast(1.1)'
+        }}
+      />
+      
+      {/* Light overlay for better text readability */}
+      <div className="absolute inset-0 bg-black/20" />
+      
+      {/* Subtle animated background elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-20 left-20 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse delay-2000" />
+      </div>
+
+      {/* Admin Login Hidden Button - Preserved */}
       {!isAdmin && (
         <div
-          className="admin-secret-btn"
+          className="admin-secret-btn fixed top-4 right-4 w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full border border-white/30 cursor-pointer hover:bg-white/30 transition-all duration-300 z-50 flex items-center justify-center"
           onClick={isLocked ? undefined : onToggleAdmin}
-          title="Admin Login"
-        />
+          title="Admin Login (Hidden)"
+        >
+          <div className="w-2 h-2 bg-white/80 rounded-full" />
+        </div>
       )}
 
-      <div className="max-w-md w-full bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-6 sm:p-8">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-            <img src="../../src/assets/logo.png" alt="Logo" className="w-15 h-15 rounded-full" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {isAdmin ? 'Admin Login' : 'Student Voting Login'}
-          </h1>
-          <p className="text-gray-600 mt-2">
-            {isAdmin 
-              ? 'Access the admin dashboard' 
-              : isPollFinished 
-                ? 'Voting has ended' 
-                : isPollPaused
-                  ? 'Voting is currently paused'
-                  : 'Cast your vote securely'
-            }
-          </p>
-          
-          {!isAdmin && (
-            <div className={`mt-3 px-3 py-2 rounded-lg text-sm font-medium ${
-              isPollFinished 
-                ? 'bg-red-100 text-red-800 border border-red-300'
-                : isPollPaused
-                  ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
-                  : isVotingAccessible
-                    ? 'bg-green-100 text-green-800 border border-green-300'
-                    : 'bg-gray-100 text-gray-800 border border-gray-300'
-            }`}>
-              {isPollFinished 
-                ? '🗳️ Voting has ended'
-                : isPollPaused
-                  ? 'Please stand by. The administrator will reopen the poll momentarily'
-                  : isVotingAccessible
-                    ? '✅ Voting Active'
-                    : '⏳ Voting Not Started'
+      {/* Main Login Container */}
+      <div className="relative z-10 max-w-md w-full">
+        <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/30 p-8 sm:p-10">
+          {/* Logo Section */}
+          <div className="text-center mb-8">
+            <div className="relative mx-auto mb-6">
+              {/* Logo Container - No outer shape */}
+              <div className="w-20 h-20 bg-white rounded-2xl mx-auto flex items-center justify-center shadow-lg">
+                <img 
+                  src="/logo.png" 
+                  alt="SSC Voting Logo" 
+                  className="w-16 h-16 rounded-lg"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+                <div className="hidden w-10 h-10 text-blue-600">
+                  <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <h1 className="text-3xl font-bold text-gray-900 mb-3">
+              {isAdmin ? 'Admin Portal' : 'Student Voting Portal'}
+            </h1>
+            <p className="text-gray-600 text-lg">
+              {isAdmin 
+                ? 'Secure admin access' 
+                : isPollFinished 
+                  ? 'Voting has ended' 
+                  : isPollPaused
+                    ? 'Voting is paused'
+                    : 'Cast your vote securely with Blockchain Technology'
               }
+            </p>
+          </div>
+
+          {/* Status Indicator */}
+          {!isAdmin && (
+            <div className={`mb-6 px-4 py-3 rounded-xl text-sm font-medium backdrop-blur-sm border ${
+              isPollFinished 
+                ? 'bg-red-100 text-red-800 border-red-300'
+                : isPollPaused
+                  ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                  : isVotingAccessible
+                    ? 'bg-green-100 text-green-800 border-green-300'
+                    : 'bg-gray-100 text-gray-800 border-gray-300'
+            }`}>
+              <div className="flex items-center justify-center space-x-2">
+                {isPollFinished ? (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                ) : isPollPaused ? (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                ) : isVotingAccessible ? (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                  </svg>
+                )}
+                <span>
+                  {isPollFinished 
+                    ? 'Voting has ended'
+                    : isPollPaused
+                      ? 'Voting is paused'
+                      : isVotingAccessible
+                        ? 'Voting Active'
+                        : 'Voting Not Started'
+                  }
+                </span>
+              </div>
             </div>
           )}
 
+          {/* Lock Warning */}
           {isLocked && (
-            <div className="mt-3 px-4 py-3 bg-orange-500/10 border border-orange-200 text-orange-800 rounded-xl backdrop-blur-sm">
-              <div className="flex items-center justify-center space-x-3">
-                <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mb-6 px-4 py-3 bg-orange-100 border border-orange-300 text-orange-800 rounded-xl">
+              <div className="flex items-center space-x-3">
+                <svg className="w-5 h-5 text-orange-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                <div className="text-left">
-                  <p className="font-semibold text-sm">Account Temporarily Locked</p>
-                  <p className="text-xs mt-1 text-orange-700">
-                    Please wait {lockTimeRemaining} seconds before trying again
-                  </p>
+                <div>
+                  <p className="font-semibold text-sm">Account Locked</p>
+                  <p className="text-xs text-orange-700">Wait {lockTimeRemaining}s to try again</p>
                 </div>
               </div>
             </div>
           )}
-        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {isAdmin ? (
-                <>
-                  <Mail className="w-4 h-4 inline mr-2" />
-                  Email Address
-                </>
-              ) : (
-                <>
-                  <User className="w-4 h-4 inline mr-2" />
-                  Student ID
-                </>
-              )}
-            </label>
-            <input
-              type={isAdmin ? 'email' : 'text'}
-              value={emailOrStudentId}
-              onChange={handleEmailChange}
-              className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                fieldErrors.email ? 'border-red-500 focus:ring-red-500' : ''
-              } ${isFormDisabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-              placeholder={isAdmin ? 'admin@example.com' : 'Enter your Student ID'}
-              required
-              disabled={isFormDisabled}
-            />
-            {fieldErrors.email && (
-              <p className="text-red-600 text-sm mt-1 flex items-center">
-                <AlertCircle className="w-4 h-4 mr-1" />
-                {fieldErrors.email}
-              </p>
-            )}
-            {!isAdmin && !fieldErrors.email && (
-              <p className="text-xs text-gray-500 mt-1">
-                Enter your student ID in any format
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Lock className="w-4 h-4 inline mr-2" />
-              Password
-            </label>
-            <div className="relative">
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email/Student ID Field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {isAdmin ? (
+                  <>
+                    <Mail className="w-4 h-4 inline mr-2" />
+                    Email Address
+                  </>
+                ) : (
+                  <>
+                    <User className="w-4 h-4 inline mr-2" />
+                    Student ID
+                  </>
+                )}
+              </label>
               <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={handlePasswordChange}
-                className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12 ${
-                  fieldErrors.password ? 'border-red-500 focus:ring-red-500' : ''
-                } ${isFormDisabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                placeholder="Enter your password"
+                type={isAdmin ? 'email' : 'text'}
+                value={emailOrStudentId}
+                onChange={handleEmailChange}
+                className={`w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-gray-900 placeholder-gray-500 ${
+                  fieldErrors.email ? 'border-red-500 focus:ring-red-500' : ''
+                } ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                placeholder={isAdmin ? 'admin@example.com' : 'Enter your Student ID'}
                 required
                 disabled={isFormDisabled}
               />
+              {fieldErrors.email && (
+                <p className="text-red-600 text-sm mt-2 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {fieldErrors.email}
+                </p>
+              )}
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Lock className="w-4 h-4 inline mr-2" />
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={handlePasswordChange}
+                  className={`w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 pr-12 text-gray-900 placeholder-gray-500 ${
+                    fieldErrors.password ? 'border-red-500 focus:ring-red-500' : ''
+                  } ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  placeholder="Enter your password"
+                  required
+                  disabled={isFormDisabled}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200 disabled:opacity-50"
+                  disabled={isFormDisabled}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {fieldErrors.password && (
+                <p className="text-red-600 text-sm mt-2 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {fieldErrors.password}
+                </p>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isFormDisabled}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-4 px-6 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            >
+              {loading ? (
+                <>
+                  <LoadingSpinner size="sm" color="white" />
+                  <span>Signing In...</span>
+                </>
+              ) : isLocked ? (
+                <span>Please wait... ({lockTimeRemaining}s)</span>
+              ) : (
+                <span>
+                  {!isAdmin && !isVotingAccessible 
+                    ? isPollFinished 
+                      ? 'Voting Ended' 
+                      : 'Voting Not Available'
+                    : 'Sign In'
+                  }
+                </span>
+              )}
+            </button>
+          </form>
+
+          {/* Admin Toggle */}
+          {isAdmin && (
+            <div className="mt-8 pt-6 border-t border-gray-200">
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isFormDisabled}
+                onClick={isLocked ? undefined : onToggleAdmin}
+                className="w-full text-center text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200 disabled:opacity-50"
+                disabled={isLocked}
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                ← Back to Student Login
               </button>
             </div>
-            
-            {fieldErrors.password && (
-              <p className="text-red-600 text-sm mt-1 flex items-center">
-                <AlertCircle className="w-4 h-4 mr-1" />
-                {fieldErrors.password}
-              </p>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={isFormDisabled}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-4 px-6 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-          >
-            {loading ? (
-              <>
-                <LoadingSpinner size="sm" color="white" />
-                <span>Signing In...</span>
-              </>
-            ) : isLocked ? (
-              <span>Please wait... ({lockTimeRemaining}s)</span>
-            ) : (
-              <span>
-                {!isAdmin && !isVotingAccessible 
-                  ? isPollFinished 
-                    ? 'Voting Ended' 
-                    : 'Voting Not Available'
-                  : 'Sign In'
-                }
-              </span>
-            )}
-          </button>
-        </form>
-
-        {isAdmin && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={isLocked ? undefined : onToggleAdmin}
-              className="w-full text-center text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLocked}
-            >
-              ← Back to Student Login
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

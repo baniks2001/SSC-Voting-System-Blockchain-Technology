@@ -144,11 +144,12 @@ export const VoterManagement: React.FC = () => {
       if (filters.hasVoted) params.append('hasVoted', filters.hasVoted);
       if (filters.isActive) params.append('isActive', filters.isActive);
 
-      // First, get the response
-      const response = await api.get(`/voters?${params.toString()}`, {
-        successMessage: 'Voters loaded successfully'
-      });
-
+      // Get the response with a small delay to ensure server consistency
+      const response = await api.get(`/voters?${params.toString()}`);
+      
+      // Add a small delay to ensure data consistency
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Then process the response
       const votersData = response.data || response;
       const votersArray = Array.isArray(votersData) ? votersData : [];
@@ -183,7 +184,7 @@ export const VoterManagement: React.FC = () => {
 
   const addCourse = async () => {
     if (!newCourse.name.trim() || !newCourse.code.trim()) {
-      showToast('warning', 'Please enter both course name and code');
+      showToast('error', 'Please enter both course name and code');
       return;
     }
 
@@ -280,7 +281,7 @@ export const VoterManagement: React.FC = () => {
 
   const handleDeleteAll = async () => {
     if (selectedStudents.length === 0) {
-      showToast('warning', 'No voters selected for deletion');
+      showToast('error', 'No voters selected for deletion');
       return;
     }
     setShowDeleteModal(true);
@@ -318,7 +319,7 @@ export const VoterManagement: React.FC = () => {
 
   const handleBulkStatusChange = async (isActive: boolean) => {
     if (selectedStudents.length === 0) {
-      showToast('warning', `No voters selected to ${isActive ? 'activate' : 'deactivate'}`);
+      showToast('error', `No voters selected to ${isActive ? 'activate' : 'deactivate'}`);
       return;
     }
 
@@ -353,7 +354,7 @@ export const VoterManagement: React.FC = () => {
 
   const handleResetHasVoted = async (scope: 'all' | 'selected') => {
     if (scope === 'selected' && selectedStudents.length === 0) {
-      showToast('warning', 'No voters selected to reset voting status');
+      showToast('error', 'No voters selected to reset voting status');
       return;
     }
 
@@ -408,11 +409,11 @@ export const VoterManagement: React.FC = () => {
   const generatePassword = () => {
     const { studentId, fullName, yearLevel, section } = formData;
     if (!fullName.trim()) {
-      showToast('warning', 'Please enter full name first');
+      showToast('error', 'Please enter full name first');
       return;
     }
     if (!studentId.trim()) {
-      showToast('warning', 'Please enter student ID first');
+      showToast('error', 'Please enter student ID first');
       return;
     }
     try {
@@ -441,17 +442,45 @@ export const VoterManagement: React.FC = () => {
         await api.put(`/voters/${editingVoter.id}`, updateData, {
           successMessage: 'Voter updated successfully'
         });
+        
+        // Optimistic update - update local state immediately
+        setVoters(prev => prev.map(voter => 
+          voter.id === editingVoter.id 
+            ? { ...voter, ...updateData, student_id: updateData.studentId, full_name: updateData.fullName, year_level: updateData.yearLevel }
+            : voter
+        ));
+        
         setShowModal(false);
         resetForm();
-        fetchVoters();
+        
+        // Then fetch fresh data to ensure consistency
+        setTimeout(() => fetchVoters(), 500);
       } else {
-        await api.post('/voters', formData, {
+        const newVoter = await api.post('/voters', formData, {
           successMessage: 'Voter created successfully'
         });
+        
+        // Optimistic update - add to local state immediately
+        setVoters(prev => [{
+          id: newVoter.id || Date.now(),
+          student_id: newVoter.student_id,
+          full_name: newVoter.full_name,
+          course: newVoter.course,
+          year_level: newVoter.year_level,
+          section: newVoter.section,
+          password: newVoter.password,
+          is_active: newVoter.is_active,
+          has_voted: false,
+          voted_at: undefined,
+          created_at: new Date().toISOString()
+        }, ...prev]);
+        
         setShowModal(false);
         setShowSuccessModal(true);
         resetForm();
-        fetchVoters();
+        
+        // Then fetch fresh data to ensure consistency
+        setTimeout(() => fetchVoters(), 500);
       }
     } catch (error: any) {
       if (error.message?.includes('already exists') || error.message?.includes('Student ID')) {
@@ -459,6 +488,8 @@ export const VoterManagement: React.FC = () => {
         setShowErrorModal(true);
       } else {
         showToast('error', error.message || 'Operation failed');
+        // Revert optimistic update on error
+        fetchVoters();
       }
     }
   };
@@ -937,7 +968,7 @@ export const VoterManagement: React.FC = () => {
         .filter(([, value]) => value)
         .map(([key]) => key);
       if (selectedOptions.length === 0) {
-        showToast('warning', 'Please select at least one field to export');
+        showToast('error', 'Please select at least one field to export');
         return;
       }
       setExporting(true);
@@ -980,7 +1011,7 @@ export const VoterManagement: React.FC = () => {
         }
       }
       if (!exportData || exportData.length === 0) {
-        showToast('warning', 'No data found for the selected filters');
+        showToast('error', 'No data found for the selected filters');
         setExporting(false);
         setExportProgress(0);
         return;

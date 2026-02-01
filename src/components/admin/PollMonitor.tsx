@@ -7,7 +7,6 @@ import {
   Vote,
   AlertTriangle,
   Eye,
-  RefreshCw,
   Download,
   Server,
   Shield,
@@ -78,7 +77,6 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [currentNode, setCurrentNode] = useState<string>('node1');
   const [blockchainStatus, setBlockchainStatus] = useState<BlockchainStatus | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -114,7 +112,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
             const settingsResponse = await api.get('/poll/status');
             setPollSettings(settingsResponse);
             
-            showToast('warning', 'Poll auto-paused because both blockchain nodes are down');
+            showToast('error', 'Poll auto-paused because both blockchain nodes are down');
           } catch (pauseError) {
             console.error('Failed to auto-pause poll:', pauseError);
           }
@@ -392,11 +390,8 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
   }, [showToast]);
 
   const fetchData = useCallback(async () => {
-    if (refreshing) return;
 
     try {
-      setRefreshing(true);
-
       const blockchainHealthy = await checkBlockchainStatus();
 
       console.log('📡 Fetching data from clean system...', {
@@ -470,9 +465,8 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
       showToast('error', 'Failed to fetch poll data');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  }, [refreshing, currentNode, blockchainStatus, checkBlockchainStatus, fetchCandidatesFromMySQL, fetchVotesFromBlockchain, fetchPositions, showToast]);
+  }, [currentNode, blockchainStatus, checkBlockchainStatus, fetchCandidatesFromMySQL, fetchVotesFromBlockchain, fetchPositions, showToast]);
 
   useEffect(() => {
     if (candidates.length > 0) {
@@ -490,7 +484,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
         }
       });
     }
-  }, [candidates, positions, totalVotes, currentNode, blockchainStatus, loading, refreshing]);
+  }, [candidates, positions, totalVotes, currentNode, blockchainStatus, loading]);
 
   useEffect(() => {
     fetchData();
@@ -507,11 +501,6 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
     };
   }, [autoRefresh, fetchData]);
 
-  const handleManualRefresh = useCallback(async () => {
-    console.log('🔄 Manual refresh requested');
-    await checkBlockchainStatus();
-    await fetchData();
-  }, [checkBlockchainStatus, fetchData]);
 
   const exportVotes = useCallback(() => {
     try {
@@ -699,19 +688,6 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
   // Mobile-optimized ControlButtons component
   const ControlButtons = () => (
     <div className="flex flex-wrap gap-2">
-      <button
-        onClick={handleManualRefresh}
-        disabled={refreshing}
-        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px] justify-center"
-      >
-        {refreshing ? (
-          <LoadingSpinner size="sm" />
-        ) : (
-          <RefreshCw className="w-4 h-4" />
-        )}
-        <span className="hidden sm:inline">Refresh</span>
-      </button>
-
       {isSuperAdmin && (
         <button
           onClick={exportVotes}

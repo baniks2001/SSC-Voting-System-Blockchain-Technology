@@ -61,13 +61,13 @@ class ApiClient {
   private baseUrl: string;
   private requestQueue: QueueItem[] = [];
   private processing = false;
-  private readonly maxConcurrent = 3;
+  private readonly maxConcurrent = 5;
   private activeRequests = 0;
   private lastRequestTime = 0;
-  private readonly minRequestInterval = 200;
+  private readonly minRequestInterval = 50;
   private retryCounts = new Map<string, number>();
   private readonly maxRetries = 2;
-  private readonly defaultTimeout = 10000;
+  private readonly defaultTimeout = 15000;
   private pendingRequests = new Set<string>();
   
   constructor(baseUrl: string) {
@@ -322,11 +322,11 @@ class ApiClient {
       }
     }
 
-    // Show success toast if configured
+    // Show success toast if configured (skip for vote submissions)
     if (config.successMessage) {
       toastManager.showToast('success', config.successMessage);
-    } else if (response.status >= 200 && response.status < 300) {
-      // Auto success message for common operations
+    } else if (response.status >= 200 && response.status < 300 && !endpoint.includes('cast-blockchain')) {
+      // Auto success message for common operations (except vote submissions)
       const method = endpoint.includes('get') ? 'fetched' : 
                     endpoint.includes('post') ? 'created' :
                     endpoint.includes('put') || endpoint.includes('patch') ? 'updated' :
@@ -367,13 +367,16 @@ class ApiClient {
       const headers = this.getAuthHeaders(config.skipAuth, isFormData);
       const url = `${this.baseUrl}${endpoint}`;
       
-      toastManager.showToast('info', `Creating ${endpoint.replace('/', '')}...`);
+      // Only show toast for non-vote submissions to reduce noise
+      if (!endpoint.includes('cast-blockchain')) {
+        toastManager.showToast('info', `Creating ${endpoint.replace('/', '')}...`);
+      }
       
       const response = await this.fetchWithTimeout(url, {
         method: 'POST',
         headers,
         body: isFormData ? data : (data ? JSON.stringify(data) : undefined),
-        timeout: config.timeout,
+        timeout: config.timeout || 5000, // Faster timeout for vote submissions
       });
       
       return this.handleResponse(response, endpoint, config);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { UserPlus, Edit, Trash2, Eye, Search, Mail, Lock, User, MoreVertical, Shield, X, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Eye, Search, Mail, Lock, User, MoreVertical, Shield, X, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Admin } from '../../types';
 import { api } from '../../utils/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -9,8 +9,7 @@ import { Modal } from '../common/Modal';
 interface Notification {
   id: number;
   message: string;
-  type: 'success' | 'error' | 'info' | 'warning';
-  title?: string;
+  type: 'success' | 'error';
 }
 
 export const AdminManagement: React.FC = () => {
@@ -38,9 +37,9 @@ export const AdminManagement: React.FC = () => {
   });
 
   // Notification functions
-  const addNotification = useCallback((message: string, type: Notification['type'], title?: string) => {
+  const addNotification = useCallback((message: string, type: 'success' | 'error') => {
     const id = notificationIdCounter.current++;
-    const notification: Notification = { id, message, type, title };
+    const notification: Notification = { id, message, type };
     
     setNotifications(prev => [...prev, notification]);
     
@@ -60,9 +59,7 @@ export const AdminManagement: React.FC = () => {
       switch (notification.type) {
         case 'success': return <CheckCircle className="w-5 h-5 text-emerald-500" />;
         case 'error': return <XCircle className="w-5 h-5 text-rose-500" />;
-        case 'warning': return <AlertCircle className="w-5 h-5 text-amber-500" />;
-        case 'info': return <Info className="w-5 h-5 text-blue-500" />;
-        default: return <Info className="w-5 h-5 text-gray-500" />;
+        default: return <CheckCircle className="w-5 h-5 text-emerald-500" />;
       }
     };
 
@@ -70,9 +67,7 @@ export const AdminManagement: React.FC = () => {
       switch (notification.type) {
         case 'success': return 'border-emerald-200';
         case 'error': return 'border-rose-200';
-        case 'warning': return 'border-amber-200';
-        case 'info': return 'border-blue-200';
-        default: return 'border-gray-200';
+        default: return 'border-emerald-200';
       }
     };
 
@@ -80,9 +75,7 @@ export const AdminManagement: React.FC = () => {
       switch (notification.type) {
         case 'success': return 'bg-emerald-50';
         case 'error': return 'bg-rose-50';
-        case 'warning': return 'bg-amber-50';
-        case 'info': return 'bg-blue-50';
-        default: return 'bg-gray-50';
+        default: return 'bg-emerald-50';
       }
     };
 
@@ -94,9 +87,6 @@ export const AdminManagement: React.FC = () => {
               {getIcon()}
             </div>
             <div className="ml-3 w-0 flex-1 pt-0.5">
-              {notification.title && (
-                <p className="text-sm font-medium text-gray-900">{notification.title}</p>
-              )}
               <p className="text-sm text-gray-700">{notification.message}</p>
             </div>
             <div className="ml-4 flex-shrink-0 flex">
@@ -124,10 +114,13 @@ export const AdminManagement: React.FC = () => {
   const fetchAdmins = async () => {
     try {
       const response = await api.get('/admin/admins');
-      setAdmins(response);
-      addNotification('Admins loaded successfully', 'success');
+      
+      // Add a small delay to ensure data consistency
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      setAdmins(response || []);
     } catch (error: any) {
-      addNotification('Failed to fetch admins', 'error', 'Error');
+      addNotification('Failed to fetch admins', 'error');
     } finally {
       setLoading(false);
     }
@@ -137,17 +130,39 @@ export const AdminManagement: React.FC = () => {
     e.preventDefault();
     try {
       if (editingAdmin) {
-        await api.put(`/admin/admins/${editingAdmin.id}`, formData);
-        addNotification('Admin updated successfully', 'success', 'Success');
+        const updatedAdmin = await api.put(`/admin/admins/${editingAdmin.id}`, formData);
+        addNotification('Admin updated successfully', 'success');
+        
+        // Optimistic update - update local state immediately
+        setAdmins(prev => prev.map(admin => 
+          admin.id === editingAdmin.id 
+            ? { ...admin, email: formData.email, full_name: formData.fullName, role: formData.role }
+            : admin
+        ));
       } else {
-        await api.post('/admin/admins', formData);
-        addNotification('Admin created successfully', 'success', 'Success');
+        const newAdmin = await api.post('/admin/admins', formData);
+        addNotification('Admin added successfully', 'success');
+        
+        // Optimistic update - add to local state immediately
+        setAdmins(prev => [{
+          id: newAdmin.id || Date.now(),
+          email: formData.email,
+          full_name: formData.fullName,
+          role: formData.role,
+          is_active: true,
+          created_at: new Date().toISOString()
+        }, ...prev]);
       }
+      
       setShowModal(false);
       resetForm();
-      fetchAdmins();
+      
+      // Then fetch fresh data to ensure consistency
+      setTimeout(() => fetchAdmins(), 500);
     } catch (error: any) {
-      addNotification(error.message || 'Operation failed', 'error', 'Error');
+      addNotification(error.message || 'Failed to update admin', 'error');
+      // Revert optimistic update on error
+      fetchAdmins();
     }
   };
 
@@ -161,14 +176,12 @@ export const AdminManagement: React.FC = () => {
     });
     setShowModal(true);
     setShowMobileActions(null);
-    addNotification(`Editing admin: ${admin.full_name}`, 'info', 'Edit Mode');
   };
 
   const handleView = (admin: Admin) => {
     setViewingAdmin(admin);
     setShowViewModal(true);
     setShowMobileActions(null);
-    addNotification(`Viewing admin details: ${admin.full_name}`, 'info', 'View Mode');
   };
 
   // Show delete confirmation modal
@@ -185,12 +198,12 @@ export const AdminManagement: React.FC = () => {
     setDeletingAdmin(true);
     try {
       await api.delete(`/admin/admins/${adminToDelete.id}`);
-      addNotification('Admin deleted successfully', 'success', 'Success');
+      addNotification('Admin deleted successfully', 'success');
       fetchAdmins();
       setShowDeleteModal(false);
       setAdminToDelete(null);
     } catch (error: any) {
-      addNotification(error.message || 'Failed to delete admin', 'error', 'Error');
+      addNotification(error.message || 'Failed to delete admin', 'error');
     } finally {
       setDeletingAdmin(false);
     }
@@ -356,7 +369,6 @@ export const AdminManagement: React.FC = () => {
           <button
             onClick={() => {
               setShowModal(true);
-              addNotification('Creating new admin', 'info', 'Add Admin');
             }}
             className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
           >
@@ -385,7 +397,6 @@ export const AdminManagement: React.FC = () => {
               <button
                 onClick={() => {
                   setSearchTerm('');
-                  addNotification('Search cleared', 'info', 'Search');
                 }}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
               >

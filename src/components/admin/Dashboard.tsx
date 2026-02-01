@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users, Vote, UserCheck, Activity, Download, Play, Pause, StopCircle,
-  RefreshCw, AlertCircle, X, Save, Calendar, History, Trash2, Eye, Search,
+  AlertCircle, X, Save, Calendar, History, Trash2, Eye, Search,
   FileText, Shield, BarChart3, Clock, CheckCircle, XCircle, Info,
 } from 'lucide-react';
 import { DashboardStats, AuditLog } from '../../types';
@@ -62,8 +62,7 @@ interface Candidate {
 interface Notification {
   id: number;
   message: string;
-  type: 'success' | 'error' | 'info' | 'warning';
-  title?: string;
+  type: 'success' | 'error';
 }
 
 type ExportType = 'xlsx' | 'docs' | 'json';
@@ -77,7 +76,6 @@ export const Dashboard: React.FC = () => {
   const [showFinishPollForm, setShowFinishPollForm] = useState(false);
   const [showElectionHistory, setShowElectionHistory] = useState(false);
   const [showElectionDetails, setShowElectionDetails] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [totalVotes, setTotalVotes] = useState<number>(0);
   const [finishPollData, setFinishPollData] = useState<FinishPollFormData>({
@@ -116,9 +114,9 @@ export const Dashboard: React.FC = () => {
   const [showResultModal, setShowResultModal] = useState(false);
 
   // Notification functions
-  const addNotification = useCallback((message: string, type: Notification['type'], title?: string) => {
+  const addNotification = useCallback((message: string, type: 'success' | 'error') => {
     const id = notificationIdCounter.current++;
-    const notification: Notification = { id, message, type, title };
+    const notification: Notification = { id, message, type };
 
     setNotifications(prev => [...prev, notification]);
 
@@ -289,10 +287,8 @@ export const Dashboard: React.FC = () => {
   }, []);
 
   const fetchData = useCallback(async () => {
-    if (refreshing) return;
 
     try {
-      setRefreshing(true);
       setAuthError(false);
 
       const [candidatesResponse, resultsResponse, dashboardResponse, votersResponse] = await Promise.allSettled([
@@ -403,10 +399,9 @@ export const Dashboard: React.FC = () => {
     } finally {
       if (isMounted.current) {
         setLoading(false);
-        setRefreshing(false);
       }
     }
-  }, [refreshing]);
+  }, []);
 
   useEffect(() => {
     isMounted.current = true;
@@ -916,11 +911,11 @@ export const Dashboard: React.FC = () => {
             if (electionsResponse.success && electionsResponse.elections.length > 0) {
               const latestElection = electionsResponse.elections[0];
               await exportElection(latestElection.id, 'json');
-              addNotification('Election finished and JSON file exported successfully!', 'success');
+              addNotification('Election finished and JSON file exported successfully', 'success');
             }
           } catch (exportError) {
             console.error('Auto-export failed:', exportError);
-            addNotification('Election finished successfully, but automatic JSON export failed. You can export manually from Election History.', 'warning');
+            addNotification('Election finished successfully, but automatic JSON export failed. You can export manually from Election History.', 'error');
           }
         }, 1000);
       } else {
@@ -959,7 +954,7 @@ export const Dashboard: React.FC = () => {
 
   const handleFinishPollSubmit = useCallback(async () => {
     if (!finishPollData.electionName || !finishPollData.electionDate || !finishPollData.academicYear) {
-      addNotification('Please fill in all required fields', 'warning');
+      addNotification('Please fill in all required fields', 'error');
       return;
     }
 
@@ -970,7 +965,7 @@ export const Dashboard: React.FC = () => {
   const handleFinishSequence = useCallback(async () => {
     if (!superAdminPassword) {
       setPasswordError('Password is required');
-      addNotification('Super admin password is required', 'warning');
+      addNotification('Super admin password is required', 'error');
       return;
     }
 
@@ -1931,16 +1926,6 @@ export const Dashboard: React.FC = () => {
                   <span>Election History</span>
                 </button>
               )}
-              <button
-                onClick={() => {
-                  fetchData();
-                }}
-                disabled={refreshing}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 disabled:opacity-50 text-sm font-medium transition-all duration-200 hover:shadow-lg"
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
-              </button>
             </div>
           </div>
         </div>

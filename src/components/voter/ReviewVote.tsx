@@ -674,27 +674,40 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
 
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mb-6">
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <ShieldCheck className="w-6 h-6 text-blue-800" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  Review Your Vote
-                </h1>
-                <p className="text-gray-600 text-sm sm:text-base mt-1">
-                  Please verify your selections before submitting
-                </p>
-              </div>
-              <div className="lg:hidden text-xs text-gray-500 flex items-center bg-gray-100 px-3 py-1 rounded-full">
-                <Smartphone className="w-3 h-3 mr-1" />
-                Mobile View
-              </div>
-              <div className="hidden lg:flex text-xs text-gray-500 items-center bg-gray-100 px-3 py-1 rounded-full">
-                <Monitor className="w-3 h-3 mr-1" />
-                Desktop View
+        <div className="bg-gradient-to-r from-blue-800 via-blue-700 to-blue-900 rounded-2xl shadow-xl border border-blue-600 mb-6 overflow-hidden">
+          <div className="p-8 relative">
+            {/* Background pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute inset-0 bg-white/20"></div>
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-16 -mb-16"></div>
+            </div>
+            
+            <div className="relative z-10">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 flex-shrink-0">
+                  <ShieldCheck className="w-8 h-8 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-3xl font-bold text-white mb-2">
+                    Review Your Vote
+                  </h1>
+                  <p className="text-blue-100 text-lg">
+                    Please verify your selections before submitting
+                  </p>
+                </div>
+                <div className="lg:hidden bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/30">
+                  <div className="flex items-center text-white text-sm">
+                    <Smartphone className="w-4 h-4 mr-2" />
+                    Mobile View
+                  </div>
+                </div>
+                <div className="hidden lg:flex bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/30">
+                  <div className="flex items-center text-white text-sm">
+                    <Monitor className="w-4 h-4 mr-2" />
+                    Desktop View
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -828,121 +841,119 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
 
           {/* Right Column - Vote Selections */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <CheckCircle className="w-5 h-5 mr-2 text-blue-800" />
-                Your Selections ({totalSelectedCandidates} candidate{totalSelectedCandidates !== 1 ? 's' : ''} across {positionsWithVotes} of {positions.length} position{positions.length !== 1 ? 's' : ''})
-              </h2>
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+              {/* Selections Header */}
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200 p-6">
+                <h2 className="text-xl font-bold text-blue-900 mb-2 flex items-center">
+                  <CheckCircle className="w-6 h-6 mr-3 text-blue-700" />
+                  Your Selections
+                </h2>
+                <p className="text-blue-700 text-sm">
+                  {totalSelectedCandidates} candidate{totalSelectedCandidates !== 1 ? 's' : ''} across {positionsWithVotes} of {positions.length} position{positions.length !== 1 ? 's' : ''}
+                </p>
+              </div>
 
-              <div className="space-y-4">
+              <div className="p-6 space-y-6">
                 {positions.map((position) => {
                   const selectedCandidates = getSelectedCandidates(position.name);
                   const maxVotes = position.maxVotes || 1;
                   const isEmpty = selectedCandidates.length === 0;
 
                   return (
-                    <div key={position.id} className="border border-gray-200 rounded-xl p-4 bg-white hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-2">
-                          <h3 className="font-semibold text-gray-900 text-base bg-gray-100 rounded-lg px-3 py-2">
-                            {position.name}
-                          </h3>
-                          {isEmpty && (
-                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium flex items-center">
-                              <MinusCircle className="w-3 h-3 mr-1" />
-                              Empty
-                            </span>
-                          )}
+                    <div key={position.id} className="bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300">
+                      {/* Position Header */}
+                      <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <h3 className="font-bold text-lg text-white">
+                              {position.name}
+                            </h3>
+                            {isEmpty && (
+                              <span className="bg-yellow-400/30 backdrop-blur-sm text-yellow-100 px-3 py-1 rounded-full text-sm font-medium flex items-center border border-yellow-400/30">
+                                <MinusCircle className="w-4 h-4 mr-1" />
+                                Empty
+                              </span>
+                            )}
+                          </div>
+                          <div className={`px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm border ${
+                            isEmpty 
+                              ? 'bg-yellow-400/30 text-yellow-100 border-yellow-400/30' 
+                              : 'bg-green-400/30 text-green-100 border-green-400/30'
+                          }`}>
+                            {selectedCandidates.length}/{maxVotes} selected
+                          </div>
                         </div>
-                        <span className={`text-sm px-3 py-1 rounded-full font-medium ${
-                          isEmpty 
-                            ? 'bg-yellow-100 text-yellow-800' 
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {selectedCandidates.length}/{maxVotes} selected
-                        </span>
                       </div>
 
+                      {/* Candidates */}
                       {selectedCandidates.length > 0 ? (
-                        <div className="space-y-3">
+                        <div className="p-4 space-y-4">
                           {selectedCandidates.map((candidate) => (
-                            <div key={candidate.id} className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 p-3 bg-white rounded-xl border border-gray-200">
-                              <div className="flex items-center space-x-3 w-full sm:w-auto">
-                                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100">
+                            <div key={candidate.id} className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-blue-300 hover:shadow-md transition-all duration-300">
+                              <div className="flex flex-col sm:flex-row">
+                                {/* Candidate Image - Much Larger */}
+                                <div className="w-full sm:w-32 h-32 bg-gradient-to-br from-blue-100 to-blue-200 overflow-hidden">
                                   {candidate.image_url ? (
                                     <img
                                       src={candidate.image_url}
                                       alt={candidate.name}
-                                      className="w-full h-full object-cover"
+                                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                       onError={(e) => {
-                                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random`;
+                                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random&size=128`;
                                       }}
                                     />
                                   ) : (
-                                    <User className="w-5 h-5 text-gray-500" />
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <User className="w-12 h-12 text-blue-400" />
+                                    </div>
                                   )}
                                 </div>
-                                <div className="min-w-0 flex-1 sm:hidden">
-                                  <h4 className="font-semibold text-gray-900 text-base">
-                                    {candidate.name}
-                                  </h4>
-                                  <p className="text-gray-600 text-sm">
-                                    {candidate.party}
-                                  </p>
-                                </div>
-                              </div>
 
-                              <div className="flex-1 min-w-0 w-full">
-                                <div className="hidden sm:block">
-                                  <h4 className="font-semibold text-gray-900 text-base">
-                                    {candidate.name}
-                                  </h4>
-                                  <p className="text-gray-600 text-sm">{candidate.party}</p>
+                                {/* Candidate Info */}
+                                <div className="flex-1 p-4">
+                                  <div className="flex items-start justify-between">
+                                    <div className="min-w-0 flex-1">
+                                      <h4 className="font-bold text-lg text-gray-900 mb-2 group-hover:text-blue-700 transition-colors">
+                                        {candidate.name}
+                                      </h4>
+                                      <div className="flex items-center text-gray-600 mb-3">
+                                        <Users className="w-4 h-4 mr-2 text-blue-500" />
+                                        <span className="text-sm font-medium">{candidate.party}</span>
+                                      </div>
+                                      
+                                      {/* Selection indicator */}
+                                      <div className="flex items-center">
+                                        <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center">
+                                          <CheckCircle className="w-3 h-3 mr-1" />
+                                          Selected
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Hover indicator */}
+                                    <div className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <CheckCircle className="w-4 h-4 text-blue-600" />
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-
-                              <div className="w-8 h-8 bg-blue-800 rounded-full flex items-center justify-center flex-shrink-0">
-                                <CheckCircle className="w-4 h-4 text-white" />
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                          <div className="flex flex-col items-center">
-                            <MinusCircle className="w-8 h-8 text-yellow-600 mb-2" />
-                            <p className="text-yellow-700 text-sm">
-                              No candidate selected for this position
-                            </p>
-                            <p className="text-yellow-600 text-xs mt-1">
-                              This will be recorded as an empty vote
-                            </p>
+                        <div className="p-6 text-center">
+                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <MinusCircle className="w-8 h-8 text-gray-400" />
                           </div>
+                          <p className="text-gray-500 font-medium">No candidates selected</p>
+                          <p className="text-gray-400 text-sm mt-1">This position will be left empty</p>
                         </div>
                       )}
                     </div>
                   );
                 })}
-
-                {/* Show summary of empty positions */}
-                {emptyPositions > 0 && (
-                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                    <div className="flex items-center">
-                      <Users className="w-5 h-5 text-blue-600 mr-2" />
-                      <div>
-                        <h4 className="font-semibold text-blue-800 text-sm">Empty Positions Summary</h4>
-                        <p className="text-blue-600 text-xs">
-                          You have left {emptyPositions} position{emptyPositions !== 1 ? 's' : ''} empty.
-                          {emptyPositions > 0 && (
-                            <span className="ml-1">
-                              Positions: {getEmptyPositions().map(p => p.name).join(', ')}
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>

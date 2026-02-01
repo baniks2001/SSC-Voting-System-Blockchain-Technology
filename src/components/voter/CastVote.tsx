@@ -267,29 +267,29 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
         </div>
 
         {/* Desktop Header */}
-        <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-gray-200 mb-6">
-          <div className="p-6">
+        <div className="hidden lg:block bg-gradient-to-r from-blue-800 to-blue-900 rounded-2xl shadow-xl border border-blue-700 mb-6 overflow-hidden">
+          <div className="p-8">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <Vote className="w-6 h-6 text-blue-800" />
+              <div className="flex items-center space-x-6">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30">
+                  <Vote className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Cast Your Vote</h1>
-                  <p className="text-gray-600">Select candidates for each position (optional)</p>
+                  <h1 className="text-3xl font-bold text-white mb-2">Cast Your Vote</h1>
+                  <p className="text-blue-100 text-lg">Select candidates for each position (optional)</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
-                <div className="bg-blue-50 rounded-xl px-4 py-2">
-                  <span className="text-sm font-semibold text-blue-800">
+              <div className="flex items-center space-x-6">
+                <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-3 border border-white/30">
+                  <span className="text-lg font-semibold text-white">
                     {totalSelected} of {totalPossible} selected
                   </span>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-2 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 py-2 px-4 rounded-lg transition-colors font-medium text-sm"
+                  className="flex items-center space-x-3 bg-red-500 hover:bg-red-600 text-white py-3 px-6 rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-5 h-5" />
                   <span>Logout</span>
                 </button>
               </div>
@@ -379,42 +379,57 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
               const canSelectMore = canSelectCandidate(position.name);
 
               return (
-                <div key={position.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  {/* Position Header - Updated to dark blue with white text */}
-                  <div className="bg-blue-800 border-b border-blue-700 p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
-                      <div className="flex items-center space-x-3">
-                        <Users className="w-6 h-6 text-white" />
-                        <h2 className="text-xl sm:text-2xl font-bold text-white">{position.name}</h2>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <span className={`text-sm px-3 py-1 rounded-full font-semibold ${
-                          voteStatus.status === 'empty' ? 'bg-blue-200 text-blue-800' :
-                          voteStatus.status === 'partial' ? 'bg-blue-100 text-blue-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
-                          {selectedCount}/{maxVotes} selected
-                        </span>
-                        {voteStatus.status === 'full' && (
-                          <span className="text-sm text-green-600 font-semibold bg-green-50 px-3 py-1 rounded-full flex items-center">
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Complete
-                          </span>
-                        )}
-                      </div>
+                <div key={position.id} className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                  {/* Position Header - Modern gradient design */}
+                  <div className="bg-gradient-to-r from-blue-800 via-blue-700 to-blue-800 border-b border-blue-600 p-6 sm:p-8 relative overflow-hidden">
+                    {/* Background pattern */}
+                    <div className="absolute inset-0 opacity-10">
+                      <div className="absolute inset-0 bg-white/20"></div>
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                      <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-2 space-y-1 sm:space-y-0">
-                      <p className="text-base text-blue-100">
-                        {maxVotes > 1
-                          ? `You can select up to ${maxVotes} candidate(s) for this position`
-                          : 'Select one candidate for this position'
-                        }
-                        <span className="ml-2 text-blue-200 italic">(Optional - can be left empty)</span>
-                      </p>
+                    
+                    <div className="relative z-10">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
+                            <Users className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-white">{position.name}</h2>
+                            <p className="text-blue-100 text-sm mt-1">
+                              {maxVotes > 1
+                                ? `Select up to ${maxVotes} candidates`
+                                : 'Select one candidate'
+                              }
+                              <span className="ml-2 text-blue-200 italic">(Optional)</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <div className={`px-4 py-2 rounded-full font-semibold text-sm backdrop-blur-sm border ${
+                            voteStatus.status === 'empty' ? 'bg-blue-200/30 text-blue-100 border-blue-400/30' :
+                            voteStatus.status === 'partial' ? 'bg-yellow-200/30 text-yellow-100 border-yellow-400/30' :
+                            'bg-green-200/30 text-green-100 border-green-400/30'
+                          }`}>
+                            {selectedCount}/{maxVotes} selected
+                          </div>
+                          {voteStatus.status === 'full' && (
+                            <div className="bg-green-500/20 backdrop-blur-sm border border-green-400/30 px-3 py-2 rounded-full flex items-center">
+                              <CheckCircle className="w-4 h-4 mr-1 text-green-100" />
+                              <span className="text-green-100 text-sm font-medium">Complete</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
                       {voteStatus.status !== 'full' && voteStatus.status !== 'empty' && (
-                        <p className="text-base text-blue-200 font-medium">
-                          {voteStatus.message}
-                        </p>
+                        <div className="mt-3 flex items-center">
+                          <AlertCircle className="w-4 h-4 text-yellow-300 mr-2" />
+                          <p className="text-yellow-100 text-sm font-medium">
+                            {voteStatus.message}
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -427,55 +442,92 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
                         <p className="text-base">No candidates available for this position</p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {positionCandidates.map((candidate) => (
                           <div
                             key={candidate.id}
                             onClick={() => handleCandidateSelect(position.name, candidate.id, maxVotes)}
-                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 transform hover:scale-[1.02] ${
+                            className={`group relative overflow-hidden rounded-2xl border-2 cursor-pointer transition-all duration-300 transform hover:scale-[1.03] hover:shadow-xl ${
                               isCandidateSelected(position.name, candidate.id)
-                                ? 'border-blue-800 bg-blue-100 shadow-md'
+                                ? 'border-blue-600 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg'
                                 : !canSelectMore && !isCandidateSelected(position.name, candidate.id)
-                                  ? 'border-gray-200 bg-gray-100 opacity-60 cursor-not-allowed'
-                                  : 'border-gray-200 bg-white hover:border-blue-500 hover:bg-blue-50'
+                                  ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
+                                  : 'border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50 hover:shadow-lg'
                             }`}
                           >
-                            <div className="flex items-center space-x-4">
-                              <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100">
-                                {candidate.image_url ? (
-                                  <img
-                                    src={candidate.image_url}
-                                    alt={candidate.name}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random`;
-                                    }}
-                                  />
-                                ) : (
-                                  <User className="w-7 h-7 text-gray-500" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-bold text-lg text-gray-900 truncate">
-                                  {candidate.name}
-                                </h3>
-                                <p className="text-gray-600 text-base truncate">
+                            {/* Selection Indicator */}
+                            <div className="absolute top-3 right-3 z-10">
+                              {isCandidateSelected(position.name, candidate.id) && (
+                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                                  <CheckCircle className="w-5 h-5 text-white" />
+                                </div>
+                              )}
+                              {!canSelectMore && !isCandidateSelected(position.name, candidate.id) && (
+                                <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
+                                  <AlertCircle className="w-5 h-5 text-white" />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Candidate Image - Much Larger */}
+                            <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                              {candidate.image_url ? (
+                                <img
+                                  src={candidate.image_url}
+                                  alt={candidate.name}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                  onError={(e) => {
+                                    e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random&size=200`;
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200">
+                                  <User className="w-16 h-16 text-blue-400" />
+                                </div>
+                              )}
+                              
+                              {/* Overlay with party name */}
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                                <p className="text-white text-sm font-medium truncate">
                                   {candidate.party}
                                 </p>
                               </div>
-                              <div className="flex items-center">
-                                {isCandidateSelected(position.name, candidate.id) && (
-                                  <div className="w-8 h-8 bg-blue-800 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-                                    <CheckCircle className="w-5 h-5 text-white" />
-                                  </div>
-                                )}
-                                {!canSelectMore && !isCandidateSelected(position.name, candidate.id) && (
-                                  <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <AlertCircle className="w-5 h-5 text-white" />
-                                  </div>
-                                )}
+                            </div>
+
+                            {/* Candidate Info */}
+                            <div className="p-4">
+                              <h3 className="font-bold text-lg text-gray-900 truncate mb-2 group-hover:text-blue-700 transition-colors">
+                                {candidate.name}
+                              </h3>
+                              
+                              {/* Additional candidate details */}
+                              <div className="space-y-2">
+                                <div className="flex items-center text-sm text-gray-600">
+                                  <Users className="w-4 h-4 mr-2 text-blue-500" />
+                                  <span>{candidate.party}</span>
+                                </div>
+                                
+                                {/* Selection status */}
+                                <div className="flex items-center justify-between">
+                                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                    isCandidateSelected(position.name, candidate.id)
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : 'bg-gray-100 text-gray-600'
+                                  }`}>
+                                    {isCandidateSelected(position.name, candidate.id) ? 'Selected' : 'Click to select'}
+                                  </span>
+                                  
+                                  {maxVotes > 1 && (
+                                    <span className="text-xs text-gray-500">
+                                      {selectedCount}/{maxVotes} slots
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
+
+                            {/* Hover effect overlay */}
+                            <div className="absolute inset-0 bg-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                           </div>
                         ))}
                       </div>

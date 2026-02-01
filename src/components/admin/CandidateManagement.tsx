@@ -11,7 +11,7 @@ interface Notification {
   id: number;
   title: string;
   message: string;
-  type: 'success' | 'error' | 'info' | 'warning';
+  type: 'success' | 'error';
   timestamp: Date;
 }
 
@@ -81,7 +81,7 @@ export const CandidateManagement: React.FC = () => {
   const [duplicateNameError, setDuplicateNameError] = useState('');
 
   // Add notification function
-  const addNotification = useCallback((title: string, message: string, type: Notification['type']) => {
+  const addNotification = useCallback((title: string, message: string, type: 'success' | 'error') => {
     const id = notificationIdCounter.current++;
     const newNotification: Notification = {
       id,
@@ -125,23 +125,15 @@ export const CandidateManagement: React.FC = () => {
       <div className="fixed top-4 right-4 z-50 space-y-3 max-w-md">
         {notifications.map((notification) => {
           const bgColor = notification.type === 'success' ? 'bg-emerald-50 border-emerald-200' :
-                         notification.type === 'error' ? 'bg-rose-50 border-rose-200' :
-                         notification.type === 'warning' ? 'bg-amber-50 border-amber-200' :
-                         'bg-blue-50 border-blue-200';
+                         'bg-rose-50 border-rose-200';
           
           const textColor = notification.type === 'success' ? 'text-emerald-800' :
-                           notification.type === 'error' ? 'text-rose-800' :
-                           notification.type === 'warning' ? 'text-amber-800' :
-                           'text-blue-800';
+                           'text-rose-800';
           
           const iconColor = notification.type === 'success' ? 'text-emerald-600' :
-                           notification.type === 'error' ? 'text-rose-600' :
-                           notification.type === 'warning' ? 'text-amber-600' :
-                           'text-blue-600';
+                           'text-rose-600';
 
-          const Icon = notification.type === 'success' ? CheckCircle :
-                      notification.type === 'error' ? XCircle :
-                      notification.type === 'warning' ? AlertCircle : Info;
+          const Icon = notification.type === 'success' ? CheckCircle : XCircle;
 
           return (
             <div
@@ -258,9 +250,14 @@ export const CandidateManagement: React.FC = () => {
   const fetchCandidates = async () => {
     try {
       const response = await api.get('/candidates/admin');
-      setCandidates(response);
+      
+      // Add a small delay to ensure data consistency
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      setCandidates(response || []);
     } catch (error: any) {
       console.error('Failed to fetch candidates:', error);
+      addNotification('Failed to fetch candidates', 'Failed to fetch candidates', 'error');
     }
   };
 
@@ -313,7 +310,7 @@ export const CandidateManagement: React.FC = () => {
     // Validate candidate name
     const candidateName = candidateFormData.name.trim();
     if (!candidateName) {
-      addNotification('Validation Error', 'Candidate name is required', 'error');
+      addNotification('Failed to add candidate', 'Candidate name is required', 'error');
       return;
     }
 
@@ -322,7 +319,7 @@ export const CandidateManagement: React.FC = () => {
       const isDuplicate = checkDuplicateCandidateName(candidateName, editingCandidate?.id);
       if (isDuplicate) {
         setDuplicateNameError(`A candidate with the name "${candidateName}" already exists.`);
-        addNotification('Duplicate Candidate', `Candidate "${candidateName}" already exists`, 'error');
+        addNotification('Failed to add candidate', `Candidate "${candidateName}" already exists`, 'error');
         return;
       }
     }
@@ -343,24 +340,49 @@ export const CandidateManagement: React.FC = () => {
       }
 
       if (editingCandidate) {
-        await api.put(`/candidates/${editingCandidate.id}`, formData);
-        addNotification('Candidate Updated', 'Candidate updated successfully', 'success');
+        const updatedCandidate = await api.put(`/candidates/${editingCandidate.id}`, formData);
+        addNotification('Candidate updated successfully', 'Candidate updated successfully', 'success');
+        
+        // Optimistic update - update local state immediately
+        setCandidates(prev => prev.map(candidate => 
+          candidate.id === editingCandidate.id 
+            ? { ...candidate, name: candidateFormData.name, party: candidateFormData.party, position: candidateFormData.position }
+            : candidate
+        ));
       } else {
-        await api.post('/candidates', formData);
-        addNotification('Candidate Created', 'Candidate created successfully', 'success');
+        const newCandidate = await api.post('/candidates', formData);
+        addNotification('Candidate added successfully', 'Candidate created successfully', 'success');
+        
+        // Optimistic update - add to local state immediately
+        setCandidates(prev => [{
+          id: newCandidate.id || Date.now(),
+          name: candidateFormData.name,
+          party: candidateFormData.party,
+          position: candidateFormData.position,
+          image_url: newCandidate.image_url || '',
+          created_at: new Date().toISOString()
+        }, ...prev]);
       }
+      
       setShowCandidateModal(false);
       resetCandidateForm();
-      fetchCandidates();
+      
+      // Then fetch fresh data to ensure consistency
+      setTimeout(() => {
+        fetchCandidates();
+        fetchPositions();
+      }, 500);
     } catch (error: any) {
       // Handle duplicate name error from backend as well
       if (error.message && error.message.toLowerCase().includes('duplicate') || 
           error.message && error.message.toLowerCase().includes('already exists')) {
-        setDuplicateNameError(`A candidate with the name "${candidateName}" already exists.`);
-        addNotification('Duplicate Candidate', `Candidate "${candidateName}" already exists`, 'error');
+        setDuplicateNameError(`A candidate with the name "${candidateFormData.name}" already exists.`);
+        addNotification('Failed to add candidate', `Candidate "${candidateFormData.name}" already exists`, 'error');
       } else {
-        addNotification('Operation Failed', error.message || 'Failed to save candidate', 'error');
+        addNotification('Failed to save candidate', error.message || 'Failed to save candidate', 'error');
       }
+      // Revert optimistic update on error
+      fetchCandidates();
     }
   };
 
@@ -379,16 +401,35 @@ export const CandidateManagement: React.FC = () => {
 
       if (editingPosition) {
         await positionApi.updatePosition(editingPosition.id, positionData);
-        addNotification('Position Updated', 'Position updated successfully', 'success');
+        addNotification('Position updated successfully', 'Position updated successfully', 'success');
+        
+        // Optimistic update - update local state immediately
+        setPositions(prev => prev.map(position => 
+          position.id === editingPosition.id 
+            ? { ...position, ...positionData }
+            : position
+        ));
       } else {
-        await positionApi.createPosition(positionData);
-        addNotification('Position Created', 'Position created successfully', 'success');
+        const newPosition = await positionApi.createPosition(positionData);
+        addNotification('Position added successfully', 'Position created successfully', 'success');
+        
+        // Optimistic update - add to local state immediately
+        setPositions(prev => [{
+          id: newPosition.id || Date.now(),
+          ...positionData,
+          created_at: new Date().toISOString()
+        }, ...prev]);
       }
+      
       setShowPositionModal(false);
       resetPositionForm();
-      fetchPositions();
+      
+      // Then fetch fresh data to ensure consistency
+      setTimeout(() => fetchPositions(), 500);
     } catch (error: any) {
-      addNotification('Operation Failed', error.message || 'Failed to save position', 'error');
+      addNotification('Failed to save position', error.message || 'Failed to save position', 'error');
+      // Revert optimistic update on error
+      fetchPositions();
     }
   };
 
@@ -428,11 +469,11 @@ export const CandidateManagement: React.FC = () => {
       onConfirm: async () => {
         try {
           await api.delete(`/candidates/${candidate.id}`);
-          addNotification('Candidate Deleted', `"${candidate.name}" has been deleted successfully`, 'success');
+          addNotification('Candidate deleted successfully', `"${candidate.name}" has been deleted successfully`, 'success');
           setCandidates(prev => prev.filter(c => c.id !== candidate.id));
           setShowMobileActions(null);
         } catch (error: any) {
-          addNotification('Delete Failed', error.message || 'Failed to delete candidate', 'error');
+          addNotification('Failed to delete candidate', error.message || 'Failed to delete candidate', 'error');
           fetchCandidates();
         }
       },
@@ -458,14 +499,14 @@ export const CandidateManagement: React.FC = () => {
       onConfirm: async () => {
         try {
           await positionApi.deletePosition(position.id);
-          addNotification('Position Deleted', `"${position.name}" has been deleted successfully`, 'success');
+          addNotification('Position deleted successfully', `"${position.name}" has been deleted successfully`, 'success');
           setPositions(prev => prev.filter(p => p.id !== position.id));
           // Also remove candidates associated with this position
           if (hasCandidates) {
             setCandidates(prev => prev.filter(c => c.position !== position.name));
           }
         } catch (error: any) {
-          addNotification('Delete Failed', error.message || 'Failed to delete position', 'error');
+          addNotification('Failed to delete position', error.message || 'Failed to delete position', 'error');
           fetchPositions();
         }
       },
@@ -526,7 +567,7 @@ export const CandidateManagement: React.FC = () => {
     // Check for duplicate when selecting from voter list
     if (checkDuplicateCandidateName(selectedName)) {
       setDuplicateNameError(`A candidate with the name "${selectedName}" already exists.`);
-      addNotification('Duplicate Candidate', `Candidate "${selectedName}" already exists`, 'error');
+      addNotification('Failed to add candidate', `Candidate "${selectedName}" already exists`, 'error');
       return;
     }
     
@@ -561,13 +602,13 @@ export const CandidateManagement: React.FC = () => {
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        addNotification('Invalid File', 'Please select an image file (JPEG, PNG, etc.)', 'error');
+        addNotification('Failed to upload image', 'Please select an image file (JPEG, PNG, etc.)', 'error');
         return;
       }
       
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
-        addNotification('File Too Large', 'Image must be less than 5MB', 'error');
+        addNotification('Failed to upload image', 'Image must be less than 5MB', 'error');
         return;
       }
 
