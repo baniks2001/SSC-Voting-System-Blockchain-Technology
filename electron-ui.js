@@ -1,11 +1,22 @@
 let currentIP = '';
 let currentEnvIP = '';
 let currentTerminalTab = 'system';
+let outputBuffer = {};
+let maxOutputLines = 1000;
+let performanceData = {
+    cpu: [],
+    memory: [],
+    network: [],
+    timestamps: []
+};
+let performanceInterval = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadSystemInfo();
     setupOutputListener();
     setupStatusListener();
+    setupPerformanceListener();
+    startPerformanceMonitoring();
 });
 
 async function loadSystemInfo() {
@@ -51,9 +62,28 @@ function setupStatusListener() {
     });
 }
 
+function setupPerformanceListener() {
+    window.electronAPI.onPerformanceData((data) => {
+        updatePerformanceGraph(data);
+    });
+}
+
 function addOutput(message, category, type = 'stdout') {
     const timestamp = new Date().toLocaleTimeString();
     const outputData = { message: message, category: category, type: type, timestamp: timestamp };
+
+    // Initialize buffer for category if not exists
+    if (!outputBuffer[category]) {
+        outputBuffer[category] = [];
+    }
+
+    // Add to buffer
+    outputBuffer[category].push(outputData);
+
+    // Limit buffer size to prevent memory issues
+    if (outputBuffer[category].length > maxOutputLines) {
+        outputBuffer[category] = outputBuffer[category].slice(-maxOutputLines);
+    }
 
     // Add to specific category terminal
     const specificLine = document.createElement('div');
@@ -61,14 +91,23 @@ function addOutput(message, category, type = 'stdout') {
     specificLine.textContent = `[${outputData.timestamp}] ${outputData.message}`;
     
     const terminalId = `terminal-${outputData.category}`;
-    if (document.getElementById(terminalId)) {
-        document.getElementById(terminalId).appendChild(specificLine);
-    }
-
-    // Scroll current terminal to bottom
-    const currentTerminal = document.getElementById(`terminal-${currentTerminalTab}`);
-    if (currentTerminal) {
-        currentTerminal.scrollTop = currentTerminal.scrollHeight;
+    const terminal = document.getElementById(terminalId);
+    if (terminal) {
+        terminal.appendChild(specificLine);
+        
+        // Auto-scroll to bottom only if user is at bottom
+        const isAtBottom = terminal.scrollHeight - terminal.scrollTop <= terminal.clientHeight + 50;
+        if (isAtBottom) {
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+        
+        // Limit terminal lines to prevent performance issues
+        const lines = terminal.children;
+        if (lines.length > maxOutputLines) {
+            for (let i = 0; i < lines.length - maxOutputLines; i++) {
+                terminal.removeChild(lines[0]);
+            }
+        }
     }
     
     updateOutputCount();
@@ -91,6 +130,14 @@ function switchTerminalTab(tabName) {
     
     currentTerminalTab = tabName;
     updateOutputCount();
+    
+    // Scroll to bottom when switching tabs
+    const terminal = document.getElementById(`terminal-${tabName}`);
+    if (terminal) {
+        setTimeout(() => {
+            terminal.scrollTop = terminal.scrollHeight;
+        }, 100);
+    }
 }
 
 function clearCurrentTerminal() {
@@ -103,8 +150,114 @@ function clearCurrentTerminal() {
 
 function clearAllTerminals() {
     document.querySelectorAll('.terminal-content').forEach(terminal => terminal.innerHTML = '');
+    outputBuffer = {};
     updateOutputCount();
     addOutput('All terminals cleared', 'system', 'info');
+}
+
+// Performance monitoring functions
+function startPerformanceMonitoring() {
+    if (performanceInterval) {
+        clearInterval(performanceInterval);
+    }
+    
+    performanceInterval = setInterval(async () => {
+        try {
+            const perfData = await window.electronAPI.getPerformanceData();
+            updatePerformanceGraph(perfData);
+        } catch (error) {
+            console.error('Error getting performance data:', error);
+        }
+    }, 2000);
+}
+
+function updatePerformanceGraph(data) {
+    const now = new Date().toLocaleTimeString();
+    
+    // Keep only last 30 data points
+    if (performanceData.timestamps.length >= 30) {
+        performanceData.cpu.shift();
+        performanceData.memory.shift();
+        performanceData.network.shift();
+        performanceData.timestamps.shift();
+    }
+    
+    performanceData.cpu.push(data.cpu);
+    performanceData.memory.push(data.memory);
+    performanceData.network.push(data.network);
+    performanceData.timestamps.push(now);
+    
+    renderPerformanceGraph();
+    updateNetworkStatus(data.network);
+}
+
+function updateNetworkStatus(networkActivity) {
+    const networkStatus = document.getElementById('networkStatus');
+    if (networkStatus) {
+        if (networkActivity > 70) {
+            networkStatus.innerHTML = '<span style="color: #ef4444;">● High</span>';
+        } else if (networkActivity > 30) {
+            networkStatus.innerHTML = '<span style="color: #f59e0b;">● Medium</span>';
+        } else {
+            networkStatus.innerHTML = '<span style="color: #10b981;">● Low</span>';
+        }
+    }
+}
+
+function renderPerformanceGraph() {
+    const canvas = document.getElementById('performanceCanvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    // Draw grid
+    ctx.strokeStyle = '#4a5568';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+        const y = (height / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+    }
+    
+    // Draw CPU line
+    drawLine(ctx, performanceData.cpu, '#10b981', height);
+    
+    // Draw Memory line
+    drawLine(ctx, performanceData.memory, '#3b82f6', height);
+    
+    // Draw Network line
+    drawLine(ctx, performanceData.network, '#f59e0b', height);
+}
+
+function drawLine(ctx, data, color, height) {
+    if (data.length < 2) return;
+    
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    const width = ctx.canvas.width;
+    const step = width / (data.length - 1);
+    
+    data.forEach((value, index) => {
+        const x = index * step;
+        const y = height - (value / 100) * height;
+        
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    
+    ctx.stroke();
 }
 
 function updateProcessIndicatorDirect(process, status) {

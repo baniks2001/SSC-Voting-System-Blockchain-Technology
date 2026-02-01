@@ -25,8 +25,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openXamppControl: () => ipcRenderer.invoke('open-xampp-control'),
   openBrowser: (url) => ipcRenderer.invoke('open-browser', url),
   runAllSteps: (options) => ipcRenderer.invoke('run-all-steps', options),
+  getPerformanceData: () => ipcRenderer.invoke('get-performance-data'),
   onCommandOutput: (callback) => ipcRenderer.on('command-output', (event, data) => callback(data)),
   onIPChanged: (callback) => ipcRenderer.on('ip-changed', (event, data) => callback(data)),
   onIPRefreshed: (callback) => ipcRenderer.on('ip-refreshed', (event, data) => callback(data)),
-  onProcessStatus: (callback) => ipcRenderer.on('process-status', (event, data) => callback(data))
+  onProcessStatus: (callback) => ipcRenderer.on('process-status', (event, data) => callback(data)),
+  onPerformanceData: (callback) => ipcRenderer.on('performance-data', (event, data) => callback(data))
 });

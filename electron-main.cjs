@@ -15,6 +15,8 @@ let processes = {
 };
 let currentIP = 'localhost';
 let ipCheckInterval = null;
+let performanceMonitoringInterval = null;
+let memoryCleanupInterval = null;
 
 function createWindow() {
     console.log('Creating Electron window...');
@@ -40,6 +42,8 @@ function createWindow() {
         console.log('UI loaded successfully');
         mainWindow.show();
         startIPMonitoring();
+        startPerformanceMonitoring();
+        startMemoryCleanup();
     }).catch(err => {
         console.error('Failed to load UI:', err);
     });
@@ -51,6 +55,12 @@ function createWindow() {
     mainWindow.on('closed', function () {
         mainWindow = null;
         stopIPMonitoring();
+        if (performanceMonitoringInterval) {
+            clearInterval(performanceMonitoringInterval);
+        }
+        if (memoryCleanupInterval) {
+            clearInterval(memoryCleanupInterval);
+        }
     });
 }
 
@@ -73,6 +83,93 @@ function startIPMonitoring() {
             autoUpdateEnvFile(newIP);
         }
     }, 10000);
+}
+
+function startPerformanceMonitoring() {
+    if (performanceMonitoringInterval) {
+        clearInterval(performanceMonitoringInterval);
+    }
+    
+    performanceMonitoringInterval = setInterval(() => {
+        const perfData = getPerformanceData();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('performance-data', perfData);
+        }
+    }, 2000);
+}
+
+function startMemoryCleanup() {
+    if (memoryCleanupInterval) {
+        clearInterval(memoryCleanupInterval);
+    }
+    
+    memoryCleanupInterval = setInterval(() => {
+        // Force garbage collection if available
+        if (global.gc) {
+            global.gc();
+        }
+        
+        // Clean up zombie processes
+        cleanupZombieProcesses();
+        
+        // Log memory usage
+        const memUsage = process.memoryUsage();
+        console.log('Memory usage:', {
+            rss: Math.round(memUsage.rss / 1024 / 1024) + 'MB',
+            heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + 'MB',
+            heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + 'MB'
+        });
+    }, 30000); // Every 30 seconds
+}
+
+function getPerformanceData() {
+    const memUsage = process.memoryUsage();
+    const cpus = os.cpus();
+    const loadAvg = os.loadavg();
+    
+    // Calculate CPU usage (simplified)
+    let totalIdle = 0;
+    let totalTick = 0;
+    cpus.forEach(cpu => {
+        for (const type in cpu.times) {
+            totalTick += cpu.times[type];
+        }
+        totalIdle += cpu.times.idle;
+    });
+    
+    const cpuUsage = 100 - (totalIdle / totalTick * 100);
+    
+    // Calculate memory usage percentage
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const memoryUsage = ((totalMem - freeMem) / totalMem) * 100;
+    
+    // Network activity (simplified)
+    const networkInterfaces = os.networkInterfaces();
+    let networkActivity = 0;
+    for (const name of Object.keys(networkInterfaces)) {
+        const iface = networkInterfaces[name];
+        if (iface && !iface[0].internal) {
+            networkActivity += iface[0].rx_bytes || 0;
+        }
+    }
+    
+    return {
+        cpu: Math.round(cpuUsage),
+        memory: Math.round(memoryUsage),
+        network: Math.min(100, Math.round(networkActivity / 1000000)), // Normalize to 0-100
+        timestamp: Date.now()
+    };
+}
+
+function cleanupZombieProcesses() {
+    Object.keys(processes).forEach(key => {
+        const process = processes[key];
+        if (process && process.killed) {
+            console.log(`Cleaning up zombie process: ${key}`);
+            processes[key] = null;
+        }
+    });
 }
 
 function stopIPMonitoring() {
@@ -237,7 +334,7 @@ function runCommand(command, args, options) {
         
         process.stdout.on('data', function (data) {
             output += data.toString();
-            if (mainWindow) {
+            if (mainWindow && !mainWindow.isDestroyed()) {
                 mainWindow.webContents.send('command-output', {
                     type: 'stdout',
                     data: data.toString(),
@@ -248,7 +345,7 @@ function runCommand(command, args, options) {
         
         process.stderr.on('data', function (data) {
             errorOutput += data.toString();
-            if (mainWindow) {
+            if (mainWindow && !mainWindow.isDestroyed()) {
                 mainWindow.webContents.send('command-output', {
                     type: 'stderr', 
                     data: data.toString(),
@@ -266,9 +363,30 @@ function runCommand(command, args, options) {
         });
         
         process.on('error', function (error) {
+            console.error('Process error:', error);
             reject(error);
         });
+        
+        // Set timeout to prevent hanging
+        const timeout = setTimeout(() => {
+            process.kill();
+            reject(new Error('Process timeout after 60 seconds'));
+        }, 60000);
+        
+        process.on('close', () => {
+            clearTimeout(timeout);
+        });
     });
+}
+
+function addTerminalOutput(category, message, type = 'info') {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('command-output', {
+            type: type,
+            data: message,
+            category: category
+        });
+    }
 }
 
 // IPC Handlers
@@ -300,6 +418,10 @@ ipcMain.handle('refresh-ip', async function () {
         ipAddress: newIP, 
         currentEnvIP: currentEnvIP
     };
+});
+
+ipcMain.handle('get-performance-data', async function () {
+    return getPerformanceData();
 });
 
 ipcMain.handle('update-env', async function (event, ipAddress) {

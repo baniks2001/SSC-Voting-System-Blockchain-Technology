@@ -104,36 +104,9 @@ if (isMaster) {
         maxAge: 3600
     }));
 
-    // High-performance rate limiting for 1-5000 requests
-    const limiter = rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 5000, // Handle up to 5000 requests per 15 minutes
-        message: { error: 'Too many requests, please try again later.' },
-        standardHeaders: true,
-        legacyHeaders: false,
-        // Skip successful requests from counting toward rate limit
-        skipSuccessfulRequests: true,
-        // Skip failed requests that don't consume resources
-        skip: (req) => {
-            return req.path === '/api/health' || req.path === '/api/blockchain-status';
-        }
-    });
+    // Rate limiting removed for unlimited connections
 
-    app.use('/api/', limiter);
-
-    // Additional rate limiting for voting endpoints (more restrictive)
-    const votingLimiter = rateLimit({
-        windowMs: 60 * 1000, // 1 minute
-        max: 1000, // 1000 votes per minute per IP
-        message: { error: 'Too many vote attempts, please try again later.' },
-        standardHeaders: true,
-        legacyHeaders: false,
-        keyGenerator: (req) => {
-            return req.ip; // Rate limit by IP for voting
-        }
-    });
-
-    app.use('/api/voting', votingLimiter);
+    // Voting rate limiting removed
 
     // Body parser with optimized settings for high load
     app.use(express.json({
@@ -221,8 +194,8 @@ if (isMaster) {
                     environment: process.env.NODE_ENV || 'development',
                     contractAddress: process.env.VOTING_CONTRACT_ADDRESS,
                     serverPort: PORT,
-                    maxRequests: 5000,
-                    rateLimitWindow: '15 minutes'
+                    maxRequests: 'unlimited',
+                    rateLimitWindow: 'disabled'
                 }
             });
         } catch (error) {
@@ -242,8 +215,8 @@ if (isMaster) {
             version: '2.0.0',
             timestamp: new Date().toISOString(),
             performance: {
-                maxRequests: 5000,
-                rateLimitWindow: '15 minutes',
+                maxRequests: 'unlimited',
+                rateLimitWindow: 'disabled',
                 clusterMode: true,
                 workers: numCPUs
             },
@@ -474,7 +447,7 @@ if (isMaster) {
                 console.log(`📝 Contract Address: ${process.env.VOTING_CONTRACT_ADDRESS || 'Not configured'}`);
                 console.log(`🔗 Node 1: ${process.env.ETHEREUM_NODE1_URL || 'http://localhost:8545'}`);
                 console.log(`🔗 Node 2: ${process.env.ETHEREUM_NODE2_URL || 'http://localhost:8547'}`);
-                console.log(`⚡ Performance: Up to 5000 requests per 15 minutes`);
+                console.log(`⚡ Performance: Unlimited requests`);
                 console.log(`🖥️ Cluster Mode: ${numCPUs} workers active`);
 
                 // Initialize blockchain service
