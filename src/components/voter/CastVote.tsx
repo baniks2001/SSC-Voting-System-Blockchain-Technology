@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Vote, Users, CheckCircle, ArrowRight, User, LogOut, AlertCircle, Menu, X, Image } from 'lucide-react';
+import { Vote, Users, CheckCircle, ArrowRight, User, LogOut, AlertCircle, Menu, X } from 'lucide-react';
 import { Candidate, Position } from '../../types';
 import { api } from '../../utils/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -23,6 +23,62 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { showToast } = useToast();
   useAuth();
+
+  // Check for receipt persistence on component mount
+  useEffect(() => {
+    const savedReceipt = sessionStorage.getItem('votingReceipt');
+    const savedTimestamp = sessionStorage.getItem('receiptTimestamp');
+    const savedReviewState = sessionStorage.getItem('reviewVoteState');
+    
+    // If there's a saved review state (before submission), show review page
+    if (savedReviewState) {
+      try {
+        const reviewData = JSON.parse(savedReviewState);
+        const timestamp = parseInt(reviewData.timestamp);
+        const currentTime = Date.now();
+        const elapsedSeconds = Math.floor((currentTime - timestamp) / 1000);
+        
+        // Only show review if less than 30 seconds have passed
+        if (elapsedSeconds < 30) {
+          setShowReview(true);
+          // Restore selected votes if available
+          if (reviewData.selectedVotes) {
+            setSelectedVotes(reviewData.selectedVotes);
+          }
+        } else {
+          // Clear expired session data
+          sessionStorage.removeItem('reviewVoteState');
+        }
+      } catch (error) {
+        console.error('Error restoring review state:', error);
+        sessionStorage.removeItem('reviewVoteState');
+      }
+    }
+    // If there's a saved receipt (after submission), show review page
+    else if (savedReceipt && savedTimestamp) {
+      try {
+        const timestamp = parseInt(savedTimestamp);
+        const currentTime = Date.now();
+        const elapsedSeconds = Math.floor((currentTime - timestamp) / 1000);
+        
+        // Only show review if less than 30 seconds have passed
+        if (elapsedSeconds < 30) {
+          setShowReview(true);
+        } else {
+          // Clear expired session data
+          sessionStorage.removeItem('votingReceipt');
+          sessionStorage.removeItem('logoutCountdown');
+          sessionStorage.removeItem('receiptTimestamp');
+        }
+      } catch (error) {
+        console.error('Error checking receipt persistence:', error);
+        // Clear corrupted data
+        sessionStorage.removeItem('votingReceipt');
+        sessionStorage.removeItem('logoutCountdown');
+        sessionStorage.removeItem('receiptTimestamp');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -96,13 +152,18 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
   };
 
   const handleReviewVote = async () => {
-    // REMOVED: No longer check if all required positions are selected
-    // Voters can now leave positions empty if they want
-    
+    // Save review state to sessionStorage before showing review
+    const reviewData = {
+      selectedVotes: selectedVotes,
+      timestamp: Date.now().toString()
+    };
+    sessionStorage.setItem('reviewVoteState', JSON.stringify(reviewData));
+
+    // Validate selections
     const exceededPositions = positions.filter(position => {
-      const selectedForPosition = selectedVotes[position.name] || [];
+      const selectedCount = (selectedVotes[position.name] || []).length;
       const maxVotes = position.maxVotes || 1;
-      return selectedForPosition.length > maxVotes;
+      return selectedCount > maxVotes;
     });
 
     if (exceededPositions.length > 0) {
@@ -115,6 +176,11 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
 
   const handleBackToVoting = () => {
     setShowReview(false);
+    // Clear session data when going back to voting
+    sessionStorage.removeItem('votingReceipt');
+    sessionStorage.removeItem('logoutCountdown');
+    sessionStorage.removeItem('receiptTimestamp');
+    sessionStorage.removeItem('reviewVoteState');
   };
 
   const handleLogout = () => {

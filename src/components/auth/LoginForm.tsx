@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Eye, EyeOff, User, Lock, Mail, AlertCircle } from 'lucide-react';
+import { User, Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePoll } from '../../contexts/PollContext';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -60,11 +60,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin, onToggleAdmin }) 
   };
 
   useEffect(() => {
-    return () => {
-      if (lockTimeoutRef.current) clearTimeout(lockTimeoutRef.current);
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-    };
-  }, []);
+    if (isLocked && lockTimeRemaining > 0) {
+      const timer = setTimeout(() => {
+        setLockTimeRemaining(prev => {
+          if (prev <= 1) {
+            setIsLocked(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isLocked, lockTimeRemaining]);
 
   const showLoginErrorScreen = (title: string, message: string) => {
     setErrorDetails({ title, message });
@@ -222,6 +231,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin, onToggleAdmin }) 
       if (errorMsg.includes('account not found') || errorMsg.includes('not found') || errorMsg.includes('404')) {
         errorTitle = 'Account Not Found';
         errorMessage = `No ${isAdmin ? 'admin account' : 'student account'} found. Please check your credentials.`;
+        lockForm(10); // Add 10-second countdown for account not found
       } else if (errorMsg.includes('invalid password') || errorMsg.includes('401') || errorMsg.includes('unauthorized')) {
         errorTitle = 'Invalid Password';
         errorMessage = 'The password you entered is incorrect. Please try again.';
@@ -262,7 +272,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin, onToggleAdmin }) 
     }
   };
 
-  // Error Screen
+  // Error Screen - Updated to match login page colors
   if (showErrorScreen) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
@@ -278,34 +288,47 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin, onToggleAdmin }) 
         {/* Light overlay */}
         <div className="absolute inset-0 bg-black/20" />
         
-        {/* Subtle animated background elements */}
+        {/* Subtle animated background elements - Updated to match login page */}
         <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-red-500/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-20 left-20 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse delay-2000" />
         </div>
 
         <div className="relative z-10 max-w-md w-full">
-          <div className="bg-transparent backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 p-8 sm:p-10 text-center">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-red-500/20 flex items-center justify-center border border-red-400/30">
-              <AlertCircle className="w-10 h-10 text-red-300" />
+          <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/30 p-8 sm:p-10 text-center">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-red-100 flex items-center justify-center border border-red-300">
+              <AlertCircle className="w-10 h-10 text-red-600" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-4">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
               {errorDetails.title}
             </h2>
-            <p className="text-gray-200 text-lg mb-6 leading-relaxed">
+            <p className="text-gray-600 text-lg mb-6 leading-relaxed">
               {errorDetails.message}
             </p>
             
             {isLocked && (
-              <div className="mb-6 px-4 py-3 bg-orange-500/20 border border-orange-400/30 text-orange-100 rounded-xl backdrop-blur-sm">
+              <div className="mb-6 px-4 py-3 bg-orange-100 border border-orange-300 text-orange-800 rounded-xl">
                 <div className="flex items-center justify-center space-x-3">
-                  <svg className="w-5 h-5 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span className="font-semibold">Try again in: {lockTimeRemaining}s</span>
                 </div>
               </div>
             )}
+
+            <button
+              onClick={handleTryAgain}
+              disabled={isLocked}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white py-4 px-6 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 mb-4"
+            >
+              {isLocked ? (
+                <span>Please wait... ({lockTimeRemaining}s)</span>
+              ) : (
+                <span>Try Again</span>
+              )}
+            </button>
 
             {isAdmin && (
               <button
@@ -314,8 +337,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ isAdmin, onToggleAdmin }) 
                   onToggleAdmin();
                 }}
                 disabled={isLocked}
-                className={`w-full mt-4 text-center text-sm transition-colors duration-200 ${
-                  isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-gray-200 hover:text-white'
+                className={`w-full text-center text-sm transition-colors duration-200 ${
+                  isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-800'
                 }`}
               >
                 ← Back to Student Login

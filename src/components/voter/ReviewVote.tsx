@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { User, ArrowLeft, ShieldCheck, Hash, CheckCircle, XCircle, Loader, Smartphone, Monitor, AlertTriangle, Clock, Users, MinusCircle } from 'lucide-react';
+import { User, ArrowLeft, ShieldCheck, Hash, CheckCircle, XCircle, Loader, Smartphone, Monitor, AlertTriangle, Clock, Users, MinusCircle, Download } from 'lucide-react';
 import { Candidate, Position } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { api } from '../../utils/api';
+import html2canvas from 'html2canvas';
 
 interface ReviewVoteProps {
   selectedVotes: { [position: string]: number[] };
@@ -36,6 +37,8 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showAlreadyVotedModal, setShowAlreadyVotedModal] = useState(false);
   const [logoutCountdown, setLogoutCountdown] = useState<number>(30);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const receiptRef = useRef<HTMLDivElement>(null);
   
   // Use refs to track state without triggering re-renders
   const hasVotedRef = useRef(false);
@@ -58,19 +61,37 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
   // Auto-logout after 30 seconds when success state is shown
   useEffect(() => {
     if (submissionStatus === 'success') {
+      // Clear review state since vote is now submitted
+      sessionStorage.removeItem('reviewVoteState');
+      
+      // Save receipt to sessionStorage when success state is achieved
+      if (blockchainReceipt) {
+        sessionStorage.setItem('votingReceipt', JSON.stringify(blockchainReceipt));
+        sessionStorage.setItem('receiptTimestamp', Date.now().toString());
+      }
+      
       // Start countdown
       setLogoutCountdown(30);
       
       // Start countdown interval for UI
       countdownIntervalRef.current = setInterval(() => {
         setLogoutCountdown((prev) => {
-          if (prev <= 1) {
+          const newCountdown = prev > 0 ? prev - 1 : 0;
+          
+          // Save countdown to sessionStorage
+          sessionStorage.setItem('logoutCountdown', newCountdown.toString());
+          
+          if (newCountdown <= 0) {
             if (countdownIntervalRef.current) {
               clearInterval(countdownIntervalRef.current);
             }
-            return 0;
+            // Clear session data on countdown completion
+            sessionStorage.removeItem('votingReceipt');
+            sessionStorage.removeItem('logoutCountdown');
+            sessionStorage.removeItem('receiptTimestamp');
           }
-          return prev - 1;
+          
+          return newCountdown;
         });
       }, 1000);
       
@@ -80,6 +101,10 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
         if (countdownIntervalRef.current) {
           clearInterval(countdownIntervalRef.current);
         }
+        // Clear session data on logout
+        sessionStorage.removeItem('votingReceipt');
+        sessionStorage.removeItem('logoutCountdown');
+        sessionStorage.removeItem('receiptTimestamp');
         onLogout();
       }, 30000); // 30 seconds
 
@@ -92,15 +117,19 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
         }
       };
     } else {
-      // Clear timers if not in success state
+      // Clear timers and session data if not in success state
       if (logoutTimerRef.current) {
         clearTimeout(logoutTimerRef.current);
       }
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
       }
+      // Clear session data when leaving success state
+      sessionStorage.removeItem('votingReceipt');
+      sessionStorage.removeItem('logoutCountdown');
+      sessionStorage.removeItem('receiptTimestamp');
     }
-  }, [submissionStatus, onLogout]);
+  }, [submissionStatus, onLogout, blockchainReceipt]);
 
   const generateSecureBallotId = useCallback(async () => {
     if (!user) {
@@ -415,7 +444,36 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
     if (countdownIntervalRef.current) {
       clearInterval(countdownIntervalRef.current);
     }
+    // Clear session data on manual logout
+    sessionStorage.removeItem('votingReceipt');
+    sessionStorage.removeItem('logoutCountdown');
+    sessionStorage.removeItem('receiptTimestamp');
     onLogout();
+  };
+
+  // Download receipt as image
+  const downloadReceiptAsImage = async () => {
+    if (!receiptRef.current || !blockchainReceipt || !user) return;
+    
+    setIsDownloading(true);
+    try {
+      const canvas = await html2canvas(receiptRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true
+      });
+      
+      const link = document.createElement('a');
+      link.download = `voting-receipt-${user.studentId}-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Error downloading receipt:', error);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const formatBallotId = (id: string) => {
@@ -593,24 +651,96 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
                 </p>
               </div>
               
-              {blockchainReceipt && (
-                <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Transaction Details:</p>
-                  <p className="text-xs text-gray-600 font-mono break-all">
-                    Hash: {blockchainReceipt.transactionHash}
-                  </p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Time: {blockchainReceipt.timestamp ?
-                      new Date(blockchainReceipt.timestamp).toLocaleString() :
-                      'Timestamp not available'}
-                  </p>
-                  {blockchainReceipt.emptyPositions && blockchainReceipt.emptyPositions > 0 && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      Note: {blockchainReceipt.emptyPositions} position(s) were left empty
-                    </p>
-                  )}
+              {/* Transaction Receipt with Download */}
+              <div ref={receiptRef} className="bg-gray-50 rounded-xl p-6 mb-6 text-left border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm font-medium text-gray-700">Transaction Receipt</p>
+                  <button
+                    onClick={downloadReceiptAsImage}
+                    disabled={isDownloading}
+                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 disabled:text-gray-400 transition-colors text-sm"
+                  >
+                    {isDownloading ? (
+                      <>
+                        <Loader className="w-4 h-4 animate-spin" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        <span>Download</span>
+                      </>
+                    )}
+                  </button>
                 </div>
-              )}
+                
+                {/* Voter Information */}
+                <div className="bg-white rounded-lg p-4 mb-4 border border-gray-300">
+                  <h4 className="text-xs font-semibold text-gray-600 mb-3">VOTER INFORMATION</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-500">Student ID:</span>
+                      <span className="text-xs font-medium text-gray-900">{user?.studentId}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-500">Name:</span>
+                      <span className="text-xs font-medium text-gray-900">{user?.fullName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-500">Course & Section:</span>
+                      <span className="text-xs font-medium text-gray-900">{user?.course} - {user?.section}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Transaction Details */}
+                <div className="bg-white rounded-lg p-4 mb-4 border border-gray-300">
+                  <h4 className="text-xs font-semibold text-gray-600 mb-3">TRANSACTION DETAILS</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-500">Vote ID:</span>
+                      <span className="text-xs font-mono text-gray-900 break-all max-w-[200px]">{ballotId}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-500">Timestamp:</span>
+                      <span className="text-xs font-medium text-gray-900">
+                        {blockchainReceipt.timestamp ?
+                          new Date(blockchainReceipt.timestamp).toLocaleString() :
+                          'Timestamp not available'
+                        }
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-500">Status:</span>
+                      <span className="text-xs font-medium text-green-600">Confirmed</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Vote Summary */}
+                <div className="bg-white rounded-lg p-4 border border-gray-300">
+                  <h4 className="text-xs font-semibold text-gray-600 mb-3">VOTE SUMMARY</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-500">Total Candidates:</span>
+                      <span className="text-xs font-medium text-gray-900">{totalSelectedCandidates}</span>
+                    </div>
+                    {blockchainReceipt.emptyPositions && blockchainReceipt.emptyPositions > 0 && (
+                      <div className="mt-2 pt-2 border-t border-gray-200">
+                        <p className="text-xs text-blue-600">
+                          Note: {blockchainReceipt.emptyPositions} position(s) were left empty
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Footer */}
+                <div className="mt-4 pt-4 border-t border-gray-300 text-center">
+                  <p className="text-xs text-gray-400">SSC Voting System - Blockchain Secured</p>
+                  <p className="text-xs text-gray-400">Generated on {new Date().toLocaleString()}</p>
+                </div>
+              </div>
               <button
                 onClick={handleManualLogout}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors text-sm sm:text-base flex items-center justify-center space-x-2"

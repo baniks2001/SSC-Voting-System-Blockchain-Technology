@@ -16,3 +16,13 @@
 09:29:00.323406 version@stat F·[1] S·181B[181B] Sc·[0.25]
 09:29:00.438282 db@janitor F·3 G·0
 09:29:00.438282 db@open done T·242.7799ms
+=============== Feb 3, 2026 (+08) ===============
+14:01:24.178303 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+14:01:24.242248 version@stat F·[1] S·181B[181B] Sc·[0.25]
+14:01:24.242248 db@open opening
+14:01:24.242824 journal@recovery F·1
+14:01:24.243376 journal@recovery recovering @3
+14:01:24.430192 memdb@flush created L0@5 N·1 S·162B "loc..seq,v4":"loc..seq,v4"
+14:01:24.432452 version@stat F·[2] S·343B[343B] Sc·[0.50]
+14:01:24.831125 db@janitor F·4 G·0
+14:01:24.831125 db@open done T·588.8767ms
