@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PollProvider, usePoll } from './contexts/PollContext';
 import { LoginForm } from './components/auth/LoginForm';
@@ -22,6 +23,7 @@ function AppContent() {
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard');
   const [appInitialized, setAppInitialized] = useState(false);
   const [minLoadingTimePassed, setMinLoadingTimePassed] = useState(false);
+  const [showTransition, setShowTransition] = useState(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -39,11 +41,19 @@ function AppContent() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Enhanced loading state management with minimum 2-second loading
+  // Enhanced loading state management with minimum 2-second loading and transition
   useEffect(() => {
     // Only set initialized to true when both auth and poll have finished loading AND minimum time has passed
     if (!authLoading && !pollLoading && minLoadingTimePassed && !appInitialized) {
-      setAppInitialized(true);
+      // Trigger transition animation before showing login
+      setShowTransition(true);
+      
+      // After transition completes, set app as initialized
+      // The login form will fade in as the transition animation completes
+      setTimeout(() => {
+        setAppInitialized(true);
+        setShowTransition(false);
+      }, 2000); // This duration should match the transition animation duration
     }
   }, [authLoading, pollLoading, minLoadingTimePassed, appInitialized]);
 
@@ -59,19 +69,45 @@ function AppContent() {
   // Show loading spinner while initializing
   if (!appInitialized) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6">
+      <motion.div
+        key="loading-screen"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6"
+      >
         <div className="text-center max-w-md w-full">
-          {/* Logo with pulse animation */}
-          <div className="relative mx-auto mb-6 sm:mb-8">
+          {/* Logo with continuous animation - pulse then zoom and fade */}
+          <motion.div
+            initial={{ scale: 1, opacity: 1 }}
+            animate={showTransition ? 
+              { 
+                scale: 15,
+                opacity: 0
+              } : { scale: 1, opacity: 1 }}
+            transition={showTransition ? 
+              { 
+                duration: 2,
+                ease: [0.4, 0, 0.2, 1], // Smooth cubic bezier for continuous zoom
+                opacity: { duration: 1.5, ease: "easeOut" }
+              } : { duration: 0.5 }}
+            className="relative mx-auto mb-6 sm:mb-8"
+          >
             <img 
               src="/logo.png" 
               alt="VoteChain Logo" 
-              className="w-40 h-40 sm:w-28 sm:h-28 md:w-30 md:h-30 mx-auto animate-pulse"
+              className={`w-40 h-40 sm:w-28 sm:h-28 md:w-30 md:h-30 mx-auto ${!showTransition ? 'animate-pulse' : ''}`}
             />
-          </div>
+          </motion.div>
 
-          {/* System Title and Subtext */}
-          <div className="mb-4">
+          {/* System Title and Subtext - fade out during transition */}
+          <motion.div
+            initial={{ opacity: 1 }}
+            animate={showTransition ? { opacity: 0 } : { opacity: 1 }}
+            transition={{ duration: 1.5, delay: showTransition ? 0.3 : 0 }}
+            className="mb-4"
+          >
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3 sm:mb-4">
               SSC Voting System
             </h1>
@@ -81,19 +117,25 @@ function AppContent() {
             <p className="text-sm sm:text-base text-gray-400">
               Developed by: Servando S. Tio III
             </p>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   // Show login form if not authenticated
   if (!isAuthenticated) {
     return (
-      <LoginForm
-        isAdmin={showAdminLogin}
-        onToggleAdmin={() => setShowAdminLogin(!showAdminLogin)}
-      />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 2, delay: 0.5 }}
+      >
+        <LoginForm
+          isAdmin={showAdminLogin}
+          onToggleAdmin={() => setShowAdminLogin(!showAdminLogin)}
+        />
+      </motion.div>
     );
   }
 

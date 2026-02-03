@@ -886,39 +886,40 @@ export const CandidateManagement: React.FC = () => {
                     <button
                       onClick={() => setShowMobileActions(showMobileActions === candidate.id ? null : candidate.id)}
                       disabled={isVotingActive}
-                      className={`p-1.5 rounded-lg transition-colors ${
+                      className={`p-1.5 rounded-lg transition-all duration-200 hover:scale-110 relative group ${
                         isVotingActive 
                           ? 'text-gray-400 cursor-not-allowed' 
                           : 'hover:bg-gray-100 text-gray-600'
                       }`}
                     >
-                      <MoreVertical className="w-4 h-4" />
+                      <MoreVertical className={`w-4 h-4 ${isVotingActive ? 'text-gray-400' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
                     </button>
                     {showMobileActions === candidate.id && (
-                      <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-xl shadow-lg z-10 w-32 overflow-hidden">
+                      <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-xl shadow-lg z-10 w-32 overflow-hidden animate-slideDown">
                         <button
                           onClick={() => handleEditCandidate(candidate)}
                           disabled={isVotingActive}
-                          className={`w-full text-left px-3 py-2.5 text-sm flex items-center space-x-2 transition-colors ${
+                          className={`w-full text-left px-3 py-2.5 text-sm flex items-center space-x-2 transition-all duration-200 group ${
                             isVotingActive 
                               ? 'text-gray-400 cursor-not-allowed' 
-                              : 'hover:bg-gray-50 text-gray-700'
+                              : 'hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 text-gray-700 hover:text-blue-700'
                           }`}
                         >
-                          <Edit className="w-3 h-3" />
-                          <span>Edit</span>
+                          <Edit className={`w-3 h-3 ${isVotingActive ? 'text-gray-400' : 'text-blue-600 group-hover:scale-110 transition-transform duration-200'}`} />
+                          <span className={`font-medium ${isVotingActive ? '' : 'group-hover:text-blue-700'}`}>Edit</span>
                         </button>
                         <button
                           onClick={() => handleDeleteCandidate(candidate)}
                           disabled={isVotingActive}
-                          className={`w-full text-left px-3 py-2.5 text-sm flex items-center space-x-2 transition-colors ${
+                          className={`w-full text-left px-3 py-2.5 text-sm flex items-center space-x-2 transition-all duration-200 group border-t border-gray-100 ${
                             isVotingActive 
                               ? 'text-gray-400 cursor-not-allowed' 
-                              : 'text-red-600 hover:bg-gray-50'
+                              : 'text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:text-red-700'
                           }`}
                         >
-                          <Trash2 className="w-3 h-3" />
-                          <span>Delete</span>
+                          <Trash2 className={`w-3 h-3 ${isVotingActive ? 'text-gray-400' : 'text-red-600 group-hover:scale-110 transition-transform duration-200'}`} />
+                          <span className={`font-medium ${isVotingActive ? '' : 'group-hover:text-red-700'}`}>Delete</span>
                         </button>
                       </div>
                     )}

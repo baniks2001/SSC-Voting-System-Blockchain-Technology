@@ -46,6 +46,7 @@ export const VoterManagement: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [voterToDelete, setVoterToDelete] = useState<number | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -68,6 +69,8 @@ export const VoterManagement: React.FC = () => {
     isActive: ''
   });
   const [selectedExportCourses, setSelectedExportCourses] = useState<string[]>([]);
+  const [selectedExportYearLevels, setSelectedExportYearLevels] = useState<string[]>([]);
+  const [selectedExportSections, setSelectedExportSections] = useState<string[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   const [studentSearch, setStudentSearch] = useState('');
   const [showStudentSelection, setShowStudentSelection] = useState(false);
@@ -128,6 +131,87 @@ export const VoterManagement: React.FC = () => {
     }
   }, [formData.studentId, formData.fullName, formData.course, formData.yearLevel, formData.section, editingVoter, showModal]);
 
+  // ESC key handler to close modals
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        // Close error modal first (highest priority)
+        if (showErrorModal) {
+          setShowErrorModal(false);
+          return;
+        }
+        // Then close other modals
+        if (showSuccessModal) {
+          setShowSuccessModal(false);
+          return;
+        }
+        if (showModal) {
+          setShowModal(false);
+          resetForm();
+          return;
+        }
+        if (showExportModal) {
+          setShowExportModal(false);
+          setExporting(false);
+          setExportProgress(0);
+          setSelectedStudents([]);
+          setStudentSearch('');
+          setSelectedExportCourses([]);
+          setSelectedExportYearLevels([]);
+          setSelectedExportSections([]);
+          return;
+        }
+        if (showDeleteModal) {
+          setShowDeleteModal(false);
+          setVoterToDelete(null);
+          return;
+        }
+        if (showCourseDeleteModal) {
+          setShowCourseDeleteModal(false);
+          setCourseToDelete(null);
+          return;
+        }
+        if (showStatusModal) {
+          setShowStatusModal(false);
+          setStatusAction(null);
+          return;
+        }
+        if (showResetVoteModal) {
+          setShowResetVoteModal(false);
+          setResetVoteAction(null);
+          return;
+        }
+        if (showImportModal) {
+          setShowImportModal(false);
+          resetImport();
+          return;
+        }
+        if (showCoursesModal) {
+          setShowCoursesModal(false);
+          return;
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [showErrorModal, showSuccessModal, showModal, showExportModal, showDeleteModal, showCourseDeleteModal, showStatusModal, showResetVoteModal, showImportModal, showCoursesModal, voterToDelete, courseToDelete, statusAction, resetVoteAction]);
+
+  // Auto-generate password when all required fields are filled in add mode
+  useEffect(() => {
+    if (!editingVoter && showModal) {
+      const { studentId, fullName, course, yearLevel, section } = formData;
+      const allFieldsFilled = studentId && fullName && course && yearLevel && section;
+
+      if (allFieldsFilled) {
+        const generatedPassword = generatePasswordForStudent(studentId, fullName, yearLevel, section);
+        setFormData(prev => ({ ...prev, password: generatedPassword }));
+      } else {
+        setFormData(prev => ({ ...prev, password: '' }));
+      }
+    }
+  }, [formData.studentId, formData.fullName, formData.course, formData.yearLevel, formData.section, editingVoter, showModal]);
+
   useEffect(() => {
     fetchVoters();
     fetchCourses();
@@ -159,10 +243,14 @@ export const VoterManagement: React.FC = () => {
         showToast('success', `Found ${votersArray.length} voters`);
       }
 
+      setAllVoters(votersArray);
       setVoters(votersArray);
+      setDisplayedVoters(votersArray);
     } catch (error: any) {
       showToast('error', 'Failed to fetch voters');
+      setAllVoters([]);
       setVoters([]);
+      setDisplayedVoters([]);
     } finally {
       setLoading(false);
     }
@@ -243,23 +331,72 @@ export const VoterManagement: React.FC = () => {
     }
   };
 
+  // Client-side filtering instead of API calls to prevent flickering
+  const [allVoters, setAllVoters] = useState<Voter[]>([]);
+  const [displayedVoters, setDisplayedVoters] = useState<Voter[]>([]);
+
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (!loading) {
-        fetchVoters();
+      if (!loading && allVoters.length > 0) {
+        // Apply client-side filtering
+        let filtered = [...allVoters];
+        
+        if (searchTerm) {
+          filtered = filtered.filter(v => 
+            (v.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (v.student_id?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+          );
+        }
+        
+        if (filters.course) {
+          filtered = filtered.filter(v => v.course === filters.course);
+        }
+        
+        if (filters.year) {
+          filtered = filtered.filter(v => v.year_level?.toString() === filters.year);
+        }
+        
+        if (filters.section) {
+          filtered = filtered.filter(v => v.section === filters.section);
+        }
+        
+        if (filters.hasVoted) {
+          filtered = filtered.filter(v => 
+            filters.hasVoted === 'voted' ? v.has_voted : !v.has_voted
+          );
+        }
+        
+        if (filters.isActive) {
+          filtered = filtered.filter(v => 
+            filters.isActive === 'active' ? v.is_active : !v.is_active
+          );
+        }
+        
+        setDisplayedVoters(filtered);
       }
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, filters.course, filters.year, filters.section, filters.hasVoted, filters.isActive]);
+  }, [searchTerm, filters.course, filters.year, filters.section, filters.hasVoted, filters.isActive, allVoters]);
 
   const getUniqueCoursesFromVoters = () => {
-    return [...new Set(voters.map(v => v.course))].filter(Boolean).sort();
+    const courses = [...new Set(allVoters.map(v => v.course || '').filter(Boolean))];
+    return courses.sort();
   };
 
-  const filteredStudents = voters.filter(voter =>
-    voter.full_name.toLowerCase().includes(studentSearch.toLowerCase()) ||
-    voter.student_id.toLowerCase().includes(studentSearch.toLowerCase())
+  const getUniqueYearLevelsFromVoters = () => {
+    const yearLevels = [...new Set(allVoters.map(v => v.year_level?.toString() || '').filter(Boolean))];
+    return yearLevels.sort();
+  };
+
+  const getUniqueSectionsFromVoters = () => {
+    const sections = [...new Set(allVoters.map(v => v.section || '').filter(Boolean))];
+    return sections.sort();
+  };
+
+  const filteredStudents = allVoters.filter(voter =>
+    (voter.full_name?.toLowerCase() || '').includes(studentSearch.toLowerCase()) ||
+    (voter.student_id?.toLowerCase() || '').includes(studentSearch.toLowerCase())
   );
 
   const toggleStudentSelection = (studentId: number) => {
@@ -510,12 +647,19 @@ export const VoterManagement: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this voter?')) return;
+    setVoterToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteVoter = async () => {
+    if (!voterToDelete) return;
     try {
-      await api.delete(`/voters/${id}`, {
+      await api.delete(`/voters/${voterToDelete}`, {
         successMessage: 'Voter deleted successfully'
       });
       fetchVoters();
+      setShowDeleteModal(false);
+      setVoterToDelete(null);
       setShowMobileActions(null);
     } catch (error: any) {
       showToast('error', error.message || 'Failed to delete voter');
@@ -939,6 +1083,22 @@ export const VoterManagement: React.FC = () => {
     );
   };
 
+  const toggleExportYearLevel = (yearLevel: string) => {
+    setSelectedExportYearLevels(prev =>
+      prev.includes(yearLevel)
+        ? prev.filter(y => y !== yearLevel)
+        : [...prev, yearLevel]
+    );
+  };
+
+  const toggleExportSection = (section: string) => {
+    setSelectedExportSections(prev =>
+      prev.includes(section)
+        ? prev.filter(s => s !== section)
+        : [...prev, section]
+    );
+  };
+
   const selectAllExportCourses = () => {
     const allCourses = getUniqueCoursesFromVoters();
     setSelectedExportCourses(allCourses);
@@ -946,6 +1106,24 @@ export const VoterManagement: React.FC = () => {
 
   const clearAllExportCourses = () => {
     setSelectedExportCourses([]);
+  };
+
+  const selectAllExportYearLevels = () => {
+    const allYearLevels = getUniqueYearLevelsFromVoters();
+    setSelectedExportYearLevels(allYearLevels);
+  };
+
+  const clearAllExportYearLevels = () => {
+    setSelectedExportYearLevels([]);
+  };
+
+  const selectAllExportSections = () => {
+    const allSections = getUniqueSectionsFromVoters();
+    setSelectedExportSections(allSections);
+  };
+
+  const clearAllExportSections = () => {
+    setSelectedExportSections([]);
   };
 
   const simulateProgress = () => {
@@ -1010,6 +1188,20 @@ export const VoterManagement: React.FC = () => {
           exportData = response.data;
         }
       }
+      
+      // Apply client-side filtering for year level and section only
+      if (selectedStudents.length === 0 && (selectedExportYearLevels.length > 0 || selectedExportSections.length > 0)) {
+        exportData = exportData.filter(voter => {
+          // Check year level filter
+          const yearLevelMatch = selectedExportYearLevels.length === 0 || selectedExportYearLevels.includes(voter.year_level?.toString() || '');
+          // Check section filter
+          const sectionMatch = selectedExportSections.length === 0 || selectedExportSections.includes(voter.section || '');
+          
+          // Return true only if ALL selected filters match (AND logic)
+          return yearLevelMatch && sectionMatch;
+        });
+      }
+      
       if (!exportData || exportData.length === 0) {
         showToast('error', 'No data found for the selected filters');
         setExporting(false);
@@ -1025,6 +1217,9 @@ export const VoterManagement: React.FC = () => {
         setExportProgress(0);
         setSelectedStudents([]);
         setStudentSearch('');
+        setSelectedExportCourses([]);
+        setSelectedExportYearLevels([]);
+        setSelectedExportSections([]);
         showToast('success', `Exported ${exportData.length} record(s) successfully`);
       }, 500);
     } catch (error: any) {
@@ -1113,10 +1308,10 @@ export const VoterManagement: React.FC = () => {
     </span>
   );
 
-  const filteredVoters = voters;
+  const filteredVoters = displayedVoters;
   const uniqueCourses = getUniqueCoursesFromVoters();
-  const uniqueYears = [...new Set(voters.map(v => v.year_level.toString()))];
-  const uniqueSections = [...new Set(voters.map(v => v.section))];
+  const uniqueYears = [...new Set(allVoters.map(v => v.year_level?.toString() || ''))];
+  const uniqueSections = [...new Set(allVoters.map(v => v.section || ''))];
 
   if (loading || coursesLoading) {
     return (
@@ -1130,8 +1325,14 @@ export const VoterManagement: React.FC = () => {
     <div className="min-h-screen bg-gray-50/30 animate-fadeIn p-3 sm:p-4 lg:p-6">
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[200]">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full transform animate-scaleIn">
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[80] lg:items-center lg:justify-center items-end justify-center pb-20"
+          onClick={() => setShowSuccessModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full transform animate-scaleIn"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="text-center space-y-4">
               <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center shadow-lg">
                 <CheckCircle className="w-8 h-8 text-white" />
@@ -1153,17 +1354,37 @@ export const VoterManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Error Modal */}
+      {/* Error Modal - Overlay on top of Create Voter Modal */}
       {showErrorModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[200]">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full transform animate-scaleIn">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-red-400 to-red-500 flex items-center justify-center shadow-lg">
-                <XCircle className="w-8 h-8 text-white" />
+        <div 
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70] lg:items-center lg:justify-center items-end justify-center pb-20"
+          onClick={() => setShowErrorModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full transform animate-scaleIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-red-400 to-red-500 flex items-center justify-center shadow-lg">
+                  <XCircle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Duplicate Found</h3>
+                  <p className="text-sm text-gray-600">A voter with this Student ID already exists.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Duplicate Found</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="text-center space-y-4">
+              <div className="bg-red-50 border border-red-200 p-4 rounded-xl">
+                <p className="text-sm text-red-800">
                   {errorMessage || "A voter with this Student ID already exists."}
                 </p>
               </div>
@@ -1189,9 +1410,9 @@ export const VoterManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Course Delete Confirmation Modal - HIGHER Z-INDEX */}
+      {/* Course Delete Confirmation Modal */}
       {showCourseDeleteModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[150]">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] lg:items-center lg:justify-center items-end justify-center pb-20">
           <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full transform animate-scaleIn">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">Delete Course</h2>
@@ -1877,54 +2098,58 @@ export const VoterManagement: React.FC = () => {
                     <div className="relative">
                       <button
                         onClick={() => setShowMobileActions(showMobileActions === voter.id ? null : voter.id)}
-                        className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                        className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:scale-110 relative group"
                       >
-                        <MoreVertical className="w-4 h-4" />
+                        <MoreVertical className="w-4 h-4 text-gray-500 group-hover:text-gray-700" />
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
                       </button>
                       {showMobileActions === voter.id && (
-                        <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-xl shadow-lg z-10 w-48 overflow-hidden">
+                        <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-xl shadow-lg z-10 w-48 overflow-hidden animate-slideDown">
                           <button
                             onClick={() => handleEdit(voter)}
-                            className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center space-x-3 transition-colors"
+                            className="w-full text-left px-4 py-3 text-sm hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 flex items-center space-x-3 transition-all duration-200 group"
                           >
-                            <Edit className="w-4 h-4" />
-                            <span>{canEditPasswordOnly ? 'Update Password & Status' : 'Edit'}</span>
+                            <Edit className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform duration-200" />
+                            <span className="text-gray-700 group-hover:text-blue-700 font-medium">{canEditPasswordOnly ? 'Update Password & Status' : 'Edit'}</span>
                           </button>
                           {voter.is_active ? (
                             <button
                               onClick={() => handleStatusChange(voter.id, false)}
                               disabled={canEditPasswordOnly}
-                              className={`w-full text-left px-4 py-3 text-sm flex items-center space-x-3 transition-colors ${canEditPasswordOnly
-                                ? 'text-gray-400 cursor-not-allowed'
-                                : 'text-gray-600 hover:bg-gray-50'
+                              className={`w-full text-left px-4 py-3 text-sm flex items-center space-x-3 transition-all duration-200 group ${
+                                canEditPasswordOnly
+                                  ? 'text-gray-400 cursor-not-allowed'
+                                  : 'text-gray-600 hover:bg-gradient-to-r hover:from-amber-50 hover:to-amber-100 hover:text-amber-700'
                                 }`}
                             >
-                              <UserX className="w-4 h-4" />
-                              <span>Deactivate</span>
+                              <UserX className={`w-4 h-4 ${canEditPasswordOnly ? 'text-gray-400' : 'text-amber-600 group-hover:scale-110 transition-transform duration-200'}`} />
+                              <span className={`font-medium ${canEditPasswordOnly ? '' : 'group-hover:text-amber-700'}`}>Deactivate</span>
                             </button>
                           ) : (
                             <button
                               onClick={() => handleStatusChange(voter.id, true)}
                               disabled={canEditPasswordOnly}
-                              className={`w-full text-left px-4 py-3 text-sm flex items-center space-x-3 transition-colors ${canEditPasswordOnly
-                                ? 'text-gray-400 cursor-not-allowed'
-                                : 'text-gray-600 hover:bg-gray-50'
+                              className={`w-full text-left px-4 py-3 text-sm flex items-center space-x-3 transition-all duration-200 group ${
+                                canEditPasswordOnly
+                                  ? 'text-gray-400 cursor-not-allowed'
+                                  : 'text-gray-600 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 hover:text-green-700'
                                 }`}
                             >
-                              <UserCheck className="w-4 h-4" />
-                              <span>Activate</span>
+                              <UserCheck className={`w-4 h-4 ${canEditPasswordOnly ? 'text-gray-400' : 'text-green-600 group-hover:scale-110 transition-transform duration-200'}`} />
+                              <span className={`font-medium ${canEditPasswordOnly ? '' : 'group-hover:text-green-700'}`}>Activate</span>
                             </button>
                           )}
                           <button
                             onClick={() => handleDelete(voter.id)}
                             disabled={canEditPasswordOnly}
-                            className={`w-full text-left px-4 py-3 text-sm flex items-center space-x-3 transition-colors ${canEditPasswordOnly
-                              ? 'text-gray-400 cursor-not-allowed'
-                              : 'text-red-600 hover:bg-gray-50'
+                            className={`w-full text-left px-4 py-3 text-sm flex items-center space-x-3 transition-all duration-200 group border-t border-gray-100 ${
+                              canEditPasswordOnly
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:text-red-700'
                               }`}
                           >
-                            <Trash2 className="w-4 h-4" />
-                            <span>Delete</span>
+                            <Trash2 className={`w-4 h-4 ${canEditPasswordOnly ? 'text-gray-400' : 'text-red-600 group-hover:scale-110 transition-transform duration-200'}`} />
+                            <span className={`font-medium ${canEditPasswordOnly ? '' : 'group-hover:text-red-700'}`}>Delete</span>
                           </button>
                         </div>
                       )}
@@ -2193,7 +2418,7 @@ export const VoterManagement: React.FC = () => {
       <Modal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        title="Delete Selected Voters"
+        title={voterToDelete ? "Delete Voter" : "Delete Selected Voters"}
         size="sm"
       >
         <div className="space-y-4">
@@ -2203,14 +2428,17 @@ export const VoterManagement: React.FC = () => {
               <div>
                 <p className="text-sm text-red-800 font-medium">Warning: This action cannot be undone</p>
                 <p className="text-xs text-red-700 mt-1">
-                  You are about to delete {selectedStudents.length} voter(s). This will permanently remove all selected voter accounts and their data.
+                  {voterToDelete 
+                    ? "This will permanently remove this voter account and all associated data."
+                    : `You are about to delete ${selectedStudents.length} voter(s). This will permanently remove all selected voter accounts and their data.`
+                  }
                 </p>
               </div>
             </div>
           </div>
 
           <p className="text-sm text-gray-600">
-            Are you sure you want to delete the selected voters?
+            Are you sure you want to delete {voterToDelete ? 'this voter' : 'the selected voters'}?
           </p>
 
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-2">
@@ -2223,7 +2451,7 @@ export const VoterManagement: React.FC = () => {
               Cancel
             </button>
             <button
-              onClick={confirmDeleteAll}
+              onClick={voterToDelete ? confirmDeleteVoter : confirmDeleteAll}
               className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center"
               disabled={deleting}
             >
@@ -2253,6 +2481,8 @@ export const VoterManagement: React.FC = () => {
           setSelectedStudents([]);
           setStudentSearch('');
           setSelectedExportCourses([]);
+          setSelectedExportYearLevels([]);
+          setSelectedExportSections([]);
         }}
         title="Export Voters Data"
         size="xl"
@@ -2358,14 +2588,18 @@ export const VoterManagement: React.FC = () => {
                 )}
               </div>
 
-              {/* Course Selection with Year and Section Filters */}
-              <div className="border border-gray-200 rounded-xl p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <p className="font-medium text-gray-700 text-sm">Filter by Course:</p>
+              {/* Enhanced Filters: Course, Year Level, and Section */}
+              <div className="border border-gray-200 rounded-xl p-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <p className="font-medium text-gray-700 text-sm">Filter by:</p>
                   <div className="flex space-x-1">
                     <button
                       type="button"
-                      onClick={selectAllExportCourses}
+                      onClick={() => {
+                        selectAllExportCourses();
+                        selectAllExportYearLevels();
+                        selectAllExportSections();
+                      }}
                       className="text-blue-600 hover:text-blue-800 underline text-xs"
                     >
                       All
@@ -2373,34 +2607,122 @@ export const VoterManagement: React.FC = () => {
                     <span className="text-gray-400">|</span>
                     <button
                       type="button"
-                      onClick={clearAllExportCourses}
+                      onClick={() => {
+                        clearAllExportCourses();
+                        clearAllExportYearLevels();
+                        clearAllExportSections();
+                      }}
                       className="text-blue-600 hover:text-blue-800 underline text-xs"
                     >
                       None
                     </button>
                   </div>
                 </div>
-                <div className="max-h-32 overflow-y-auto space-y-1 mb-4">
-                  {uniqueCourses.map(course => (
-                    <label
-                      key={course}
-                      className="flex items-center space-x-2 p-1 hover:bg-gray-50 rounded cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedExportCourses.includes(course)}
-                        onChange={() => toggleExportCourse(course)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700 truncate">{course}</span>
-                    </label>
-                  ))}
+
+                {/* Course Filter */}
+                <div>
+                  <p className="text-xs font-medium text-gray-600 mb-2">Course:</p>
+                  <div className="max-h-24 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2">
+                    {uniqueCourses.map(course => (
+                      <label
+                        key={course}
+                        className="flex items-center space-x-2 p-1 hover:bg-gray-50 rounded cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedExportCourses.includes(course)}
+                          onChange={() => toggleExportCourse(course)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700 truncate">{course}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
+                {/* Year Level Filter */}
+                <div>
+                  <p className="text-xs font-medium text-gray-600 mb-2">Year Level:</p>
+                  <div className="max-h-24 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2">
+                    {getUniqueYearLevelsFromVoters().map(yearLevel => (
+                      <label
+                        key={yearLevel}
+                        className="flex items-center space-x-2 p-1 hover:bg-gray-50 rounded cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedExportYearLevels.includes(yearLevel)}
+                          onChange={() => toggleExportYearLevel(yearLevel)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700 truncate">{yearLevel}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
 
-                <p className="text-xs text-gray-500 mt-2">
-                  Course filtering works alongside student selection
+                {/* Section Filter */}
+                <div>
+                  <p className="text-xs font-medium text-gray-600 mb-2">Section:</p>
+                  <div className="max-h-24 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2">
+                    {getUniqueSectionsFromVoters().map(section => (
+                      <label
+                        key={section}
+                        className="flex items-center space-x-2 p-1 hover:bg-gray-50 rounded cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedExportSections.includes(section)}
+                          onChange={() => toggleExportSection(section)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700 truncate">{section}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-500">
+                  Filters use AND logic - only voters matching ALL selected criteria will be exported. Leave all unchecked to export all.
                 </p>
+
+                {/* Filter Summary */}
+                {(selectedExportCourses.length > 0 || selectedExportYearLevels.length > 0 || selectedExportSections.length > 0) && (
+                  <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs text-blue-700 font-medium mb-1">Selected filters:</p>
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {selectedExportCourses.map(course => (
+                        <span key={course} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                          {course}
+                        </span>
+                      ))}
+                      {selectedExportYearLevels.map(yearLevel => (
+                        <span key={yearLevel} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                          {yearLevel}
+                        </span>
+                      ))}
+                      {selectedExportSections.map(section => (
+                        <span key={section} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                          {section}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-blue-600">
+                      {(() => {
+                        let filteredCount = allVoters.length;
+                        if (selectedExportCourses.length > 0 || selectedExportYearLevels.length > 0 || selectedExportSections.length > 0) {
+                          filteredCount = allVoters.filter(voter => {
+                            const courseMatch = selectedExportCourses.length === 0 || selectedExportCourses.includes(voter.course);
+                            const yearLevelMatch = selectedExportYearLevels.length === 0 || selectedExportYearLevels.includes(voter.year_level?.toString() || '');
+                            const sectionMatch = selectedExportSections.length === 0 || selectedExportSections.includes(voter.section);
+                            return courseMatch && yearLevelMatch && sectionMatch;
+                          }).length;
+                        }
+                        return `${filteredCount} voter(s) will be exported`;
+                      })()}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

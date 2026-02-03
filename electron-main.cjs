@@ -379,15 +379,6 @@ function runCommand(command, args, options) {
     });
 }
 
-function addTerminalOutput(category, message, type = 'info') {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('command-output', {
-            type: type,
-            data: message,
-            category: category
-        });
-    }
-}
 
 // IPC Handlers
 ipcMain.handle('get-system-info', async function () {
@@ -427,12 +418,12 @@ ipcMain.handle('get-performance-data', async function () {
 ipcMain.handle('update-env', async function (event, ipAddress) {
     const currentEnvIP = getCurrentEnvIP();
     if (currentEnvIP === ipAddress) {
-        addTerminalOutput('system', 'IP address unchanged (' + ipAddress + '), no update needed', 'info');
+        console.log('IP address unchanged (' + ipAddress + '), no update needed');
         return { success: true, updated: false, ip: ipAddress };
     } else {
         const success = updateEnvFile(ipAddress);
         if (success) {
-            addTerminalOutput('system', 'Updated .env file with new IP: ' + ipAddress, 'info');
+            console.log('Updated .env file with new IP: ' + ipAddress);
             if (mainWindow) {
                 mainWindow.webContents.send('process-status', {
                     process: 'env',
@@ -456,14 +447,20 @@ ipcMain.handle('clean-blockchain', async function () {
 ipcMain.handle('start-blockchain-node1', async function () {
     try {
         const blockchainDir = path.join(__dirname, 'blockchain');
+        const batchFile = path.join(blockchainDir, 'start-node1.bat');
         
-        addTerminalOutput('system', 'Starting Blockchain Node 1 (port 8545)...', 'info');
-        const node1Process = spawn('start-node1.bat', [], {
-            cwd: blockchainDir,
-            shell: true
+        console.log('Starting Blockchain Node 1 (port 8545) in separate terminal...');
+        console.log('Batch file path:', batchFile);
+        
+        // Open in new terminal window using start command
+        const node1Process = spawn('cmd', ['/c', `start "Node 1" cmd /k "${batchFile}"`], {
+            shell: true,
+            detached: true,
+            stdio: 'ignore'
         });
         
         processes.blockchainNode1 = node1Process;
+        node1Process.unref();
         
         // Send status update
         if (mainWindow) {
@@ -472,34 +469,15 @@ ipcMain.handle('start-blockchain-node1', async function () {
                 status: 'running'
             });
         }
-        
-        node1Process.stdout.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stdout',
-                    data: data.toString(),
-                    category: 'blockchain-node1'
-                });
-            }
-        });
-        
-        node1Process.stderr.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stderr',
-                    data: data.toString(),
-                    category: 'blockchain-node1'
-                });
-            }
-        });
 
-        addTerminalOutput('system', 'Waiting for blockchain node 1 to start (15 seconds)...', 'info');
+        console.log('Blockchain node 1 terminal opened, waiting for startup (15 seconds)...');
         await new Promise(resolve => setTimeout(resolve, 15000));
         
-        addTerminalOutput('system', 'Blockchain node 1 should be running now', 'info');
+        console.log('Blockchain node 1 should be running now');
         return { success: true };
         
     } catch (error) {
+        console.error('Error starting blockchain node 1:', error);
         return { success: false, error: error.message };
     }
 });
@@ -507,14 +485,20 @@ ipcMain.handle('start-blockchain-node1', async function () {
 ipcMain.handle('start-blockchain-node2', async function () {
     try {
         const blockchainDir = path.join(__dirname, 'blockchain');
+        const batchFile = path.join(blockchainDir, 'start-node2.bat');
         
-        addTerminalOutput('system', 'Starting Blockchain Node 2 (port 8547)...', 'info');
-        const node2Process = spawn('start-node2.bat', [], {
-            cwd: blockchainDir,
-            shell: true
+        console.log('Starting Blockchain Node 2 (port 8547) in separate terminal...');
+        console.log('Batch file path:', batchFile);
+        
+        // Open in new terminal window using start command
+        const node2Process = spawn('cmd', ['/c', `start "Node 2" cmd /k "${batchFile}"`], {
+            shell: true,
+            detached: true,
+            stdio: 'ignore'
         });
         
         processes.blockchainNode2 = node2Process;
+        node2Process.unref();
         
         // Send status update
         if (mainWindow) {
@@ -523,34 +507,15 @@ ipcMain.handle('start-blockchain-node2', async function () {
                 status: 'running'
             });
         }
-        
-        node2Process.stdout.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stdout',
-                    data: data.toString(),
-                    category: 'blockchain-node2'
-                });
-            }
-        });
-        
-        node2Process.stderr.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stderr',
-                    data: data.toString(),
-                    category: 'blockchain-node2'
-                });
-            }
-        });
 
-        addTerminalOutput('system', 'Waiting for blockchain node 2 to start (15 seconds)...', 'info');
+        console.log('Blockchain node 2 terminal opened, waiting for startup (15 seconds)...');
         await new Promise(resolve => setTimeout(resolve, 15000));
         
-        addTerminalOutput('system', 'Blockchain node 2 should be running now', 'info');
+        console.log('Blockchain node 2 should be running now');
         return { success: true };
         
     } catch (error) {
+        console.error('Error starting blockchain node 2:', error);
         return { success: false, error: error.message };
     }
 });
@@ -558,14 +523,21 @@ ipcMain.handle('start-blockchain-node2', async function () {
 ipcMain.handle('start-blockchain', async function () {
     try {
         const blockchainDir = path.join(__dirname, 'blockchain');
+        const node1Batch = path.join(blockchainDir, 'start-node1.bat');
+        const node2Batch = path.join(blockchainDir, 'start-node2.bat');
         
-        addTerminalOutput('system', 'Starting Blockchain Node 1 (port 8545)...', 'info');
-        const node1Process = spawn('start-node1.bat', [], {
-            cwd: blockchainDir,
-            shell: true
+        console.log('Starting Blockchain Node 1 (port 8545) in separate terminal...');
+        console.log('Node 1 batch file:', node1Batch);
+        
+        // Open node 1 in new terminal window
+        const node1Process = spawn('cmd', ['/c', `start "Node 1" cmd /k "${node1Batch}"`], {
+            shell: true,
+            detached: true,
+            stdio: 'ignore'
         });
         
         processes.blockchainNode1 = node1Process;
+        node1Process.unref();
         
         // Send status update
         if (mainWindow) {
@@ -574,36 +546,21 @@ ipcMain.handle('start-blockchain', async function () {
                 status: 'running'
             });
         }
-        
-        node1Process.stdout.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stdout',
-                    data: data.toString(),
-                    category: 'blockchain-node1'
-                });
-            }
-        });
-        
-        node1Process.stderr.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stderr',
-                    data: data.toString(),
-                    category: 'blockchain-node1'
-                });
-            }
-        });
 
         await new Promise(resolve => setTimeout(resolve, 5000));
         
-        addTerminalOutput('system', 'Starting Blockchain Node 2 (port 8547)...', 'info');
-        const node2Process = spawn('start-node2.bat', [], {
-            cwd: blockchainDir,
-            shell: true
+        console.log('Starting Blockchain Node 2 (port 8547) in separate terminal...');
+        console.log('Node 2 batch file:', node2Batch);
+        
+        // Open node 2 in new terminal window
+        const node2Process = spawn('cmd', ['/c', `start "Node 2" cmd /k "${node2Batch}"`], {
+            shell: true,
+            detached: true,
+            stdio: 'ignore'
         });
         
         processes.blockchainNode2 = node2Process;
+        node2Process.unref();
         
         // Send status update
         if (mainWindow) {
@@ -612,41 +569,22 @@ ipcMain.handle('start-blockchain', async function () {
                 status: 'running'
             });
         }
-        
-        node2Process.stdout.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stdout',
-                    data: data.toString(),
-                    category: 'blockchain-node2'
-                });
-            }
-        });
-        
-        node2Process.stderr.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stderr',
-                    data: data.toString(),
-                    category: 'blockchain-node2'
-                });
-            }
-        });
 
-        addTerminalOutput('system', 'Waiting for blockchain nodes to start (30 seconds)...', 'info');
+        console.log('Both blockchain node terminals opened, waiting for startup (30 seconds)...');
         await new Promise(resolve => setTimeout(resolve, 30000));
         
-        addTerminalOutput('system', 'Blockchain nodes should be running now', 'info');
+        console.log('Blockchain nodes should be running now');
         return { success: true };
         
     } catch (error) {
+        console.error('Error starting blockchain nodes:', error);
         return { success: false, error: error.message };
     }
 });
 
 ipcMain.handle('stop-blockchain-node1', async function () {
     try {
-        addTerminalOutput('system', 'Stopping blockchain node 1...', 'info');
+        console.log('Stopping blockchain node 1...');
         
         if (processes.blockchainNode1) {
             processes.blockchainNode1.kill();
@@ -681,7 +619,7 @@ ipcMain.handle('stop-blockchain-node1', async function () {
             console.log('Error killing node1 processes:', e);
         }
         
-        addTerminalOutput('system', 'Blockchain node 1 stopped', 'info');
+        console.log('Blockchain node 1 stopped');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -690,7 +628,7 @@ ipcMain.handle('stop-blockchain-node1', async function () {
 
 ipcMain.handle('stop-blockchain-node2', async function () {
     try {
-        addTerminalOutput('system', 'Stopping blockchain node 2...', 'info');
+        console.log('Stopping blockchain node 2...');
         
         if (processes.blockchainNode2) {
             processes.blockchainNode2.kill();
@@ -725,7 +663,7 @@ ipcMain.handle('stop-blockchain-node2', async function () {
             console.log('Error killing node2 processes:', e);
         }
         
-        addTerminalOutput('system', 'Blockchain node 2 stopped', 'info');
+        console.log('Blockchain node 2 stopped');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -734,7 +672,7 @@ ipcMain.handle('stop-blockchain-node2', async function () {
 
 ipcMain.handle('stop-blockchain-all', async function () {
     try {
-        addTerminalOutput('system', 'Stopping all blockchain nodes...', 'info');
+        console.log('Stopping all blockchain nodes...');
         
         if (processes.blockchainNode1) {
             processes.blockchainNode1.kill();
@@ -769,7 +707,7 @@ ipcMain.handle('stop-blockchain-all', async function () {
             console.log('Error killing geth processes:', e);
         }
         
-        addTerminalOutput('system', 'All blockchain nodes stopped', 'info');
+        console.log('All blockchain nodes stopped');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -796,12 +734,18 @@ ipcMain.handle('deploy-contract', async function () {
 
 ipcMain.handle('start-backend', async function () {
     try {
-        const backendProcess = spawn('npm', ['run', 'dev:network'], { 
-            shell: true, 
-            cwd: path.join(__dirname, 'server')
+        const serverDir = path.join(__dirname, 'server');
+        
+        console.log('Starting backend server in separate terminal...');
+        
+        // Open backend in new terminal window
+        const backendProcess = spawn('cmd', ['/c', 'start', 'cmd', '/k', 'cd /d', serverDir, '&&', 'npm', 'run', 'dev:network'], {
+            shell: true,
+            detached: true
         });
         
         processes.backend = backendProcess;
+        backendProcess.unref();
         
         // Send status update
         if (mainWindow) {
@@ -810,43 +754,8 @@ ipcMain.handle('start-backend', async function () {
                 status: 'running'
             });
         }
-        
-        backendProcess.stdout.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', { 
-                    type: 'stdout', 
-                    data: data.toString(), 
-                    category: 'backend' 
-                });
-            }
-        });
-        
-        backendProcess.stderr.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', { 
-                    type: 'stderr', 
-                    data: data.toString(), 
-                    category: 'backend' 
-                });
-            }
-        });
-        
-        backendProcess.on('close', function (code) {
-            if (mainWindow) {
-                mainWindow.webContents.send('process-status', {
-                    process: 'backend',
-                    status: 'stopped'
-                });
-                if (code !== 0) {
-                    mainWindow.webContents.send('command-output', {
-                        type: 'error',
-                        data: `Backend process exited with code ${code}`,
-                        category: 'backend'
-                    });
-                }
-            }
-        });
-        
+
+        console.log('Backend server terminal opened, waiting for startup (10 seconds)...');
         await new Promise(function (resolve) { 
             setTimeout(resolve, 10000); 
         });
@@ -859,7 +768,7 @@ ipcMain.handle('start-backend', async function () {
 
 ipcMain.handle('stop-backend', async function () {
     try {
-        addTerminalOutput('system', 'Stopping backend server...', 'info');
+        console.log('Stopping backend server...');
         
         if (processes.backend) {
             processes.backend.kill();
@@ -894,7 +803,7 @@ ipcMain.handle('stop-backend', async function () {
             console.log('Error killing backend port processes:', e);
         }
         
-        addTerminalOutput('system', 'Backend server stopped', 'info');
+        console.log('Backend server stopped');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -903,11 +812,16 @@ ipcMain.handle('stop-backend', async function () {
 
 ipcMain.handle('start-frontend', async function (event, ipAddress) {
     try {
-        const frontendProcess = spawn('npm', ['run', 'dev', '--', '--host'], { 
-            shell: true
+        console.log('Starting frontend application in separate terminal...');
+        
+        // Open frontend in new terminal window
+        const frontendProcess = spawn('cmd', ['/c', 'start', 'cmd', '/k', 'npm', 'run', 'dev', '--', '--host'], {
+            shell: true,
+            detached: true
         });
         
         processes.frontend = frontendProcess;
+        frontendProcess.unref();
         
         // Send status update
         if (mainWindow) {
@@ -916,43 +830,8 @@ ipcMain.handle('start-frontend', async function (event, ipAddress) {
                 status: 'running'
             });
         }
-        
-        frontendProcess.stdout.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', { 
-                    type: 'stdout', 
-                    data: data.toString(), 
-                    category: 'frontend' 
-                });
-            }
-        });
-        
-        frontendProcess.stderr.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', { 
-                    type: 'stderr', 
-                    data: data.toString(), 
-                    category: 'frontend' 
-                });
-            }
-        });
-        
-        frontendProcess.on('close', function (code) {
-            if (mainWindow) {
-                mainWindow.webContents.send('process-status', {
-                    process: 'frontend',
-                    status: 'stopped'
-                });
-                if (code !== 0) {
-                    mainWindow.webContents.send('command-output', {
-                        type: 'error',
-                        data: `Frontend process exited with code ${code}`,
-                        category: 'frontend'
-                    });
-                }
-            }
-        });
-        
+
+        console.log('Frontend application terminal opened, waiting for startup (10 seconds)...');
         await new Promise(function (resolve) { 
             setTimeout(resolve, 10000); 
         });
@@ -965,7 +844,7 @@ ipcMain.handle('start-frontend', async function (event, ipAddress) {
 
 ipcMain.handle('stop-frontend', async function () {
     try {
-        addTerminalOutput('system', 'Stopping frontend server...', 'info');
+        console.log('Stopping frontend application...');
         
         if (processes.frontend) {
             processes.frontend.kill();
@@ -1000,7 +879,7 @@ ipcMain.handle('stop-frontend', async function () {
             console.log('Error killing frontend port processes:', e);
         }
         
-        addTerminalOutput('system', 'Frontend server stopped', 'info');
+        console.log('Frontend application stopped');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1010,71 +889,35 @@ ipcMain.handle('stop-frontend', async function () {
 // XAMPP Control Handlers
 ipcMain.handle('start-apache', async function () {
     try {
-        addTerminalOutput('system', 'Starting Apache...', 'info');
+        console.log('Starting Apache...');
         
         // Try common XAMPP paths
         const possiblePaths = [
             'C:\\xampp\\apache\\bin\\httpd.exe',
-            'C:\\xampp\\apache_start.bat',
-            'C:\\xampp\\xampp_start.exe'
+            'C:\\xampp\\apache\\bin\\httpd.exe',
+            'D:\\xampp\\apache\\bin\\httpd.exe'
         ];
         
-        let apacheProcess = null;
         for (const path of possiblePaths) {
             if (fs.existsSync(path)) {
-                apacheProcess = spawn(path, [], { shell: true });
+                const apacheProcess = spawn(path, [], { shell: true });
                 processes.apache = apacheProcess;
-                break;
+                
+                if (mainWindow) {
+                    mainWindow.webContents.send('process-status', {
+                        process: 'apache',
+                        status: 'running'
+                    });
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                
+                console.log('Apache started');
+                return { success: true };
             }
         }
         
-        if (!apacheProcess) {
-            // If no specific path found, try to start Apache service
-            apacheProcess = spawn('sc', ['start', 'Apache2.4'], { shell: true });
-            processes.apache = apacheProcess;
-        }
-        
-        // Send status update
-        if (mainWindow) {
-            mainWindow.webContents.send('process-status', {
-                process: 'apache',
-                status: 'running'
-            });
-        }
-        
-        apacheProcess.stdout.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stdout',
-                    data: data.toString(),
-                    category: 'apache'
-                });
-            }
-        });
-        
-        apacheProcess.stderr.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stderr',
-                    data: data.toString(),
-                    category: 'apache'
-                });
-            }
-        });
-        
-        apacheProcess.on('close', function (code) {
-            if (mainWindow && code !== 0) {
-                mainWindow.webContents.send('process-status', {
-                    process: 'apache',
-                    status: 'stopped'
-                });
-            }
-        });
-        
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        
-        addTerminalOutput('system', 'Apache started', 'info');
-        return { success: true };
+        return { success: false, error: 'Apache executable not found' };
     } catch (error) {
         return { success: false, error: error.message };
     }
@@ -1082,31 +925,31 @@ ipcMain.handle('start-apache', async function () {
 
 ipcMain.handle('stop-apache', async function () {
     try {
-        addTerminalOutput('system', 'Stopping Apache...', 'info');
+        console.log('Stopping Apache...');
         
         if (processes.apache) {
             processes.apache.kill();
             processes.apache = null;
+            if (mainWindow) {
+                mainWindow.webContents.send('process-status', {
+                    process: 'apache',
+                    status: 'stopped'
+                });
+            }
         }
-        
-        // Stop Apache service
-        spawn('sc', ['stop', 'Apache2.4'], { shell: true });
         
         // Kill Apache processes
-        exec('taskkill /f /im httpd.exe', (error) => {
-            if (!error) {
-                console.log('Killed Apache processes');
-            }
-        });
-        
-        if (mainWindow) {
-            mainWindow.webContents.send('process-status', {
-                process: 'apache',
-                status: 'stopped'
+        try {
+            exec('taskkill /f /im httpd.exe', (error) => {
+                if (!error) {
+                    console.log('Killed Apache processes');
+                }
             });
+        } catch (e) {
+            console.log('Error killing Apache processes:', e);
         }
         
-        addTerminalOutput('system', 'Apache stopped', 'info');
+        console.log('Apache stopped');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1115,7 +958,7 @@ ipcMain.handle('stop-apache', async function () {
 
 ipcMain.handle('start-mysql', async function () {
     try {
-        addTerminalOutput('system', 'Starting MySQL...', 'info');
+        console.log('Starting MySQL...');
         
         // Try common XAMPP paths
         const possiblePaths = [
@@ -1147,38 +990,9 @@ ipcMain.handle('start-mysql', async function () {
             });
         }
         
-        mysqlProcess.stdout.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stdout',
-                    data: data.toString(),
-                    category: 'mysql'
-                });
-            }
-        });
-        
-        mysqlProcess.stderr.on('data', function (data) {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stderr',
-                    data: data.toString(),
-                    category: 'mysql'
-                });
-            }
-        });
-        
-        mysqlProcess.on('close', function (code) {
-            if (mainWindow && code !== 0) {
-                mainWindow.webContents.send('process-status', {
-                    process: 'mysql',
-                    status: 'stopped'
-                });
-            }
-        });
-        
         await new Promise(resolve => setTimeout(resolve, 5000));
         
-        addTerminalOutput('system', 'MySQL started', 'info');
+        console.log('MySQL started');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1187,7 +1001,7 @@ ipcMain.handle('start-mysql', async function () {
 
 ipcMain.handle('stop-mysql', async function () {
     try {
-        addTerminalOutput('system', 'Stopping MySQL...', 'info');
+        console.log('Stopping MySQL...');
         
         if (processes.mysql) {
             processes.mysql.kill();
@@ -1211,7 +1025,7 @@ ipcMain.handle('stop-mysql', async function () {
             });
         }
         
-        addTerminalOutput('system', 'MySQL stopped', 'info');
+        console.log('MySQL stopped');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1222,7 +1036,7 @@ ipcMain.handle('open-phpmyadmin', async function () {
     try {
         const url = 'http://localhost/phpmyadmin';
         await shell.openExternal(url);
-        addTerminalOutput('system', 'Opening phpMyAdmin in browser: ' + url, 'info');
+        console.log('Opening phpMyAdmin in browser: ' + url);
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1240,14 +1054,14 @@ ipcMain.handle('open-xampp-control', async function () {
         for (const path of possiblePaths) {
             if (fs.existsSync(path)) {
                 spawn(path, [], { shell: true });
-                addTerminalOutput('system', 'Opening XAMPP Control Panel', 'info');
+                console.log('Opening XAMPP Control Panel');
                 return { success: true };
             }
         }
         
         // If control panel not found, open XAMPP directory
         shell.openPath('C:\\xampp');
-        addTerminalOutput('system', 'Opening XAMPP directory', 'info');
+        console.log('Opening XAMPP directory');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1264,23 +1078,23 @@ ipcMain.handle('run-all-steps', async function (event, options) {
     
     try {
         // Start XAMPP services first
-        addTerminalOutput('system', 'Starting XAMPP services first...', 'info');
+        console.log('Starting XAMPP services first...');
         
         // Start Apache
         await startApacheService();
-        addTerminalOutput('system', 'Apache started, waiting 5 seconds...', 'info');
+        console.log('Apache started, waiting 5 seconds...');
         await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Start MySQL
         await startMysqlService();
-        addTerminalOutput('system', 'MySQL started, waiting 5 seconds...', 'info');
+        console.log('MySQL started, waiting 5 seconds...');
         await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Continue with the rest of the deployment process
         const currentEnvIP = getCurrentEnvIP();
         if (currentEnvIP !== ipAddress) {
             updateEnvFile(ipAddress);
-            addTerminalOutput('system', 'Updated .env with new IP: ' + ipAddress, 'info');
+            console.log('Updated .env with new IP: ' + ipAddress);
             if (mainWindow) {
                 mainWindow.webContents.send('process-status', {
                     process: 'env',
@@ -1295,12 +1109,16 @@ ipcMain.handle('run-all-steps', async function (event, options) {
         
         const blockchainDir = path.join(__dirname, 'blockchain');
         
-        addTerminalOutput('system', 'Starting Blockchain Node 1 (port 8545)...', 'info');
-        const node1Process = spawn('start-node1.bat', [], {
-            cwd: blockchainDir,
-            shell: true
+        console.log('Starting Blockchain Node 1 (port 8545) in separate terminal...');
+        const node1Batch = path.join(blockchainDir, 'start-node1.bat');
+        console.log('Node 1 batch file:', node1Batch);
+        const node1Process = spawn('cmd', ['/c', `start "Node 1" cmd /k "${node1Batch}"`], {
+            shell: true,
+            detached: true,
+            stdio: 'ignore'
         });
         processes.blockchainNode1 = node1Process;
+        node1Process.unref();
         
         if (mainWindow) {
             mainWindow.webContents.send('process-status', {
@@ -1308,35 +1126,19 @@ ipcMain.handle('run-all-steps', async function (event, options) {
                 status: 'running'
             });
         }
-        
-        node1Process.stdout.on('data', (data) => {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stdout',
-                    data: data.toString(),
-                    category: 'blockchain-node1'
-                });
-            }
-        });
-        
-        node1Process.stderr.on('data', (data) => {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stderr',
-                    data: data.toString(),
-                    category: 'blockchain-node1'
-                });
-            }
-        });
 
         await new Promise(resolve => setTimeout(resolve, 5000));
         
-        addTerminalOutput('system', 'Starting Blockchain Node 2 (port 8547)...', 'info');
-        const node2Process = spawn('start-node2.bat', [], {
-            cwd: blockchainDir,
-            shell: true
+        console.log('Starting Blockchain Node 2 (port 8547) in separate terminal...');
+        const node2Batch = path.join(blockchainDir, 'start-node2.bat');
+        console.log('Node 2 batch file:', node2Batch);
+        const node2Process = spawn('cmd', ['/c', `start "Node 2" cmd /k "${node2Batch}"`], {
+            shell: true,
+            detached: true,
+            stdio: 'ignore'
         });
         processes.blockchainNode2 = node2Process;
+        node2Process.unref();
         
         if (mainWindow) {
             mainWindow.webContents.send('process-status', {
@@ -1344,38 +1146,22 @@ ipcMain.handle('run-all-steps', async function (event, options) {
                 status: 'running'
             });
         }
-        
-        node2Process.stdout.on('data', (data) => {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stdout',
-                    data: data.toString(),
-                    category: 'blockchain-node2'
-                });
-            }
-        });
-        
-        node2Process.stderr.on('data', (data) => {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', {
-                    type: 'stderr',
-                    data: data.toString(),
-                    category: 'blockchain-node2'
-                });
-            }
-        });
 
-        addTerminalOutput('system', 'Waiting for blockchain nodes to start (30 seconds)...', 'info');
+        console.log('Waiting for blockchain nodes to start (30 seconds)...');
         await new Promise(resolve => setTimeout(resolve, 30000));
         
         await runCommand('node', ['scripts/compile.js']);
         await runCommand('node', ['scripts/deploy.js']);
         
-        const backendProcess = spawn('npm', ['run', 'dev:network'], { 
-            shell: true, 
-            cwd: path.join(__dirname, 'server')
+        // Start backend in separate terminal
+        const serverDir = path.join(__dirname, 'server');
+        console.log('Starting backend server in separate terminal...');
+        const backendProcess = spawn('cmd', ['/c', 'start', 'cmd', '/k', 'cd /d', serverDir, '&&', 'npm', 'run', 'dev:network'], {
+            shell: true,
+            detached: true
         });
         processes.backend = backendProcess;
+        backendProcess.unref();
         
         if (mainWindow) {
             mainWindow.webContents.send('process-status', {
@@ -1384,41 +1170,19 @@ ipcMain.handle('run-all-steps', async function (event, options) {
             });
         }
         
-        backendProcess.stdout.on('data', (data) => {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', { 
-                    type: 'stdout', 
-                    data: data.toString(), 
-                    category: 'backend' 
-                });
-            }
+        console.log('Backend server terminal opened, waiting for startup (10 seconds)...');
+        await new Promise(function (resolve) { 
+            setTimeout(resolve, 10000); 
         });
         
-        backendProcess.stderr.on('data', (data) => {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', { 
-                    type: 'stderr', 
-                    data: data.toString(), 
-                    category: 'backend' 
-                });
-            }
-        });
-        
-        backendProcess.on('close', (code) => {
-            if (mainWindow) {
-                mainWindow.webContents.send('process-status', {
-                    process: 'backend',
-                    status: 'stopped'
-                });
-            }
-        });
-        
-        await new Promise(resolve => setTimeout(resolve, 10000));
-        
-        const frontendProcess = spawn('npm', ['run', 'dev', '--', '--host'], { 
-            shell: true
+        // Start frontend in separate terminal
+        console.log('Starting frontend application in separate terminal...');
+        const frontendProcess = spawn('cmd', ['/c', 'start', 'cmd', '/k', 'npm', 'run', 'dev', '--', '--host'], {
+            shell: true,
+            detached: true
         });
         processes.frontend = frontendProcess;
+        frontendProcess.unref();
         
         if (mainWindow) {
             mainWindow.webContents.send('process-status', {
@@ -1426,37 +1190,11 @@ ipcMain.handle('run-all-steps', async function (event, options) {
                 status: 'running'
             });
         }
-        
-        frontendProcess.stdout.on('data', (data) => {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', { 
-                    type: 'stdout', 
-                    data: data.toString(), 
-                    category: 'frontend' 
-                });
-            }
+
+        console.log('Frontend application terminal opened, waiting for startup (10 seconds)...');
+        await new Promise(function (resolve) { 
+            setTimeout(resolve, 10000); 
         });
-        
-        frontendProcess.stderr.on('data', (data) => {
-            if (mainWindow) {
-                mainWindow.webContents.send('command-output', { 
-                    type: 'stderr', 
-                    data: data.toString(), 
-                    category: 'frontend' 
-                });
-            }
-        });
-        
-        frontendProcess.on('close', (code) => {
-            if (mainWindow) {
-                mainWindow.webContents.send('process-status', {
-                    process: 'frontend',
-                    status: 'stopped'
-                });
-            }
-        });
-        
-        await new Promise(resolve => setTimeout(resolve, 10000));
         
         return { success: true, url: 'http://' + ipAddress + ':5173' };
     } catch (error) {
@@ -1468,7 +1206,7 @@ ipcMain.handle('run-all-steps', async function (event, options) {
 async function startApacheService() {
     return new Promise((resolve, reject) => {
         try {
-            addTerminalOutput('system', 'Starting Apache service...', 'info');
+            console.log('Starting Apache service...');
             
             const possiblePaths = [
                 'C:\\xampp\\apache\\bin\\httpd.exe',
@@ -1497,26 +1235,6 @@ async function startApacheService() {
                 });
             }
             
-            apacheProcess.stdout.on('data', function (data) {
-                if (mainWindow) {
-                    mainWindow.webContents.send('command-output', {
-                        type: 'stdout',
-                        data: data.toString(),
-                        category: 'apache'
-                    });
-                }
-            });
-            
-            apacheProcess.stderr.on('data', function (data) {
-                if (mainWindow) {
-                    mainWindow.webContents.send('command-output', {
-                        type: 'stderr',
-                        data: data.toString(),
-                        category: 'apache'
-                    });
-                }
-            });
-            
             apacheProcess.on('close', function (code) {
                 if (code === 0) {
                     resolve();
@@ -1539,7 +1257,7 @@ async function startApacheService() {
 async function startMysqlService() {
     return new Promise((resolve, reject) => {
         try {
-            addTerminalOutput('system', 'Starting MySQL service...', 'info');
+            console.log('Starting MySQL service...');
             
             const possiblePaths = [
                 'C:\\xampp\\mysql_start.bat',
@@ -1568,26 +1286,6 @@ async function startMysqlService() {
                 });
             }
             
-            mysqlProcess.stdout.on('data', function (data) {
-                if (mainWindow) {
-                    mainWindow.webContents.send('command-output', {
-                        type: 'stdout',
-                        data: data.toString(),
-                        category: 'mysql'
-                    });
-                }
-            });
-            
-            mysqlProcess.stderr.on('data', function (data) {
-                if (mainWindow) {
-                    mainWindow.webContents.send('command-output', {
-                        type: 'stderr',
-                        data: data.toString(),
-                        category: 'mysql'
-                    });
-                }
-            });
-            
             mysqlProcess.on('close', function (code) {
                 if (code === 0) {
                     resolve();
@@ -1607,8 +1305,8 @@ async function startMysqlService() {
     });
 }
 
-function addTerminalOutput(category, message, type) {
-    if (mainWindow) {
+function addTerminalOutput(category, message, type = 'info') {
+    if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('command-output', {
             type: type,
             data: message,

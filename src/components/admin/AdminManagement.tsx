@@ -266,7 +266,7 @@ export const AdminManagement: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && adminToDelete && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4 lg:items-center lg:justify-center items-end justify-center pb-20">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-200 animate-scaleIn">
             <div className="flex items-center space-x-3 mb-4">
               <div className="p-2 bg-rose-100 rounded-xl">

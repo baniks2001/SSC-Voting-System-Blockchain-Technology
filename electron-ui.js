@@ -50,11 +50,6 @@ async function loadSystemInfo() {
     }
 }
 
-function setupOutputListener() {
-    window.electronAPI.onCommandOutput((data) => {
-        addOutput(data.data, data.category, data.type);
-    });
-}
 
 function setupStatusListener() {
     window.electronAPI.onProcessStatus((data) => {
@@ -66,6 +61,62 @@ function setupPerformanceListener() {
     window.electronAPI.onPerformanceData((data) => {
         updatePerformanceGraph(data);
     });
+}
+
+function setupOutputListener() {
+    window.electronAPI.onCommandOutput((data) => {
+        addOutput(data.data, data.category, data.type);
+    });
+}
+
+
+// Performance monitoring functions
+function startPerformanceMonitoring() {
+    if (performanceInterval) {
+        clearInterval(performanceInterval);
+    }
+    
+    performanceInterval = setInterval(async () => {
+        try {
+            const perfData = await window.electronAPI.getPerformanceData();
+            updatePerformanceGraph(perfData);
+        } catch (error) {
+            console.error('Error getting performance data:', error);
+        }
+    }, 2000);
+}
+
+function updatePerformanceGraph(data) {
+    const now = new Date().toLocaleTimeString();
+    
+    // Keep only last 30 data points
+    if (performanceData.timestamps.length >= 30) {
+        performanceData.cpu.shift();
+        performanceData.memory.shift();
+        performanceData.network.shift();
+        performanceData.timestamps.shift();
+    }
+    
+    performanceData.cpu.push(data.cpu);
+    performanceData.memory.push(data.memory);
+    performanceData.network.push(data.network);
+    performanceData.timestamps.push(now);
+    
+    renderPerformanceGraph();
+    updateNetworkStatus(data.network);
+}
+
+function updateNetworkStatus(networkActivity) {
+    const networkStatus = document.getElementById('networkStatus');
+    if (networkStatus) {
+        if (networkActivity > 70) {
+            networkStatus.innerHTML = '<span style="color: #ef4444;">● High</span>';
+        } else if (networkActivity > 30) {
+            networkStatus.innerHTML = '<span style="color: #f59e0b;">● Medium</span>';
+        } else {
+            networkStatus.innerHTML = '<span style="color: #10b981;">● Low</span>';
+        }
+    }
 }
 
 function addOutput(message, category, type = 'stdout') {
@@ -153,55 +204,6 @@ function clearAllTerminals() {
     outputBuffer = {};
     updateOutputCount();
     addOutput('All terminals cleared', 'system', 'info');
-}
-
-// Performance monitoring functions
-function startPerformanceMonitoring() {
-    if (performanceInterval) {
-        clearInterval(performanceInterval);
-    }
-    
-    performanceInterval = setInterval(async () => {
-        try {
-            const perfData = await window.electronAPI.getPerformanceData();
-            updatePerformanceGraph(perfData);
-        } catch (error) {
-            console.error('Error getting performance data:', error);
-        }
-    }, 2000);
-}
-
-function updatePerformanceGraph(data) {
-    const now = new Date().toLocaleTimeString();
-    
-    // Keep only last 30 data points
-    if (performanceData.timestamps.length >= 30) {
-        performanceData.cpu.shift();
-        performanceData.memory.shift();
-        performanceData.network.shift();
-        performanceData.timestamps.shift();
-    }
-    
-    performanceData.cpu.push(data.cpu);
-    performanceData.memory.push(data.memory);
-    performanceData.network.push(data.network);
-    performanceData.timestamps.push(now);
-    
-    renderPerformanceGraph();
-    updateNetworkStatus(data.network);
-}
-
-function updateNetworkStatus(networkActivity) {
-    const networkStatus = document.getElementById('networkStatus');
-    if (networkStatus) {
-        if (networkActivity > 70) {
-            networkStatus.innerHTML = '<span style="color: #ef4444;">● High</span>';
-        } else if (networkActivity > 30) {
-            networkStatus.innerHTML = '<span style="color: #f59e0b;">● Medium</span>';
-        } else {
-            networkStatus.innerHTML = '<span style="color: #10b981;">● Low</span>';
-        }
-    }
 }
 
 function renderPerformanceGraph() {
@@ -349,6 +351,7 @@ async function updateEnv() {
 
 async function refreshIP() {
     try {
+        addOutput('Refreshing IP address...', 'system', 'info');
         const result = await window.electronAPI.refreshIP();
         currentIP = result.ipAddress;
         currentEnvIP = result.currentEnvIP;
@@ -383,129 +386,129 @@ async function cleanBlockchain() {
 
 async function startBlockchain() {
     try {
-        addOutput('Starting both blockchain nodes...', 'system', 'info');
+        console.log('Starting both blockchain nodes...');
         document.getElementById('blockchainStatus').textContent = 'Starting...';
         document.getElementById('blockchainStatus').className = 'status status-running';
         document.getElementById('stopBlockchainAllBtn').disabled = false;
         
         await window.electronAPI.startBlockchain();
         document.getElementById('blockchainStatus').textContent = 'Running';
-        addOutput('Both blockchain nodes started successfully', 'system', 'info');
+        console.log('Both blockchain nodes started successfully');
     } catch (error) {
         document.getElementById('blockchainStatus').textContent = 'Error';
         document.getElementById('blockchainStatus').className = 'status status-stopped';
         document.getElementById('stopBlockchainAllBtn').disabled = true;
-        addOutput('Error starting blockchain: ' + error.message, 'system', 'error');
+        console.error('Error starting blockchain:', error.message);
     }
 }
 
 async function startBlockchainNode1() {
     try {
-        addOutput('Starting blockchain node 1...', 'system', 'info');
+        console.log('Starting blockchain node 1...');
         await window.electronAPI.startBlockchainNode1();
-        addOutput('Blockchain node 1 started', 'system', 'info');
+        console.log('Blockchain node 1 started');
     } catch (error) {
-        addOutput('Error starting blockchain node 1: ' + error.message, 'system', 'error');
+        console.error('Error starting blockchain node 1:', error.message);
     }
 }
 
 async function startBlockchainNode2() {
     try {
-        addOutput('Starting blockchain node 2...', 'system', 'info');
+        console.log('Starting blockchain node 2...');
         await window.electronAPI.startBlockchainNode2();
-        addOutput('Blockchain node 2 started', 'system', 'info');
+        console.log('Blockchain node 2 started');
     } catch (error) {
-        addOutput('Error starting blockchain node 2: ' + error.message, 'system', 'error');
+        console.error('Error starting blockchain node 2:', error.message);
     }
 }
 
 async function stopBlockchainNode1() {
     try {
-        addOutput('Stopping blockchain node 1...', 'system', 'info');
+        console.log('Stopping blockchain node 1...');
         await window.electronAPI.stopBlockchainNode1();
-        addOutput('Blockchain node 1 stopped', 'system', 'info');
+        console.log('Blockchain node 1 stopped');
     } catch (error) {
-        addOutput('Error stopping blockchain node 1: ' + error.message, 'system', 'error');
+        console.error('Error stopping blockchain node 1:', error.message);
     }
 }
 
 async function stopBlockchainNode2() {
     try {
-        addOutput('Stopping blockchain node 2...', 'system', 'info');
+        console.log('Stopping blockchain node 2...');
         await window.electronAPI.stopBlockchainNode2();
-        addOutput('Blockchain node 2 stopped', 'system', 'info');
+        console.log('Blockchain node 2 stopped');
     } catch (error) {
-        addOutput('Error stopping blockchain node 2: ' + error.message, 'system', 'error');
+        console.error('Error stopping blockchain node 2:', error.message);
     }
 }
 
 async function stopBlockchainAll() {
     try {
-        addOutput('Stopping all blockchain nodes...', 'system', 'info');
+        console.log('Stopping all blockchain nodes...');
         await window.electronAPI.stopBlockchainAll();
         document.getElementById('blockchainStatus').textContent = 'Stopped';
         document.getElementById('blockchainStatus').className = 'status status-stopped';
         document.getElementById('stopBlockchainAllBtn').disabled = true;
-        addOutput('All blockchain nodes stopped', 'system', 'info');
+        console.log('All blockchain nodes stopped');
     } catch (error) {
-        addOutput('Error stopping blockchain: ' + error.message, 'system', 'error');
+        console.error('Error stopping blockchain:', error.message);
     }
 }
 
 async function compileContract() {
     try {
-        addOutput('Compiling smart contracts...', 'system', 'info');
+        console.log('Compiling smart contracts...');
         await window.electronAPI.compileContract();
-        addOutput('Smart contracts compiled successfully', 'system', 'info');
+        console.log('Smart contracts compiled successfully');
     } catch (error) {
-        addOutput('Error compiling contracts: ' + error.message, 'system', 'error');
+        console.error('Error compiling contracts:', error.message);
     }
 }
 
 async function deployContract() {
     try {
-        addOutput('Deploying smart contracts to blockchain...', 'system', 'info');
+        console.log('Deploying smart contracts to blockchain...');
         await window.electronAPI.deployContract();
-        addOutput('Smart contracts deployed successfully', 'system', 'info');
+        console.log('Smart contracts deployed successfully');
     } catch (error) {
-        addOutput('Error deploying contracts: ' + error.message, 'system', 'error');
+        console.error('Error deploying contracts:', error.message);
     }
 }
 
 async function startBackend() {
     try {
-        addOutput('Starting backend server...', 'system', 'info');
+        console.log('Starting backend server...');
         document.getElementById('backendStatus').textContent = 'Starting...';
         document.getElementById('backendStatus').className = 'status status-running';
         document.getElementById('stopBackendBtn').disabled = false;
         
         await window.electronAPI.startBackend();
         document.getElementById('backendStatus').textContent = 'Running';
-        addOutput('Backend server started successfully', 'system', 'info');
+        console.log('Backend server started successfully');
     } catch (error) {
         document.getElementById('backendStatus').textContent = 'Error';
         document.getElementById('backendStatus').className = 'status status-stopped';
         document.getElementById('stopBackendBtn').disabled = true;
-        addOutput('Error starting backend: ' + error.message, 'system', 'error');
+        console.error('Error starting backend:', error.message);
     }
 }
 
 async function stopBackend() {
     try {
-        addOutput('Stopping backend server...', 'system', 'info');
+        console.log('Stopping backend server...');
         await window.electronAPI.stopBackend();
         document.getElementById('backendStatus').textContent = 'Stopped';
         document.getElementById('backendStatus').className = 'status status-stopped';
         document.getElementById('stopBackendBtn').disabled = true;
-        addOutput('Backend server stopped', 'system', 'info');
+        console.log('Backend server stopped');
     } catch (error) {
-        addOutput('Error stopping backend: ' + error.message, 'system', 'error');
+        console.error('Error stopping backend:', error.message);
     }
 }
 
 async function startFrontend() {
     try {
-        addOutput('Starting frontend application...', 'system', 'info');
+        console.log('Starting frontend application...');
         document.getElementById('frontendStatus').textContent = 'Starting...';
         document.getElementById('frontendStatus').className = 'status status-running';
         document.getElementById('stopFrontendBtn').disabled = false;
@@ -513,26 +516,26 @@ async function startFrontend() {
         const result = await window.electronAPI.startFrontend(currentIP);
         document.getElementById('frontendStatus').textContent = 'Running';
         document.getElementById('openFrontendBtn').disabled = false;
-        addOutput('Frontend application started: ' + result.url, 'system', 'info');
+        console.log('Frontend application started: ' + result.url);
     } catch (error) {
         document.getElementById('frontendStatus').textContent = 'Error';
         document.getElementById('frontendStatus').className = 'status status-stopped';
         document.getElementById('stopFrontendBtn').disabled = true;
-        addOutput('Error starting frontend: ' + error.message, 'system', 'error');
+        console.error('Error starting frontend:', error.message);
     }
 }
 
 async function stopFrontend() {
     try {
-        addOutput('Stopping frontend application...', 'system', 'info');
+        console.log('Stopping frontend application...');
         await window.electronAPI.stopFrontend();
         document.getElementById('frontendStatus').textContent = 'Stopped';
         document.getElementById('frontendStatus').className = 'status status-stopped';
         document.getElementById('stopFrontendBtn').disabled = true;
         document.getElementById('openFrontendBtn').disabled = true;
-        addOutput('Frontend application stopped', 'system', 'info');
+        console.log('Frontend application stopped');
     } catch (error) {
-        addOutput('Error stopping frontend: ' + error.message, 'system', 'error');
+        console.error('Error stopping frontend:', error.message);
     }
 }
 
@@ -540,9 +543,9 @@ async function openFrontend() {
     try {
         const url = `http://${currentIP}:5173`;
         await window.electronAPI.openBrowser(url);
-        addOutput('Opened frontend in browser: ' + url, 'system', 'info');
+        console.log('Opened frontend in browser: ' + url);
     } catch (error) {
-        addOutput('Error opening browser: ' + error.message, 'system', 'error');
+        console.error('Error opening browser:', error.message);
     }
 }
 
@@ -628,38 +631,41 @@ async function openXamppControl() {
 }
 
 async function runAllSteps() {
-    const cleanBlockchain = document.getElementById('cleanBlockchain').checked;
+const cleanBlockchain = document.getElementById('cleanBlockchain').checked;
     
-    try {
-        addOutput('Starting complete system deployment...', 'system', 'info');
+try {
+addOutput('Starting complete system deployment...', 'system', 'info');
+    
+// Start XAMPP services first
+addOutput('Starting XAMPP services first...', 'system', 'info');
+await window.electronAPI.startApache();
+addOutput('Apache started, waiting 10 seconds...', 'system', 'info');
+await new Promise(resolve => setTimeout(resolve, 10000));
+    
+await window.electronAPI.startMysql();
+addOutput('MySQL started, waiting 10 seconds...', 'system', 'info');
+await new Promise(resolve => setTimeout(resolve, 10000));
+    
+// Continue with the rest of the deployment
+const result = await window.electronAPI.runAllSteps({ cleanBlockchain: cleanBlockchain });
+    
+if (result.success) {
+addOutput('Complete system deployed successfully!', 'system', 'info');
+document.getElementById('envStatus').textContent = 'Updated';
+document.getElementById('envStatus').className = 'status status-running';
+document.getElementById('blockchainStatus').textContent = 'Running';
+document.getElementById('backendStatus').textContent = 'Running';
+document.getElementById('frontendStatus').textContent = 'Running';
+document.getElementById('stopBlockchainAllBtn').disabled = false;
+document.getElementById('stopBackendBtn').disabled = false;
+document.getElementById('stopFrontendBtn').disabled = false;
+document.getElementById('openFrontendBtn').disabled = false;
         
-        // Start XAMPP services first
-        addOutput('Starting XAMPP services first...', 'system', 'info');
-        await window.electronAPI.startApache();
-        await window.electronAPI.startMysql();
-        addOutput('XAMPP services started, waiting 10 seconds...', 'system', 'info');
-        await new Promise(resolve => setTimeout(resolve, 10000));
-        
-        // Continue with the rest of the deployment
-        const result = await window.electronAPI.runAllSteps({ cleanBlockchain: cleanBlockchain });
-        
-        if (result.success) {
-            addOutput('Complete system deployed successfully!', 'system', 'info');
-            document.getElementById('envStatus').textContent = 'Updated';
-            document.getElementById('envStatus').className = 'status status-running';
-            document.getElementById('blockchainStatus').textContent = 'Running';
-            document.getElementById('backendStatus').textContent = 'Running';
-            document.getElementById('frontendStatus').textContent = 'Running';
-            document.getElementById('stopBlockchainAllBtn').disabled = false;
-            document.getElementById('stopBackendBtn').disabled = false;
-            document.getElementById('stopFrontendBtn').disabled = false;
-            document.getElementById('openFrontendBtn').disabled = false;
-            
-            setTimeout(() => openFrontend(), 2000);
-        } else {
-            addOutput('System deployment failed: ' + result.error, 'system', 'error');
-        }
-    } catch (error) {
-        addOutput('Error running complete deployment: ' + error.message, 'system', 'error');
-    }
+setTimeout(() => openFrontend(), 2000);
+} else {
+addOutput('System deployment failed: ' + result.error, 'system', 'error');
+}
+} catch (error) {
+addOutput('Error running complete deployment: ' + error.message, 'system', 'error');
+}
 }

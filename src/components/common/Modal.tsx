@@ -51,6 +51,15 @@ export const Modal: React.FC<ModalProps> = ({
     fullscreen: 'max-w-full mx-4 h-[95vh]'
   };
 
+  // Mobile-aware positioning to avoid bottom navigation
+  const getPositionClasses = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      // On mobile, position modal to avoid bottom navigation
+      return 'items-end justify-center pb-20'; // Add padding for bottom nav
+    }
+    return 'items-center justify-center';
+  };
+
   const handleOverlayClick = () => {
     if (closeOnOverlayClick) {
       onClose();
@@ -59,14 +68,16 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity duration-200"
+      className={`fixed inset-0 z-[60] flex ${getPositionClasses()} p-4 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity duration-200`}
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
     >
       <div 
-        className={`bg-white rounded-lg shadow-xl w-full ${sizeClasses[size]} transition-all duration-200 transform animate-fadeInUp`}
+        className={`bg-white rounded-lg shadow-xl w-full ${sizeClasses[size]} transition-all duration-200 transform animate-fadeInUp ${
+          typeof window !== 'undefined' && window.innerWidth < 1024 ? 'mb-4' : ''
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -86,7 +97,7 @@ export const Modal: React.FC<ModalProps> = ({
             </button>
           )}
         </div>
-        <div className="p-6 max-h-[70vh] overflow-y-auto">
+        <div className="p-6 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto">
           {children}
         </div>
       </div>

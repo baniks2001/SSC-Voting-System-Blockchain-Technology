@@ -825,15 +825,51 @@ export const Dashboard: React.FC = () => {
       await api.delete(`/poll/elections/${electionToDelete.id}`);
       addNotification('Election record deleted successfully', 'success');
       await fetchElectionHistory();
+      // Close modal immediately after successful deletion
       setShowDeleteModal(false);
       setElectionToDelete(null);
     } catch (error) {
       console.error('Delete election record error:', error);
       addNotification('Failed to delete election record', 'error');
+      // Don't close modal on error to allow user to try again
     } finally {
       setDeletingElection(false);
     }
   }, [electionToDelete, fetchElectionHistory, addNotification]);
+
+  // ESC key handler to close modals
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        // Close delete modal first (highest priority)
+        if (showDeleteModal) {
+          setShowDeleteModal(false);
+          setElectionToDelete(null);
+          return; // Don't close other modals
+        }
+        // Then close other modals
+        if (showFinishPollForm) {
+          setShowFinishPollForm(false);
+        }
+        if (showPasswordModal) {
+          setShowPasswordModal(false);
+          setSuperAdminPassword('');
+        }
+        if (showResultModal) {
+          setShowResultModal(false);
+        }
+        if (showElectionHistory) {
+          setShowElectionHistory(false);
+        }
+        if (showElectionDetails) {
+          setShowElectionDetails(false);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [showDeleteModal, showFinishPollForm, showPasswordModal, showResultModal, showElectionHistory, showElectionDetails]);
 
   // Super admin authentication function
   const authenticateSuperAdmin = useCallback(async (password: string) => {
@@ -1136,18 +1172,39 @@ export const Dashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* NEW: Delete Confirmation Mini Modal - Higher z-index */}
+      {/* Delete Confirmation Mini Modal - Overlay on top of Election History */}
       {showDeleteModal && electionToDelete && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-200 animate-scaleIn">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-rose-100 rounded-xl">
-                <AlertCircle className="w-6 h-6 text-rose-600" />
+        <div 
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[70] p-4 lg:items-center lg:justify-center items-end justify-center pb-20"
+          onClick={() => {
+            setShowDeleteModal(false);
+            setElectionToDelete(null);
+          }}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 animate-scaleIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-rose-100 rounded-xl">
+                  <AlertCircle className="w-6 h-6 text-rose-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Delete Election Record</h3>
+                  <p className="text-gray-600 text-sm">This action cannot be undone.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Delete Election Record</h3>
-                <p className="text-gray-600 text-sm">This action cannot be undone.</p>
-              </div>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setElectionToDelete(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                disabled={deletingElection}
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
             </div>
 
             <div className="mb-6">
@@ -1203,7 +1260,7 @@ export const Dashboard: React.FC = () => {
 
       {/* Finish Poll Form Modal */}
       {showFinishPollForm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4 lg:items-center lg:justify-center items-end justify-center pb-20">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-200">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-gray-900">Finish Election</h3>
@@ -1302,7 +1359,7 @@ export const Dashboard: React.FC = () => {
 
       {/* Super Admin Password Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4 lg:items-center lg:justify-center items-end justify-center pb-20">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-200">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center space-x-3">
@@ -1402,7 +1459,7 @@ export const Dashboard: React.FC = () => {
 
       {/* Finish Election Result Modal */}
       {showResultModal && finishResult && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[90] p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4 lg:items-center lg:justify-center items-end justify-center pb-20">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-200 animate-scaleIn">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center space-x-3">
@@ -1539,7 +1596,7 @@ export const Dashboard: React.FC = () => {
       )}
 
       {showElectionHistory && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-0 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-0 sm:p-4 overflow-y-auto lg:items-center lg:justify-center items-end justify-start">
           {/* Modal Container */}
           <div className="w-full h-full sm:w-full sm:max-w-6xl sm:max-h-[90vh] sm:rounded-2xl bg-white border border-gray-200 shadow-xl flex flex-col">
             {/* Header - Fixed for mobile */}
@@ -1726,7 +1783,7 @@ export const Dashboard: React.FC = () => {
       )}
       
       {showElectionDetails && selectedElection && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[70] p-0 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-0 sm:p-4 overflow-y-auto lg:items-center lg:justify-center items-end justify-start">
           <div className="w-full h-full sm:w-full sm:max-w-4xl sm:max-h-[90vh] sm:rounded-2xl bg-white border border-gray-200 shadow-xl flex flex-col">
             <div className="p-4 sm:p-6 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
               <div className="flex justify-between items-center">
