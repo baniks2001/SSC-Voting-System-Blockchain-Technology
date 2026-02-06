@@ -22,7 +22,7 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { showToast } = useToast();
-  useAuth();
+  const { user } = useAuth();
 
   // Check for receipt persistence on component mount
   useEffect(() => {
@@ -113,14 +113,23 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
         // Handle undefined display_order values
         const aOrder = a.display_order ?? 0;
         const bOrder = b.display_order ?? 0;
-        
         if (aOrder !== bOrder) {
           return aOrder - bOrder;
         }
         return a.name.localeCompare(b.name);
       });
 
-      setPositions(sortedPositions);
+      // Filter positions based on user's course
+      const filteredPositions = sortedPositions.filter((position: Position) => {
+        // If position has no course restrictions, show it to everyone
+        if (!position.allowed_courses || position.allowed_courses.length === 0) {
+          return true;
+        }
+        // If position has course restrictions, only show to users from allowed courses
+        return position.allowed_courses.includes(user?.course || '');
+      });
+
+      setPositions(filteredPositions);
     } catch (error: any) {
       showToast('error', 'Failed to load voting data');
     } finally {

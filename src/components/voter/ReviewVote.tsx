@@ -722,10 +722,10 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
                   <h4 className="text-xs font-semibold text-gray-600 mb-3">VOTE SUMMARY</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-xs text-gray-500">Total Candidates:</span>
+                      <span className="text-xs text-gray-500">Total Voted Candidates:</span>
                       <span className="text-xs font-medium text-gray-900">{totalSelectedCandidates}</span>
                     </div>
-                    {blockchainReceipt.emptyPositions && blockchainReceipt.emptyPositions > 0 && (
+                    {blockchainReceipt.emptyPositions > 0 && (
                       <div className="mt-2 pt-2 border-t border-gray-200">
                         <p className="text-xs text-blue-600">
                           Note: {blockchainReceipt.emptyPositions} position(s) were left empty

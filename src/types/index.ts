@@ -36,6 +36,7 @@ export interface Position {
   maxVotes: number;
   order: number;
   is_active?: boolean;
+  allowed_courses?: string[]; // Array of course names that can vote for this position
   created_at?: string;
   updated_at?: string;
   display_order?: number;

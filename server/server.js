@@ -64,9 +64,12 @@ const PORT = process.env.SERVER_PORT || 5000;
 
 // Cluster setup for handling high load
 const numCPUs = os.cpus().length;
-const isMaster = cluster.isMaster;
+const isMaster = cluster.isPrimary || cluster.isMaster;
 
-if (isMaster) {
+// Temporarily disable cluster for debugging
+const DEBUG_NO_CLUSTER = true;
+
+if (isMaster && !DEBUG_NO_CLUSTER) {
     console.log(`🚀 Master ${process.pid} is running`);
     console.log(`🖥️ Starting ${numCPUs} worker processes`);
     
@@ -164,6 +167,22 @@ if (isMaster) {
     app.use('/api/courses', coursesRoutes);
     app.use('/api/blockchain', blockchainRoutes);
     app.use('/api/positions', positionsRoutes);
+
+    // Error handling middleware (required for Express 5)
+    app.use((err, req, res, next) => {
+        console.error('❌ Server Error:', err);
+        
+        if (res.headersSent) {
+            return next(err);
+        }
+        
+        res.status(err.status || 500).json({
+            status: 'ERROR',
+            message: err.message || 'Internal Server Error',
+            timestamp: new Date().toISOString(),
+            ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+        });
+    });
 
     // Enhanced health check with database status and performance metrics
     app.get('/api/health', async (req, res) => {

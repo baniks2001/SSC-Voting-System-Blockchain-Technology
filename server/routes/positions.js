@@ -12,7 +12,14 @@ router.get('/', async (req, res) => {
       SELECT * FROM positions 
       ORDER BY display_order ASC
     `);
-    res.json(positions);
+    
+    // Parse allowed_courses JSON for each position
+    const positionsWithParsedCourses = positions.map(position => ({
+      ...position,
+      allowed_courses: position.allowed_courses ? JSON.parse(position.allowed_courses) : []
+    }));
+    
+    res.json(positionsWithParsedCourses);
   } catch (error) {
     console.error('Error fetching positions:', error);
     res.status(500).json({ error: 'Failed to fetch positions' });
@@ -27,7 +34,14 @@ router.get('/active', async (req, res) => {
       WHERE is_active = true 
       ORDER BY display_order ASC
     `);
-    res.json(positions);
+    
+    // Parse allowed_courses JSON for each position
+    const positionsWithParsedCourses = positions.map(position => ({
+      ...position,
+      allowed_courses: position.allowed_courses ? JSON.parse(position.allowed_courses) : []
+    }));
+    
+    res.json(positionsWithParsedCourses);
   } catch (error) {
     console.error('Error fetching active positions:', error);
     res.status(500).json({ error: 'Failed to fetch active positions' });
@@ -38,7 +52,7 @@ router.get('/active', async (req, res) => {
 router.post('/', authenticateAdmin, async (req, res) => { // ADDED: authenticateAdmin
   try {
     console.log('➕ Creating new position:', req.body.name, 'by admin:', req.user.email || req.user.id);
-    const { name, maxVotes, order } = req.body;
+    const { name, maxVotes, order, allowed_courses } = req.body;
     
     // Validate required fields
     if (!name || !maxVotes) {
@@ -46,9 +60,9 @@ router.post('/', authenticateAdmin, async (req, res) => { // ADDED: authenticate
     }
     
     const result = await query(`
-      INSERT INTO positions (name, max_votes, display_order, is_active) 
-      VALUES (?, ?, ?, ?)
-    `, [name, maxVotes, order || 0, true]);
+      INSERT INTO positions (name, max_votes, display_order, is_active, allowed_courses) 
+      VALUES (?, ?, ?, ?, ?)
+    `, [name, maxVotes, order || 0, true, allowed_courses ? JSON.stringify(allowed_courses) : null]);
     
     const position = await query('SELECT * FROM positions WHERE id = ?', [result.insertId]);
     
@@ -70,7 +84,7 @@ router.put('/:id', authenticateAdmin, async (req, res) => { // ADDED: authentica
   try {
     console.log('✏️ Updating position ID:', req.params.id, 'by admin:', req.user.email || req.user.id);
     const { id } = req.params;
-    const { name, maxVotes, order, is_active } = req.body;
+    const { name, maxVotes, order, is_active, allowed_courses } = req.body;
     
     // Check if position exists
     const existingPosition = await query('SELECT * FROM positions WHERE id = ?', [id]);
@@ -80,9 +94,9 @@ router.put('/:id', authenticateAdmin, async (req, res) => { // ADDED: authentica
     
     await query(`
       UPDATE positions 
-      SET name = ?, max_votes = ?, display_order = ?, is_active = ?
+      SET name = ?, max_votes = ?, display_order = ?, is_active = ?, allowed_courses = ?
       WHERE id = ?
-    `, [name, maxVotes, order, is_active, id]);
+    `, [name, maxVotes, order, is_active, allowed_courses ? JSON.stringify(allowed_courses) : null, id]);
     
     const position = await query('SELECT * FROM positions WHERE id = ?', [id]);
     

@@ -74,8 +74,11 @@ export const CandidateManagement: React.FC = () => {
     name: '',
     maxVotes: 1,
     order: 0,
-    is_active: true
+    is_active: true,
+    allowed_courses: [] as string[]
   });
+
+  const [courses, setCourses] = useState<string[]>([]);
 
   // Add state for duplicate name validation
   const [duplicateNameError, setDuplicateNameError] = useState('');
@@ -236,10 +239,19 @@ export const CandidateManagement: React.FC = () => {
     fetchData();
   }, []);
 
+  const fetchCourses = async () => {
+    try {
+      const response = await api.get('/courses');
+      setCourses(response.map((course: any) => course.name));
+    } catch (error: any) {
+      console.error('Failed to fetch courses:', error);
+    }
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
-      await Promise.all([fetchCandidates(), fetchPositions()]);
+      await Promise.all([fetchCandidates(), fetchPositions(), fetchCourses()]);
     } catch (error: any) {
       console.error('Failed to fetch data:', error);
     } finally {
@@ -396,7 +408,8 @@ export const CandidateManagement: React.FC = () => {
         name: positionFormData.name,
         maxVotes: maxVotes,
         order: positionFormData.order,
-        is_active: positionFormData.is_active
+        is_active: positionFormData.is_active,
+        allowed_courses: positionFormData.allowed_courses
       };
 
       if (editingPosition) {
@@ -454,7 +467,8 @@ export const CandidateManagement: React.FC = () => {
       name: position.name,
       maxVotes: position.maxVotes || 1,
       order: position.order || 0,
-      is_active: position.is_active ?? true
+      is_active: position.is_active ?? true,
+      allowed_courses: position.allowed_courses || []
     });
     setShowPositionModal(true);
   };
@@ -535,7 +549,8 @@ export const CandidateManagement: React.FC = () => {
       name: '',
       maxVotes: 1,
       order: 0,
-      is_active: true
+      is_active: true,
+      allowed_courses: []
     });
     setEditingPosition(null);
   };
@@ -1247,6 +1262,41 @@ export const CandidateManagement: React.FC = () => {
             />
             <p className="text-sm text-gray-600 mt-1">
               Lower numbers appear first in the voting interface
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Users className="w-4 h-4 inline mr-2" />
+              Eligible Courses
+            </label>
+            <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3">
+              {courses.map((course) => (
+                <label key={course} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                  <input
+                    type="checkbox"
+                    checked={positionFormData.allowed_courses.includes(course)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setPositionFormData({
+                          ...positionFormData,
+                          allowed_courses: [...positionFormData.allowed_courses, course]
+                        });
+                      } else {
+                        setPositionFormData({
+                          ...positionFormData,
+                          allowed_courses: positionFormData.allowed_courses.filter(c => c !== course)
+                        });
+                      }
+                    }}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">{course}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-sm text-gray-600 mt-1">
+              Select courses that can vote for this position. Leave empty to allow all courses.
             </p>
           </div>
 
