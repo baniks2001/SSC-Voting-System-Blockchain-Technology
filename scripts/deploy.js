@@ -14,7 +14,7 @@ const ARTIFACTS_PATH = path.resolve(__dirname, '../artifacts/Voting.json');
 async function deployToBothNodes() {
     try {
         console.log('🚀 Starting dual-node contract deployment...');
-        console.log('🔧 Development Mode: Deploying to both nodes independently');
+        console.log('🔧 Using development mode with auto-unlocked accounts');
         
         const web3Node1 = new Web3(NODE1_URL);
         const web3Node2 = new Web3(NODE2_URL);
@@ -29,12 +29,15 @@ async function deployToBothNodes() {
         const accountsNode1 = await web3Node1.eth.getAccounts();
         const accountsNode2 = await web3Node2.eth.getAccounts();
         
-        console.log('📊 Node 1 available accounts:', accountsNode1.length);
+        console.log('� Node 1 available accounts:', accountsNode1.length);
         console.log('📊 Node 2 available accounts:', accountsNode2.length);
         
         // Display all accounts for debugging
-        console.log('🔍 Node 1 accounts:', accountsNode1);
-        console.log('🔍 Node 2 accounts:', accountsNode2);
+        console.log('� Node 1 accounts:', accountsNode1);
+        console.log('� Node 2 accounts:', accountsNode2);
+        
+        // In development mode, accounts should be auto-unlocked
+        console.log('� Development mode - accounts should be auto-unlocked');
         
         // Strategy: Use different account indices
         let NODE1_ACCOUNT = accountsNode1[0];

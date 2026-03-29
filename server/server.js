@@ -62,31 +62,36 @@ import { testConnection, cleanupPool } from './config/database.js';
 const app = express();
 const PORT = process.env.SERVER_PORT || 5000;
 
-// Cluster setup for handling high load
+// Cluster setup for handling massive load
 const numCPUs = os.cpus().length;
 const isMaster = cluster.isPrimary || cluster.isMaster;
 
-// Temporarily disable cluster for debugging
-const DEBUG_NO_CLUSTER = true;
+// Enable cluster mode for maximum performance
+const DEBUG_NO_CLUSTER = false;
 
 if (isMaster && !DEBUG_NO_CLUSTER) {
     console.log(`🚀 Master ${process.pid} is running`);
-    console.log(`🖥️ Starting ${numCPUs} worker processes`);
+    console.log(`🖥️ Starting ${numCPUs} worker processes for maximum performance`);
     
-    // Fork workers
+    // Fork workers for high performance
     for (let i = 0; i < numCPUs; i++) {
         cluster.fork();
     }
     
     cluster.on('exit', (worker, code, signal) => {
         console.log(`⚠️ Worker ${worker.process.pid} died with code ${code} and signal ${signal}`);
-        console.log('🔄 Starting a new worker');
+        console.log('🔄 Restarting worker for high availability');
         cluster.fork();
     });
     
+    // Monitor cluster performance
+    cluster.on('listening', (worker, address) => {
+        console.log(`🔧 Worker ${worker.process.pid} listening on ${address.address}:${address.port}`);
+    });
+    
 } else {
-    // Worker process
-    console.log(`🔧 Worker ${process.pid} started`);
+    // Worker process optimized for high performance
+    console.log(`🔧 Worker ${process.pid} started for high performance`);
     
     // Performance optimization: Disable x-powered-by
     app.disable('x-powered-by');
@@ -107,9 +112,42 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
         maxAge: 3600
     }));
 
-    // Rate limiting removed for unlimited connections
+    // Rate limiting optimized for massive load
+    const globalLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 5000, // Increased to 5000 requests per window
+        message: {
+            error: 'Too many requests from this IP, please try again later.',
+            retryAfter: '15 minutes'
+        },
+        standardHeaders: true,
+        legacyHeaders: false,
+        // Skip rate limiting for health checks and blockchain status
+        skip: (req) => {
+            return req.path === '/api/health' || 
+                   req.path === '/api/blockchain-status' ||
+                   req.path === '/' ||
+                   req.method === 'OPTIONS';
+        }
+    });
 
-    // Voting rate limiting removed
+    app.use(globalLimiter);
+
+    // Voting-specific rate limiting for high load
+    const votingLimiter = rateLimit({
+        windowMs: 60 * 1000, // 1 minute
+        max: 1000, // Increased to 1000 votes per minute per IP
+        message: {
+            error: 'Too many vote attempts, please try again later.',
+            retryAfter: '1 minute'
+        },
+        standardHeaders: true,
+        legacyHeaders: false
+    });
+
+    // Apply voting limiter only to vote submission endpoints
+    app.use('/api/voting/cast', votingLimiter);
+    app.use('/api/voting/cast-blockchain', votingLimiter);
 
     // Body parser with optimized settings for high load
     app.use(express.json({
@@ -132,7 +170,7 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
         parameterLimit: 100 // Increased for complex forms
     }));
 
-    // Optimized request timeout middleware
+    // Optimized request timeout middleware for high load
     app.use((req, res, next) => {
         const timeout = setTimeout(() => {
             if (!res.headersSent) {
@@ -147,6 +185,13 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
             originalEnd.apply(this, args);
         };
 
+        next();
+    });
+
+    // Enhanced connection handling for high load
+    app.use((req, res, next) => {
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('Keep-Alive', 'timeout=60, max=1000');
         next();
     });
 
@@ -213,8 +258,8 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
                     environment: process.env.NODE_ENV || 'development',
                     contractAddress: process.env.VOTING_CONTRACT_ADDRESS,
                     serverPort: PORT,
-                    maxRequests: 'unlimited',
-                    rateLimitWindow: 'disabled'
+                    maxRequests: '5000 per 15 minutes',
+                    rateLimitWindow: '15 minutes'
                 }
             });
         } catch (error) {
@@ -234,8 +279,8 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
             version: '2.0.0',
             timestamp: new Date().toISOString(),
             performance: {
-                maxRequests: 'unlimited',
-                rateLimitWindow: 'disabled',
+                maxRequests: '5000 per 15 minutes',
+                rateLimitWindow: '15 minutes',
                 clusterMode: true,
                 workers: numCPUs
             },
@@ -421,8 +466,8 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
                 console.log(`💾 Worker ${process.pid} Memory: ${usedMB}MB / ${totalMB}MB`);
             }
             
-            // Warning threshold
-            if (usedMB > 500) {
+            // Warning threshold increased for high load
+            if (usedMB > 800) {
                 console.warn('🚨 High memory usage detected in worker', process.pid);
                 if (global.gc) {
                     console.log('🔄 Forcing garbage collection');
@@ -431,7 +476,7 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
             }
             
             // Check for memory leaks (continuously increasing memory)
-            if (usedMB > 1000) {
+            if (usedMB > 1500) {
                 console.error('🚨 CRITICAL: Very high memory usage in worker', process.pid, 'possible memory leak');
             }
         }, 30000); // Check every 30 seconds for better performance
@@ -466,8 +511,9 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
                 console.log(`📝 Contract Address: ${process.env.VOTING_CONTRACT_ADDRESS || 'Not configured'}`);
                 console.log(`🔗 Node 1: ${process.env.ETHEREUM_NODE1_URL || 'http://localhost:8545'}`);
                 console.log(`🔗 Node 2: ${process.env.ETHEREUM_NODE2_URL || 'http://localhost:8547'}`);
-                console.log(`⚡ Performance: Unlimited requests`);
-                console.log(`🖥️ Cluster Mode: ${numCPUs} workers active`);
+                console.log(`⚡ Performance: 5000 requests per 15 minutes`);
+                console.log(`🖥️ Cluster Mode: ${numCPUs} workers active for maximum performance`);
+                console.log(`🔧 Database Pool: ${optimalConnectionLimit} connections, ${optimalQueueLimit} queue limit`);
 
                 // Initialize blockchain service
                 import('./services/ethereumService.js')

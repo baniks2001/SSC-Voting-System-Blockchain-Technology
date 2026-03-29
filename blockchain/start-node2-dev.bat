@@ -1,15 +1,15 @@
 @echo off
-title Ethereum Node 2 - Port 8547 (PEER - PERSISTENT)
+title Ethereum Node 2 - Port 8547 (PEER - DEV MODE)
 echo ========================================
-echo NODE 2 - ETHEREUM NODE (PEER - PERSISTENT)
+echo NODE 2 - ETHEREUM NODE (PEER - DEV MODE)
 echo ========================================
 echo.
 echo Geth Version: 1.16.5 Compatible
-echo Network: Persistent Development (Chain ID: 1337)
-echo Storage: Persistent on disk
+echo Network: Development Mode (Chain ID: 1337)
+echo Storage: In-memory development
 echo Ports: HTTP 8547, WS 8548, Auth 8552
 echo.
-echo Starting Node 2 as PEER with persistent storage...
+echo Starting Node 2 as PEER in development mode...
 echo.
 
 if not exist "node2" mkdir node2
@@ -28,15 +28,16 @@ if not exist "node2\geth\chaindata" (
     echo ✅ Node 2 already has blockchain data
 )
 
-echo [START] Launching Geth for Node 2 as PEER...
+echo [START] Launching Geth for Node 2 as PEER in DEV mode...
 echo.
 
 geth --datadir node2 ^
+--networkid 1337 ^
 --http ^
 --http.port 8547 ^
 --http.addr 0.0.0.0 ^
 --http.corsdomain "*" ^
---http.api "eth,net,web3,personal,debug,admin" ^
+--http.api "web3,eth,net,admin,debug,txpool,personal,engine" ^
 --ws ^
 --ws.port 8548 ^
 --ws.addr 0.0.0.0 ^

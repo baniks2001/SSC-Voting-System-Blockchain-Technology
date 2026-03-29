@@ -1,15 +1,15 @@
 @echo off
-title Ethereum Node 1 - Port 8545 (MASTER - PERSISTENT)
+title Ethereum Node 1 - Port 8545 (MASTER - DEV MODE)
 echo ========================================
-echo NODE 1 - ETHEREUM NODE (MASTER - PERSISTENT)
+echo NODE 1 - ETHEREUM NODE (MASTER - DEV MODE)
 echo ========================================
 echo.
 echo Geth Version: 1.16.5 Compatible
-echo Network: Persistent Development (Chain ID: 1337)
-echo Storage: Persistent on disk
+echo Network: Development Mode (Chain ID: 1337)
+echo Storage: In-memory development
 echo Ports: HTTP 8545, WS 8546, Auth 8551
 echo.
-echo Starting Node 1 as MASTER node with persistent storage...
+echo Starting Node 1 as MASTER node in development mode...
 echo.
 
 if not exist "node1" mkdir node1
@@ -28,15 +28,16 @@ if not exist "node1\geth\chaindata" (
     echo ✅ Node 1 already has blockchain data
 )
 
-echo [START] Launching Geth for Node 1 as MASTER...
+echo [START] Launching Geth for Node 1 as MASTER in DEV mode...
 echo.
 
 geth --datadir node1 ^
+--networkid 1337 ^
 --http ^
 --http.port 8545 ^
 --http.addr 0.0.0.0 ^
 --http.corsdomain "*" ^
---http.api "eth,net,web3,personal,debug,admin" ^
+--http.api "web3,eth,net,admin,debug,txpool,personal,engine" ^
 --ws ^
 --ws.port 8546 ^
 --ws.addr 0.0.0.0 ^

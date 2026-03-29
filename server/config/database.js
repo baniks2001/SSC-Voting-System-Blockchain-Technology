@@ -5,9 +5,10 @@ import os from 'os';
 
 dotenv.config();
 
-// Calculate optimal connection limit based on CPU cores
+// Calculate optimal connection limit based on CPU cores for high performance
 const cpuCores = os.cpus().length;
-const optimalConnectionLimit = Math.min(50, cpuCores * 10); // Max 50 connections
+const optimalConnectionLimit = Math.min(2000, cpuCores * 100); // Max 2000 connections for high load
+const optimalQueueLimit = Math.min(20000, cpuCores * 1000); // Max 20000 queue for high load
 
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
@@ -18,18 +19,18 @@ const dbConfig = {
   charset: 'utf8mb4',
   timezone: '+00:00',
   
-  // Performance-optimized connection pool
+  // Ultra high-performance connection pool for massive load
   waitForConnections: true,
   connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || optimalConnectionLimit,
-  queueLimit: parseInt(process.env.DB_QUEUE_LIMIT) || 100,
-  idleTimeout: 60000, // 1 minute
-  maxIdle: parseInt(process.env.DB_MAX_IDLE) || 15, // Keep more idle connections
+  queueLimit: parseInt(process.env.DB_QUEUE_LIMIT) || optimalQueueLimit,
+  idleTimeout: 10000, // Reduced to 10s for faster recycling
+  maxIdle: parseInt(process.env.DB_MAX_IDLE) || Math.max(300, cpuCores * 10), // Keep many idle connections for high performance
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000, // 10 seconds
   
-  // MySQL-specific performance optimizations
-  acquireTimeout: 30000, // Valid in mysql2
-  timeout: 60000, // Valid in mysql2
+  // MySQL-specific performance optimizations for massive load
+  acquireTimeout: 60000, // Increased for high load
+  timeout: 120000, // Increased for high load
   decimalNumbers: true, // Better decimal handling
   typeCast: true, // Better type casting
   
@@ -43,7 +44,7 @@ export const pool = mysql.createPool(dbConfig);
 // Enhanced connection tracking
 let activeConnections = 0;
 let totalQueries = 0;
-const maxConnectionsWarning = Math.floor(dbConfig.connectionLimit * 0.8); // 80% of max
+const maxConnectionsWarning = Math.floor(dbConfig.connectionLimit * 0.9); // 90% of max for early warning
 
 console.log(`🔧 Database pool configured: ${dbConfig.connectionLimit} max connections`);
 
