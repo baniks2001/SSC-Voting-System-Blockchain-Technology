@@ -83,6 +83,8 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
   const { showToast } = useToast();
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'super_admin';
+  const isPollMonitor = user?.role === 'poll_monitor';
+  const isAdmin = user?.role === 'admin';
 
   const checkBlockchainStatus = useCallback(async (): Promise<boolean> => {
     try {
@@ -661,15 +663,31 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
     );
   };
 
-  // Get election state indicator
+  // Get election state indicator based on poll settings
   const getElectionStateIcon = () => {
-    const status = blockchainStatus?.electionState?.status;
-    switch (status) {
-      case 'voting': return { icon: Activity, color: 'text-emerald-500', text: 'Voting Active' };
-      case 'paused': return { icon: PauseCircle, color: 'text-amber-500', text: 'Paused' };
-      case 'finished': return { icon: Shield, color: 'text-rose-500', text: 'Finished' };
-      default: return { icon: AlertTriangle, color: 'text-gray-500', text: 'Not Started' };
+    // Use poll settings for status instead of blockchain election state
+    if (!pollSettings) {
+      return { icon: AlertTriangle, color: 'text-gray-500', text: 'Loading...' };
     }
+
+    if (!pollSettings.is_active) {
+      return { icon: AlertTriangle, color: 'text-gray-500', text: 'Not Started' };
+    }
+
+    if (pollSettings.is_paused) {
+      return { icon: PauseCircle, color: 'text-amber-500', text: 'Paused' };
+    }
+
+    // Check if poll is finished by checking if end_time has passed
+    if (pollSettings.end_time) {
+      const endTime = new Date(pollSettings.end_time);
+      const now = new Date();
+      if (endTime < now) {
+        return { icon: Shield, color: 'text-rose-500', text: 'Finished' };
+      }
+    }
+
+    return { icon: Activity, color: 'text-emerald-500', text: 'Voting Active' };
   };
 
   if (loading) {
@@ -688,43 +706,70 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
   // Mobile-optimized ControlButtons component
   const ControlButtons = () => (
     <div className="flex flex-wrap gap-2">
-      {isSuperAdmin && (
+      {isPollMonitor && (
         <button
-          onClick={exportVotes}
-          className="flex items-center gap-2 px-3 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors min-w-[100px] justify-center"
+          onClick={toggleFullscreen}
+          className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors min-w-[100px] justify-center"
         >
-          <Download className="w-4 h-4" />
-          <span className="hidden sm:inline">Export</span>
+          {isFullscreen ? (
+            <>
+              <Minimize className="w-4 h-4" />
+              <span className="hidden sm:inline">Exit</span>
+            </>
+          ) : (
+            <>
+              <Maximize className="w-4 h-4" />
+              <span className="hidden sm:inline">Fullscreen</span>
+            </>
+          )}
         </button>
       )}
+      
+      {!isPollMonitor && (
+        <>
+          {isSuperAdmin && (
+            <button
+              onClick={exportVotes}
+              className="flex items-center gap-2 px-3 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors min-w-[100px] justify-center"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export</span>
+            </button>
+          )}
 
-      <label className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors min-w-[120px] justify-center">
-        <input
-          type="checkbox"
-          checked={autoRefresh}
-          onChange={(e) => setAutoRefresh(e.target.checked)}
-          className="rounded text-blue-500 focus:ring-blue-500"
-          disabled={isReadOnly}
-        />
-        <span className="hidden sm:inline">Auto-refresh</span>
-      </label>
+          {(isAdmin || isSuperAdmin) && (
+            <label className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors min-w-[120px] justify-center">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="rounded text-blue-500 focus:ring-blue-500"
+                disabled={isReadOnly}
+              />
+              <span className="hidden sm:inline">Auto-refresh</span>
+            </label>
+          )}
 
-      <button
-        onClick={toggleFullscreen}
-        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors min-w-[100px] justify-center"
-      >
-        {isFullscreen ? (
-          <>
-            <Minimize className="w-4 h-4" />
-            <span className="hidden sm:inline">Exit</span>
-          </>
-        ) : (
-          <>
-            <Maximize className="w-4 h-4" />
-            <span className="hidden sm:inline">Fullscreen</span>
-          </>
-        )}
-      </button>
+          {(isAdmin || isSuperAdmin) && (
+            <button
+              onClick={toggleFullscreen}
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors min-w-[100px] justify-center"
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize className="w-4 h-4" />
+                  <span className="hidden sm:inline">Exit</span>
+                </>
+              ) : (
+                <>
+                  <Maximize className="w-4 h-4" />
+                  <span className="hidden sm:inline">Fullscreen</span>
+                </>
+              )}
+            </button>
+          )}
+        </>
+      )}
     </div>
   );
 
@@ -837,24 +882,36 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
             {/* Desktop Controls */}
             <div className="hidden lg:flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <StatusPill
-                  icon={electionStateInfo.icon}
-                  text={electionStateInfo.text}
-                  variant={blockchainStatus?.electionState?.status === 'voting' ? 'success' : 
-                         blockchainStatus?.electionState?.status === 'paused' ? 'warning' : 
-                         blockchainStatus?.electionState?.status === 'finished' ? 'error' : 'default'}
-                />
-                <StatusPill
-                  icon={Shield}
-                  text={blockchainStatus?.isConnected ? 'Blockchain Online' : 'Blockchain Offline'}
-                  variant={blockchainStatus?.isConnected ? 'success' : 'error'}
-                />
-                <StatusPill
-                  icon={Server}
-                  text={`${blockchainStatus?.connectedNodes || 0}/${blockchainStatus?.totalNodes || 0} Nodes Connected`}
-                  variant={blockchainStatus?.connectedNodes === blockchainStatus?.totalNodes ? 'success' : 
-                         blockchainStatus?.connectedNodes === 0 ? 'error' : 'warning'}
-                />
+                {isPollMonitor ? (
+                  <StatusPill
+                    icon={electionStateInfo.icon}
+                    text={electionStateInfo.text}
+                    variant={pollSettings?.is_active && !pollSettings?.is_paused && (pollSettings?.end_time === null || new Date(pollSettings.end_time) > new Date()) ? 'success' : 
+                           pollSettings?.is_paused ? 'warning' : 
+                           (pollSettings?.end_time && new Date(pollSettings.end_time) < new Date()) ? 'error' : 'default'}
+                  />
+                ) : (
+                  <>
+                    <StatusPill
+                      icon={electionStateInfo.icon}
+                      text={electionStateInfo.text}
+                      variant={pollSettings?.is_active && !pollSettings?.is_paused && (pollSettings?.end_time === null || new Date(pollSettings.end_time) > new Date()) ? 'success' : 
+                             pollSettings?.is_paused ? 'warning' : 
+                             (pollSettings?.end_time && new Date(pollSettings.end_time) < new Date()) ? 'error' : 'default'}
+                    />
+                    <StatusPill
+                      icon={Shield}
+                      text={blockchainStatus?.isConnected ? 'Blockchain Online' : 'Blockchain Offline'}
+                      variant={blockchainStatus?.isConnected ? 'success' : 'error'}
+                    />
+                    <StatusPill
+                      icon={Server}
+                      text={`${blockchainStatus?.connectedNodes || 0}/${blockchainStatus?.totalNodes || 0} Nodes Connected`}
+                      variant={blockchainStatus?.connectedNodes === blockchainStatus?.totalNodes ? 'success' : 
+                             blockchainStatus?.connectedNodes === 0 ? 'error' : 'warning'}
+                    />
+                  </>
+                )}
               </div>
               <ControlButtons />
             </div>
@@ -864,24 +921,36 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
               <div className="lg:hidden p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <div className="flex flex-col space-y-4">
                   <div className="flex flex-wrap gap-2">
-                    <StatusPill
-                      icon={electionStateInfo.icon}
-                      text={electionStateInfo.text}
-                      variant={blockchainStatus?.electionState?.status === 'voting' ? 'success' : 
-                             blockchainStatus?.electionState?.status === 'paused' ? 'warning' : 
-                             blockchainStatus?.electionState?.status === 'finished' ? 'error' : 'default'}
-                    />
-                    <StatusPill
-                      icon={Shield}
-                      text={blockchainStatus?.isConnected ? 'Online' : 'Offline'}
-                      variant={blockchainStatus?.isConnected ? 'success' : 'error'}
-                    />
-                    <StatusPill
-                      icon={Server}
-                      text={`${blockchainStatus?.connectedNodes || 0}/${blockchainStatus?.totalNodes || 0} Nodes Connected`}
-                      variant={blockchainStatus?.connectedNodes === blockchainStatus?.totalNodes ? 'success' : 
-                             blockchainStatus?.connectedNodes === 0 ? 'error' : 'warning'}
-                    />
+                    {isPollMonitor ? (
+                      <StatusPill
+                        icon={electionStateInfo.icon}
+                        text={electionStateInfo.text}
+                        variant={pollSettings?.is_active && !pollSettings?.is_paused && (pollSettings?.end_time === null || new Date(pollSettings.end_time) > new Date()) ? 'success' : 
+                               pollSettings?.is_paused ? 'warning' : 
+                               (pollSettings?.end_time && new Date(pollSettings.end_time) < new Date()) ? 'error' : 'default'}
+                      />
+                    ) : (
+                      <>
+                        <StatusPill
+                          icon={electionStateInfo.icon}
+                          text={electionStateInfo.text}
+                          variant={pollSettings?.is_active && !pollSettings?.is_paused && (pollSettings?.end_time === null || new Date(pollSettings.end_time) > new Date()) ? 'success' : 
+                                 pollSettings?.is_paused ? 'warning' : 
+                                 (pollSettings?.end_time && new Date(pollSettings.end_time) < new Date()) ? 'error' : 'default'}
+                        />
+                        <StatusPill
+                          icon={Shield}
+                          text={blockchainStatus?.isConnected ? 'Online' : 'Offline'}
+                          variant={blockchainStatus?.isConnected ? 'success' : 'error'}
+                        />
+                        <StatusPill
+                          icon={Server}
+                          text={`${blockchainStatus?.connectedNodes || 0}/${blockchainStatus?.totalNodes || 0} Nodes Connected`}
+                          variant={blockchainStatus?.connectedNodes === blockchainStatus?.totalNodes ? 'success' : 
+                                 blockchainStatus?.connectedNodes === 0 ? 'error' : 'warning'}
+                        />
+                      </>
+                    )}
                   </div>
                   <div className="border-t border-gray-200 pt-4">
                     <ControlButtons />
@@ -893,36 +962,38 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
         </div>
 
         {/* Statistics Grid - Mobile Responsive */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4 lg:mb-6">
-          <StatCard
-            title="Total Votes"
-            value={totalVotes || 0}
-            icon={Vote}
-            color="blue"
-            trend="Persistent"
-          />
-          <StatCard
-            title="Candidates"
-            value={candidates.length || 0}
-            icon={Users}
-            color="green"
-            trend="MySQL"
-          />
-          <StatCard
-            title="Connected Nodes"
-            value={`${blockchainStatus?.connectedNodes || 0}/${blockchainStatus?.totalNodes || 0}`}
-            icon={Server}
-            color="purple"
-            trend={blockchainStatus?.connectedNodes === blockchainStatus?.totalNodes ? 'All Online' : 'Partial'}
-          />
-          <StatCard
-            title="Current Node"
-            value={currentNode || 'none'}
-            icon={Server}
-            color="indigo"
-            trend={`${blockchainStatus?.connectedNodes || 0} connected`}
-          />
-        </div>
+        {!isPollMonitor && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4 lg:mb-6">
+            <StatCard
+              title="Total Votes"
+              value={totalVotes || 0}
+              icon={Vote}
+              color="blue"
+              trend="Persistent"
+            />
+            <StatCard
+              title="Candidates"
+              value={candidates.length || 0}
+              icon={Users}
+              color="green"
+              trend="MySQL"
+            />
+            <StatCard
+              title="Connected Nodes"
+              value={`${blockchainStatus?.connectedNodes || 0}/${blockchainStatus?.totalNodes || 0}`}
+              icon={Server}
+              color="purple"
+              trend={blockchainStatus?.connectedNodes === blockchainStatus?.totalNodes ? 'All Online' : 'Partial'}
+            />
+            <StatCard
+              title="Current Node"
+              value={currentNode || 'none'}
+              icon={Server}
+              color="indigo"
+              trend={`${blockchainStatus?.connectedNodes || 0} connected`}
+            />
+          </div>
+        )}
 
         {/* Results by Position */}
         <div className="space-y-4 lg:space-y-6">
@@ -935,16 +1006,71 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                   <h2 className="text-lg lg:text-xl font-bold text-gray-900">{position}</h2>
                 </div>
 
-                {/* Responsive candidate grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 lg:gap-4">
-                  {sortedCandidates.map((candidate) => (
-                    <CandidateCard
-                      key={candidate.id}
-                      candidate={candidate}
-                      totalVotes={totalVotes}
-                    />
-                  ))}
-                </div>
+                {/* Responsive candidate display - Cards for Admin, Simple List for Poll Monitor */}
+                {isPollMonitor ? (
+                  // Simple list format for poll monitor
+                  <div className="space-y-3">
+                    {sortedCandidates.map((candidate) => {
+                      const voteCount = candidate.vote_count || 0;
+                      const percentage = getVotePercentage(voteCount, totalVotes || 0);
+                      
+                      return (
+                        <div key={candidate.id} className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex items-center space-x-3">
+                            {/* Candidate Image or Fallback Icon */}
+                            {candidate.image_url ? (
+                              <img 
+                                src={candidate.image_url} 
+                                alt={candidate.name}
+                                className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const fallback = target.nextElementSibling as HTMLElement;
+                                  if (fallback) fallback.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className="w-10 h-10 rounded-lg bg-gray-200 text-gray-600 flex items-center justify-center flex-shrink-0" 
+                                 style={{ display: candidate.image_url ? 'none' : 'flex' }}>
+                              <Users className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 text-base">
+                                {candidate.name}
+                              </h4>
+                              <p className="text-gray-600 text-sm">{candidate.party}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center space-x-6">
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-gray-900">{voteCount} votes</div>
+                              <div className="text-sm text-gray-600">{percentage}%</div>
+                            </div>
+                            <div className="w-20 bg-gray-200 rounded-full h-2">
+                              <div
+                                className="h-2 rounded-full bg-blue-500 transition-all duration-1000"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  // Card format for other roles
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 lg:gap-4">
+                    {sortedCandidates.map((candidate) => (
+                      <CandidateCard
+                        key={candidate.id}
+                        candidate={candidate}
+                        totalVotes={totalVotes}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1012,29 +1138,43 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                   <StatusPill
                     icon={electionStateInfo.icon}
                     text={electionStateInfo.text}
-                    variant={blockchainStatus?.electionState?.status === 'voting' ? 'success' : 
-                           blockchainStatus?.electionState?.status === 'paused' ? 'warning' : 
-                           blockchainStatus?.electionState?.status === 'finished' ? 'error' : 'default'}
+                    variant={pollSettings?.is_active && !pollSettings?.is_paused && (!pollSettings?.end_time || new Date(pollSettings.end_time).getTime() > new Date().getTime()) ? 'success' : 
+                         pollSettings?.is_paused ? 'warning' : 
+                         (pollSettings?.end_time && new Date(pollSettings.end_time).getTime() < new Date().getTime()) ? 'error' : 'default'}
                   />
                 </div>
 
-                {isSuperAdmin && (
+                {isPollMonitor && (
                   <button
-                    onClick={exportVotes}
-                    className="flex items-center gap-2 px-3 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors"
+                    onClick={toggleFullscreen}
+                    className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
-                    <Download className="w-4 h-4" />
-                    <span className="hidden sm:inline">Export</span>
+                    <Minimize className="w-4 h-4" />
+                    <span className="hidden sm:inline">Exit</span>
                   </button>
                 )}
+                
+                {!isPollMonitor && (
+                  <>
+                    {isSuperAdmin && (
+                      <button
+                        onClick={exportVotes}
+                        className="flex items-center gap-2 px-3 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">Export</span>
+                      </button>
+                    )}
 
-                <button
-                  onClick={toggleFullscreen}
-                  className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <Minimize className="w-4 h-4" />
-                  <span className="hidden sm:inline">Exit</span>
-                </button>
+                    <button
+                      onClick={toggleFullscreen}
+                      className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Minimize className="w-4 h-4" />
+                      <span className="hidden sm:inline">Exit</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

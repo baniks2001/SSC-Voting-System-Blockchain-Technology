@@ -11,6 +11,7 @@ import { CandidateManagement } from './components/admin/CandidateManagement';
 import { VoterManagement } from './components/admin/VoterManagement';
 import { PollMonitor } from './components/admin/PollMonitor';
 import { CastVote } from './components/voter/CastVote';
+import { useSecurity } from './hooks/useSecurity';
 import './styles/globals.css';
 import './styles/components.css';
 
@@ -167,12 +168,22 @@ function AppContent() {
   const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
   const { pollStatus, isLoginEnabled, loading: pollLoading } = usePoll();
   const { showToast } = useToast();
+  const { checkDevTools } = useSecurity();
 
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard');
   const [appInitialized, setAppInitialized] = useState(false);
   const [minLoadingTimePassed, setMinLoadingTimePassed] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
+
+  // Check for devtools periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkDevTools();
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [checkDevTools]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);

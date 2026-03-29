@@ -6,9 +6,227 @@
     <link rel="icon" type="image/x-icon" href="logo.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SSC Voting System with Blockchain Technology</title>
+    
+    <!-- Security Measures -->
+    <script>
+      // Disable right-click context menu
+      document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+      });
+
+      // Disable text selection
+      document.addEventListener('selectstart', function(e) {
+        e.preventDefault();
+        return false;
+      });
+
+      // Disable drag and drop
+      document.addEventListener('dragstart', function(e) {
+        e.preventDefault();
+        return false;
+      });
+
+      // Disable copy, cut, paste
+      document.addEventListener('keydown', function(e) {
+        // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+        if (e.keyCode === 123 || 
+            (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || 
+            (e.ctrlKey && e.keyCode === 85)) {
+          e.preventDefault();
+          return false;
+        }
+        
+        // Ctrl+C, Ctrl+X, Ctrl+V
+        if (e.ctrlKey && (e.keyCode === 67 || e.keyCode === 86 || e.keyCode === 88)) {
+          e.preventDefault();
+          return false;
+        }
+      });
+
+      // Disable developer tools detection
+      let devtools = {open: false, orientation: null};
+      const threshold = 160;
+      
+      setInterval(() => {
+        if (window.outerHeight - window.innerHeight > threshold || 
+            window.outerWidth - window.innerWidth > threshold) {
+          if (!devtools.open) {
+            devtools.open = true;
+            // Close developer tools or redirect
+            window.close();
+            if (!window.closed) {
+              window.location.href = 'about:blank';
+            }
+          }
+        } else {
+          devtools.open = false;
+        }
+      }, 500);
+
+      // Disable console logging in production
+      console.log = function() {};
+      console.warn = function() {};
+      console.error = function() {};
+      console.info = function() {};
+      console.debug = function() {};
+
+      // Prevent view source
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+          e.preventDefault();
+          return false;
+        }
+      });
+    </script>
+    
+    <style>
+      /* Disable text selection globally */
+      * {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+      
+      /* Allow text selection for input fields and textareas */
+      input, textarea, [contenteditable] {
+        -webkit-user-select: text;
+        -khtml-user-select: text;
+        -moz-user-select: text;
+        -ms-user-select: text;
+        user-select: text;
+      }
+      
+      /* Disable image drag */
+      img {
+        -webkit-user-drag: none;
+        -khtml-user-drag: none;
+        -moz-user-drag: none;
+        -o-user-drag: none;
+        user-drag: none;
+        pointer-events: none;
+      }
+      
+      /* Hide scrollbar but keep functionality */
+      ::-webkit-scrollbar {
+        display: none;
+      }
+      
+      html {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Additional security script -->
+    <script>
+      // Prevent back button
+      history.pushState(null, null, location.href);
+      window.onpopstate = function () {
+        history.go(1);
+      };
+      
+      // Disable print screen
+      document.addEventListener('keyup', function(e) {
+        if (e.key === 'PrintScreen') {
+          navigator.clipboard.writeText('');
+          e.preventDefault();
+        }
+      });
+      
+      // Clear clipboard on page load
+      window.addEventListener('load', function() {
+        navigator.clipboard.writeText('');
+      });
+      
+      // Detect and block common developer tools shortcuts
+      document.addEventListener('keydown', function(e) {
+        // Block Ctrl+Shift+C (inspect element)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+          e.preventDefault();
+          return false;
+        }
+        
+        // Block Ctrl+Shift+K (console)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 75) {
+          e.preventDefault();
+          return false;
+        }
+        
+        // Block Ctrl+Shift+X (responsive design mode)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 88) {
+          e.preventDefault();
+          return false;
+        }
+      });
+      
+      // Disable right-click on images specifically
+      document.addEventListener('contextmenu', function(e) {
+        if (e.target.tagName === 'IMG') {
+          e.preventDefault();
+          return false;
+        }
+      });
+      
+      // Block access to developer tools via console
+      (function() {
+        const _log = console.log;
+        const _warn = console.warn;
+        const _error = console.error;
+        const _info = console.info;
+        const _debug = console.debug;
+        
+        console.log = function() { return; };
+        console.warn = function() { return; };
+        console.error = function() { return; };
+        console.info = function() { return; };
+        console.debug = function() { return; };
+        
+        // Detect if console is opened
+        let devtools = {
+          open: false,
+          orientation: null
+        };
+        const threshold = 160;
+        
+        const emitEvent = (state, orientation) => {
+          if (state !== devtools.open) {
+            devtools.open = state;
+            devtools.orientation = orientation;
+            
+            if (devtools.open) {
+              // Close the window or redirect when devtools are opened
+              document.body.innerHTML = '<h1>Developer tools are not allowed</h1>';
+              setTimeout(() => {
+                window.close();
+                if (!window.closed) {
+                  window.location.href = 'about:blank';
+                }
+              }, 1000);
+            }
+          }
+        };
+        
+        setInterval(() => {
+          if (window.outerHeight - window.innerHeight > threshold || 
+              window.outerWidth - window.innerWidth > threshold) {
+            if (!devtools.open) {
+              emitEvent(true, 'vertical');
+            }
+          } else {
+            if (devtools.open) {
+              emitEvent(false, null);
+            }
+          }
+        }, 500);
+      })();
+    </script>
   </body>
 </html>

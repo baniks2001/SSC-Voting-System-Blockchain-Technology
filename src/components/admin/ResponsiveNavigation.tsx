@@ -276,20 +276,22 @@ export const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
                     // Close mobile menu after navigation
                   }}
                   className={cn(
-                    "w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px]",
                     activeTab === item.id
                       ? "bg-blue-100 text-blue-700"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                   )}
                 >
-                  <item.icon className="w-4 h-4" />
-                  <span>{item.label}</span>
+                  <div className="flex items-center justify-center flex-shrink-0">
+                    <item.icon className="w-5 h-5" />
+                  </div>
+                  <span className="truncate text-left">{item.label}</span>
                 </button>
               ))}
             </div>
             <div className="px-4 py-3 border-b border-gray-200">
               <div className="flex items-center space-x-3 mb-3">
-                <Avatar className="w-10 h-10 bg-blue-100">
+                <Avatar className="w-10 h-10 bg-blue-100 flex-shrink-0">
                   <span className="text-sm font-medium text-blue-600">
                     {user?.fullName?.charAt(0) || user?.email?.charAt(0) || 'A'}
                   </span>
@@ -303,15 +305,15 @@ export const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
               </div>
               {isViewOnly() && (
                 <div className="flex items-center text-xs text-blue-600 mb-3">
-                  <Eye className="w-3 h-3 mr-1" />
+                  <Eye className="w-3 h-3 mr-1 flex-shrink-0" />
                   View Only Access
                 </div>
               )}
               <button
                 onClick={onLogout}
-                className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                className="w-full flex items-center space-x-2 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors min-h-[44px]"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 h-4 flex-shrink-0" />
                 <span>Sign Out</span>
               </button>
             </div>
@@ -326,13 +328,13 @@ export const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
 
       {/* Mobile Bottom Navigation */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 z-40">
-        <div className="grid grid-cols-5 gap-1 px-2 py-2">
+        <div className="grid grid-cols-5 gap-1 px-1 py-1">
           {navItems.map((item, index) => (
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
               className={cn(
-                "flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-all duration-200 transform hover:scale-105",
+                "flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-all duration-200 transform hover:scale-105 min-w-0",
                 activeTab === item.id
                   ? "text-blue-600 bg-gradient-to-t from-blue-50 to-blue-100 shadow-lg shadow-blue-500/20"
                   : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -343,8 +345,10 @@ export const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
                 opacity: 0
               }}
             >
-              <item.icon className="w-5 h-5 mb-1" />
-              <span className="text-xs font-medium truncate">{item.label}</span>
+              <div className="flex items-center justify-center mb-1">
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+              </div>
+              <span className="text-xs font-medium leading-tight text-center w-full overflow-hidden overflow-ellipsis">{item.label}</span>
               {activeTab === item.id && (
                 <span className="w-1 h-1 bg-blue-600 rounded-full mt-1 animate-pulse"></span>
               )}
