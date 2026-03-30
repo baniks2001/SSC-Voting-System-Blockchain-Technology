@@ -3,7 +3,7 @@ import { UserPlus, Edit, Trash2, Search, User, Award, Layers, MoreVertical, Filt
 import { Candidate, Position, Voter } from '../../types';
 import { api } from '../../utils/api';
 import { positionApi } from '../../utils/positionApi';
-import { LoadingSpinner } from '../common/LoadingSpinner';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Modal } from '../common/Modal';
 import { usePoll } from '../../contexts/PollContext';
 
@@ -352,8 +352,8 @@ export const CandidateManagement: React.FC = () => {
       }
 
       if (editingCandidate) {
-        const updatedCandidate = await api.put(`/candidates/${editingCandidate.id}`, formData);
-        addNotification('Candidate updated successfully', 'Candidate updated successfully', 'success');
+        await api.put(`/candidates/${editingCandidate.id}`, formData);
+        addNotification('Success', 'Candidate updated successfully', 'success');
         
         // Optimistic update - update local state immediately
         setCandidates(prev => prev.map(candidate => 
@@ -666,7 +666,7 @@ export const CandidateManagement: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" text="Loading data..." />
+        <LoadingSpinner size="lg" variant="pulse" color="primary" text="Loading data..." />
       </div>
     );
   }
@@ -1094,7 +1094,7 @@ export const CandidateManagement: React.FC = () => {
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {votersLoading ? (
                     <div className="p-3 text-center">
-                      <LoadingSpinner size="sm" text="Searching voters..." />
+                      <LoadingSpinner size="sm" variant="pulse" color="primary" text="Searching voters..." />
                     </div>
                   ) : (
                     voters.map((voter) => (

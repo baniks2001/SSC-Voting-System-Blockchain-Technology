@@ -9,23 +9,9 @@ import { api } from '../../utils/api';
 import { usePoll, PollStatus } from '../../contexts/PollContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
-  Button, 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardContent, 
-  Input, 
-  Badge, 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  Progress,
   StatCard,
   LoadingSpinner
 } from '../ui';
-import { cn, formatNumber, formatDate } from '@/lib/utils';
-import { useAnimation, useStaggeredAnimation } from '@/hooks';
 
 interface FinishPollFormData {
   electionName: string;
@@ -62,7 +48,8 @@ interface Candidate {
 interface Notification {
   id: number;
   message: string;
-  type: 'success' | 'error';
+  title?: string;
+  type: 'success' | 'error' | 'warning' | 'info';
 }
 
 type ExportType = 'xlsx' | 'docs' | 'json';
@@ -211,27 +198,7 @@ export const Dashboard: React.FC = () => {
     );
   };
 
-  // Modern stat card component using new UI components
-  const ModernStatCard = ({ title, value, icon: Icon, color = 'blue', trend, description }: {
-    title: string,
-    value: string | number,
-    icon: any,
-    color?: 'blue' | 'green' | 'purple' | 'orange' | 'indigo',
-    trend?: string,
-    description?: string
-  }) => {
-    return (
-      <StatCard
-        title={title}
-        value={typeof value === 'number' ? formatNumber(value) : value}
-        icon={Icon}
-        color={color}
-        trend={trend}
-        description={description}
-      />
-    );
-  };
-
+  
   // Filter election history based on search and year
   const filteredElectionHistory = electionHistory.filter(election => {
     const matchesSearch = election.election_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1245,7 +1212,7 @@ export const Dashboard: React.FC = () => {
                 className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 disabled:opacity-50 transition-colors"
               >
                 {deletingElection ? (
-                  <LoadingSpinner size="sm" color="white" />
+                  <LoadingSpinner size="sm" color="primary" />
                 ) : (
                   <>
                     <Trash2 className="w-4 h-4 mr-2" />
@@ -1344,7 +1311,7 @@ export const Dashboard: React.FC = () => {
                 className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 disabled:opacity-50 transition-colors"
               >
                 {pollLoading ? (
-                  <LoadingSpinner size="sm" color="white" />
+                  <LoadingSpinner size="sm" color="primary" />
                 ) : (
                   <>
                     <Save className="w-4 h-4 mr-2" />
@@ -1444,7 +1411,7 @@ export const Dashboard: React.FC = () => {
                 className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 disabled:opacity-50 transition-colors"
               >
                 {pollLoading ? (
-                  <LoadingSpinner size="sm" color="white" />
+                  <LoadingSpinner size="sm" color="primary" />
                 ) : (
                   <>
                     <Shield className="w-4 h-4 mr-2" />
@@ -2013,7 +1980,7 @@ export const Dashboard: React.FC = () => {
                     className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-transparent text-sm font-medium rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg"
                   >
                     {pollLoading ? (
-                      <LoadingSpinner size="sm" color="white" />
+                      <LoadingSpinner size="sm" color="primary" />
                     ) : (
                       <Play className="w-4 h-4" />
                     )}
@@ -2026,7 +1993,7 @@ export const Dashboard: React.FC = () => {
                     className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-transparent text-sm font-medium rounded-xl text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg"
                   >
                     {pollLoading ? (
-                      <LoadingSpinner size="sm" color="white" />
+                      <LoadingSpinner size="sm" color="primary" />
                     ) : (
                       <Pause className="w-4 h-4" />
                     )}
@@ -2040,7 +2007,7 @@ export const Dashboard: React.FC = () => {
                     className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-transparent text-sm font-medium rounded-xl text-white bg-rose-600 hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg"
                   >
                     {pollLoading ? (
-                      <LoadingSpinner size="sm" color="white" />
+                      <LoadingSpinner size="sm" color="primary" />
                     ) : (
                       <StopCircle className="w-4 h-4" />
                     )}

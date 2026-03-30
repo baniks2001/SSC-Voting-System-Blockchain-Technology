@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { PollSettings, Position } from '../../types';
 import { api } from '../../utils/api';
-import { LoadingSpinner } from '../common/LoadingSpinner';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useToast } from '../common/Toast';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -694,8 +694,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
     return (
       <div className="flex items-center justify-center h-96 rounded-2xl bg-white/80 backdrop-blur-sm">
         <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className="mt-4 text-gray-600 font-medium">Loading poll monitor...</p>
+          <LoadingSpinner size="lg" variant="pulse" color="primary" text="Loading poll monitor..." />
         </div>
       </div>
     );
@@ -886,7 +885,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                   <StatusPill
                     icon={electionStateInfo.icon}
                     text={electionStateInfo.text}
-                    variant={pollSettings?.is_active && !pollSettings?.is_paused && (pollSettings?.end_time === null || new Date(pollSettings.end_time) > new Date()) ? 'success' : 
+                    variant={pollSettings?.is_active && !pollSettings?.is_paused && (pollSettings?.end_time === null || (pollSettings?.end_time && new Date(pollSettings.end_time) > new Date())) ? 'success' : 
                            pollSettings?.is_paused ? 'warning' : 
                            (pollSettings?.end_time && new Date(pollSettings.end_time) < new Date()) ? 'error' : 'default'}
                   />
@@ -895,7 +894,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                     <StatusPill
                       icon={electionStateInfo.icon}
                       text={electionStateInfo.text}
-                      variant={pollSettings?.is_active && !pollSettings?.is_paused && (pollSettings?.end_time === null || new Date(pollSettings.end_time) > new Date()) ? 'success' : 
+                      variant={pollSettings?.is_active && !pollSettings?.is_paused && (pollSettings?.end_time === null || (pollSettings?.end_time && new Date(pollSettings.end_time) > new Date())) ? 'success' : 
                              pollSettings?.is_paused ? 'warning' : 
                              (pollSettings?.end_time && new Date(pollSettings.end_time) < new Date()) ? 'error' : 'default'}
                     />
@@ -925,16 +924,16 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                       <StatusPill
                         icon={electionStateInfo.icon}
                         text={electionStateInfo.text}
-                        variant={pollSettings?.is_active && !pollSettings?.is_paused && (pollSettings?.end_time === null || new Date(pollSettings.end_time) > new Date()) ? 'success' : 
-                               pollSettings?.is_paused ? 'warning' : 
-                               (pollSettings?.end_time && new Date(pollSettings.end_time) < new Date()) ? 'error' : 'default'}
+                        variant={pollSettings?.is_active && !pollSettings?.is_paused && (pollSettings?.end_time === null || (pollSettings?.end_time && new Date(pollSettings.end_time) > new Date())) ? 'success' : 
+                           pollSettings?.is_paused ? 'warning' : 
+                           (pollSettings?.end_time && new Date(pollSettings.end_time) < new Date()) ? 'error' : 'default'}
                       />
                     ) : (
                       <>
                         <StatusPill
                           icon={electionStateInfo.icon}
                           text={electionStateInfo.text}
-                          variant={pollSettings?.is_active && !pollSettings?.is_paused && (pollSettings?.end_time === null || new Date(pollSettings.end_time) > new Date()) ? 'success' : 
+                          variant={pollSettings?.is_active && !pollSettings?.is_paused && (pollSettings?.end_time === null || (pollSettings?.end_time && new Date(pollSettings.end_time) > new Date())) ? 'success' : 
                                  pollSettings?.is_paused ? 'warning' : 
                                  (pollSettings?.end_time && new Date(pollSettings.end_time) < new Date()) ? 'error' : 'default'}
                         />
@@ -1138,7 +1137,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                   <StatusPill
                     icon={electionStateInfo.icon}
                     text={electionStateInfo.text}
-                    variant={pollSettings?.is_active && !pollSettings?.is_paused && (!pollSettings?.end_time || new Date(pollSettings.end_time).getTime() > new Date().getTime()) ? 'success' : 
+                    variant={pollSettings?.is_active && !pollSettings?.is_paused && (!pollSettings?.end_time || (pollSettings?.end_time && new Date(pollSettings.end_time).getTime() > new Date().getTime())) ? 'success' : 
                          pollSettings?.is_paused ? 'warning' : 
                          (pollSettings?.end_time && new Date(pollSettings.end_time).getTime() < new Date().getTime()) ? 'error' : 'default'}
                   />

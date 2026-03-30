@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { UserPlus, Edit, Trash2, Eye, Search, Mail, Lock, User, MoreVertical, Shield, X, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Admin } from '../../types';
 import { api } from '../../utils/api';
-import { LoadingSpinner } from '../common/LoadingSpinner';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Modal } from '../common/Modal';
 
 // Define notification type
@@ -130,7 +130,7 @@ export const AdminManagement: React.FC = () => {
     e.preventDefault();
     try {
       if (editingAdmin) {
-        const updatedAdmin = await api.put(`/admin/admins/${editingAdmin.id}`, formData);
+        await api.put(`/admin/admins/${editingAdmin.id}`, formData);
         addNotification('Admin updated successfully', 'success');
         
         // Optimistic update - update local state immediately
@@ -250,7 +250,7 @@ export const AdminManagement: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" text="Loading admins..." />
+        <LoadingSpinner size="lg" variant="pulse" color="primary" text="Loading admins..." />
       </div>
     );
   }
@@ -335,7 +335,7 @@ export const AdminManagement: React.FC = () => {
                 className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 disabled:opacity-50 transition-colors"
               >
                 {deletingAdmin ? (
-                  <LoadingSpinner size="sm" color="white" />
+                  <LoadingSpinner size="sm" variant="pulse" color="primary" />
                 ) : (
                   <>
                     <Trash2 className="w-4 h-4 mr-2" />

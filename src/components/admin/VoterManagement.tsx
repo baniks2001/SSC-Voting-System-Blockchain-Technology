@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserPlus, Edit, Trash2, Search, Download, User, GraduationCap, Hash, Key, RefreshCw, CheckSquare, Square, AlertCircle, ChevronDown, Check, Filter, MoreVertical, CheckCircle, XCircle, Upload, Plus, X, BookOpen, UserX, UserCheck } from 'lucide-react';
 import { Voter } from '../../types';
 import { api } from '../../utils/api';
-import { LoadingSpinner } from '../common/LoadingSpinner';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Modal } from '../common/Modal';
 import { useToast } from '../common/Toast';
 import { usePoll } from '../../contexts/PollContext';
@@ -380,21 +380,21 @@ export const VoterManagement: React.FC = () => {
   }, [searchTerm, filters.course, filters.year, filters.section, filters.hasVoted, filters.isActive, allVoters]);
 
   const getUniqueCoursesFromVoters = () => {
-    const courses = [...new Set(allVoters.map(v => v.course || '').filter(Boolean))];
+    const courses = [...new Set(allVoters.map((v: Voter) => v.course || '').filter(Boolean))];
     return courses.sort();
   };
 
   const getUniqueYearLevelsFromVoters = () => {
-    const yearLevels = [...new Set(allVoters.map(v => v.year_level?.toString() || '').filter(Boolean))];
+    const yearLevels = [...new Set(allVoters.map((v: Voter) => v.year_level?.toString() || '').filter(Boolean))];
     return yearLevels.sort();
   };
 
   const getUniqueSectionsFromVoters = () => {
-    const sections = [...new Set(allVoters.map(v => v.section || '').filter(Boolean))];
+    const sections = [...new Set(allVoters.map((v: Voter) => v.section || '').filter(Boolean))];
     return sections.sort();
   };
 
-  const filteredStudents = allVoters.filter(voter =>
+  const filteredStudents = allVoters.filter((voter: Voter) =>
     (voter.full_name?.toLowerCase() || '').includes(studentSearch.toLowerCase()) ||
     (voter.student_id?.toLowerCase() || '').includes(studentSearch.toLowerCase())
   );
@@ -581,7 +581,7 @@ export const VoterManagement: React.FC = () => {
         });
         
         // Optimistic update - update local state immediately
-        setVoters(prev => prev.map(voter => 
+        setVoters(prev => prev.map((voter: Voter) => 
           voter.id === editingVoter.id 
             ? { ...voter, ...updateData, student_id: updateData.studentId, full_name: updateData.fullName, year_level: updateData.yearLevel }
             : voter
@@ -1191,7 +1191,7 @@ export const VoterManagement: React.FC = () => {
       
       // Apply client-side filtering for year level and section only
       if (selectedStudents.length === 0 && (selectedExportYearLevels.length > 0 || selectedExportSections.length > 0)) {
-        exportData = exportData.filter(voter => {
+        exportData = exportData.filter((voter: Voter) => {
           // Check year level filter
           const yearLevelMatch = selectedExportYearLevels.length === 0 || selectedExportYearLevels.includes(voter.year_level?.toString() || '');
           // Check section filter
@@ -1310,13 +1310,13 @@ export const VoterManagement: React.FC = () => {
 
   const filteredVoters = displayedVoters;
   const uniqueCourses = getUniqueCoursesFromVoters();
-  const uniqueYears = [...new Set(allVoters.map(v => v.year_level?.toString() || ''))];
-  const uniqueSections = [...new Set(allVoters.map(v => v.section || ''))];
+  const uniqueYears = [...new Set(allVoters.map((v: Voter) => v.year_level?.toString() || ''))];
+  const uniqueSections = [...new Set(allVoters.map((v: Voter) => v.section || ''))];
 
   if (loading || coursesLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" text="Loading voters..." />
+        <LoadingSpinner size="lg" variant="pulse" color="primary" text="Loading voters..." />
       </div>
     );
   }
@@ -1513,7 +1513,7 @@ export const VoterManagement: React.FC = () => {
             >
               {deleting ? (
                 <>
-                  <LoadingSpinner size="sm" />
+                  <LoadingSpinner size="sm" variant="pulse" color="primary" />
                   <span className="ml-2">Resetting...</span>
                 </>
               ) : (
@@ -1575,7 +1575,7 @@ export const VoterManagement: React.FC = () => {
             >
               {deleting ? (
                 <>
-                  <LoadingSpinner size="sm" />
+                  <LoadingSpinner size="sm" variant="pulse" color="primary" />
                   <span className="ml-2">
                     {statusAction === 'activate' ? 'Activating...' : 'Deactivating...'}
                   </span>
@@ -1856,7 +1856,7 @@ export const VoterManagement: React.FC = () => {
                     checked={selectedStudents.length === voters.length && voters.length > 0}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        setSelectedStudents(voters.map(v => v.id));
+                        setSelectedStudents(voters.map((v: Voter) => v.id));
                       } else {
                         setSelectedStudents([]);
                       }
@@ -2457,7 +2457,7 @@ export const VoterManagement: React.FC = () => {
             >
               {deleting ? (
                 <>
-                  <LoadingSpinner size="sm" />
+                  <LoadingSpinner size="sm" variant="pulse" color="primary" />
                   <span className="ml-2">Deleting...</span>
                 </>
               ) : (
@@ -2711,7 +2711,7 @@ export const VoterManagement: React.FC = () => {
                       {(() => {
                         let filteredCount = allVoters.length;
                         if (selectedExportCourses.length > 0 || selectedExportYearLevels.length > 0 || selectedExportSections.length > 0) {
-                          filteredCount = allVoters.filter(voter => {
+                          filteredCount = allVoters.filter((voter: Voter) => {
                             const courseMatch = selectedExportCourses.length === 0 || selectedExportCourses.includes(voter.course);
                             const yearLevelMatch = selectedExportYearLevels.length === 0 || selectedExportYearLevels.includes(voter.year_level?.toString() || '');
                             const sectionMatch = selectedExportSections.length === 0 || selectedExportSections.includes(voter.section);
@@ -2819,7 +2819,7 @@ export const VoterManagement: React.FC = () => {
             >
               {exporting ? (
                 <>
-                  <LoadingSpinner size="sm" />
+                  <LoadingSpinner size="sm" variant="pulse" color="primary" />
                   <span className="ml-2">Exporting... ({exportProgress}%)</span>
                 </>
               ) : (
@@ -3040,7 +3040,7 @@ export const VoterManagement: React.FC = () => {
               >
                 {importing ? (
                   <>
-                    <LoadingSpinner size="sm" />
+                    <LoadingSpinner size="sm" variant="pulse" color="primary" />
                     <span className="ml-2">Importing...</span>
                   </>
                 ) : (
@@ -3114,7 +3114,7 @@ export const VoterManagement: React.FC = () => {
             >
               {addingCourse ? (
                 <>
-                  <LoadingSpinner size="sm" />
+                  <LoadingSpinner size="sm" variant="pulse" color="primary" />
                   <span className="ml-2">Adding...</span>
                 </>
               ) : (

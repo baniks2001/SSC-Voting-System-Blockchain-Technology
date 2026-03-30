@@ -70,6 +70,17 @@
     -webkit-tap-highlight-color: transparent;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* Mobile-specific background */
+  @media (max-width: 767px) {
+    body {
+      background: url('../assets/mobile.jpg');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-attachment: fixed;
+    }
+  }
 }
 
 /* Modern animations with Framer Motion compatibility */
@@ -218,6 +229,17 @@ body {
   min-height: 100vh;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile-specific background */
+@media (max-width: 767px) {
+  body {
+    background: url('../assets/mobile.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+  }
 }
 
 /* Modern responsive container with better spacing */

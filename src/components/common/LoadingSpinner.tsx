@@ -1,10 +1,11 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   color?: 'blue' | 'white' | 'gray' | 'purple' | 'gradient';
   text?: string;
-  variant?: 'classic' | 'modern' | 'orbital' | 'pulsing';
+  variant?: 'classic' | 'modern' | 'orbital' | 'pulsing' | 'dots' | 'morph';
 }
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
@@ -22,90 +23,101 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   const colorSchemes = {
     blue: {
-      primary: 'border-t-blue-500',
-      secondary: 'border-r-blue-400',
-      tertiary: 'border-b-blue-300',
+      primary: '#3B82F6',
+      secondary: '#60A5FA',
+      tertiary: '#93C5FD',
       shadow: 'shadow-blue-500/25'
     },
     white: {
-      primary: 'border-t-white',
-      secondary: 'border-r-gray-300',
-      tertiary: 'border-b-gray-400',
+      primary: '#FFFFFF',
+      secondary: '#E5E7EB',
+      tertiary: '#9CA3AF',
       shadow: 'shadow-white/25'
     },
     gray: {
-      primary: 'border-t-gray-600',
-      secondary: 'border-r-gray-500',
-      tertiary: 'border-b-gray-400',
+      primary: '#4B5563',
+      secondary: '#6B7280',
+      tertiary: '#9CA3AF',
       shadow: 'shadow-gray-500/25'
     },
     purple: {
-      primary: 'border-t-purple-500',
-      secondary: 'border-r-purple-400',
-      tertiary: 'border-b-purple-300',
+      primary: '#8B5CF6',
+      secondary: '#A78BFA',
+      tertiary: '#C4B5FD',
       shadow: 'shadow-purple-500/25'
     },
     gradient: {
-      primary: 'border-t-blue-500',
-      secondary: 'border-r-purple-500',
-      tertiary: 'border-b-pink-500',
+      primary: '#3B82F6',
+      secondary: '#8B5CF6',
+      tertiary: '#EC4899',
       shadow: 'shadow-blue-500/25'
     }
   };
 
   const variants = {
     classic: (
-      <div
+      <motion.div
         className={`
           ${sizeClasses[size]} 
-          border-4 rounded-full animate-spin
+          border-4 rounded-full
           border-gray-200 
-          ${colorSchemes[color].primary}
+          border-t-2
           ${colorSchemes[color].shadow} shadow-lg
           transform-gpu
         `}
+        style={{ borderTopColor: colorSchemes[color].primary }}
+        animate={{ rotate: 360 }}
+        transition={{
+          duration: 1,
+          repeat: Infinity,
+          ease: "linear"
+        }}
       />
     ),
     
     modern: (
       <div className="relative">
         {/* Outer glow effect */}
-        <div
+        <motion.div
           className={`
             ${sizeClasses[size]} 
             absolute inset-0 rounded-full 
             ${colorSchemes[color].shadow} 
-            blur-sm animate-pulse
+            blur-sm
           `}
-        />
-        {/* Main spinner with gradient borders */}
-        <div
-          className={`
-            ${sizeClasses[size]} 
-            border-4 rounded-full animate-spin
-            border-transparent
-            bg-gradient-to-r from-transparent via-transparent to-transparent
-            [border-image:conic-gradient(from_0deg,transparent,var(--tw-gradient-from),var(--tw-gradient-to),transparent)_1]
-            ${color === 'gradient' 
-              ? 'from-blue-500 via-purple-500 to-pink-500' 
-              : `from-${colorSchemes[color].primary.split('-')[1]}-400 to-${colorSchemes[color].primary.split('-')[1]}-600`
-            }
-            ${colorSchemes[color].shadow} shadow-xl
-            transform-gpu transition-all duration-300
-            hover:scale-110 hover:shadow-2xl
-          `}
-          style={{
-            borderImageSlice: 1,
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.5, 0.8, 0.5],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
           }}
         />
-        {/* Inner shadow for depth */}
-        <div
+        {/* Main spinner with gradient */}
+        <motion.div
           className={`
             ${sizeClasses[size]} 
-            absolute inset-0 rounded-full 
-            border-2 border-white/10
+            rounded-full
+            ${color === 'gradient' 
+              ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500' 
+              : ''
+            }
+            ${color !== 'gradient' ? '' : 'shadow-xl'}
             transform-gpu
           `}
+          style={color !== 'gradient' ? {
+            background: `conic-gradient(from 0deg, ${colorSchemes[color].primary}, ${colorSchemes[color].secondary}, ${colorSchemes[color].primary})`,
+            WebkitMask: 'radial-gradient(circle, transparent 35%, black 35%)',
+            mask: 'radial-gradient(circle, transparent 35%, black 35%)'
+          } : {}}
+          animate={{ rotate: 360 }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "linear"
+          }}
         />
       </div>
     ),
@@ -113,33 +125,45 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     orbital: (
       <div className="relative">
         {/* Orbital rings */}
-        <div
+        <motion.div
           className={`
             ${sizeClasses[size]} 
-            border-2 rounded-full animate-spin
-            border-dashed ${colorSchemes[color].primary}/30
+            border-2 rounded-full border-dashed
             transform-gpu
           `}
-          style={{ animationDuration: '3s' }}
+          style={{ borderColor: `${colorSchemes[color].primary}30` }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
         />
-        <div
+        <motion.div
           className={`
             ${sizeClasses[size]} 
-            absolute inset-0 border-2 rounded-full animate-spin
-            border-dashed ${colorSchemes[color].secondary}/50
+            absolute inset-0 border-2 rounded-full border-dashed
             transform-gpu
           `}
-          style={{ animationDuration: '2s', animationDirection: 'reverse' }}
+          style={{ borderColor: `${colorSchemes[color].secondary}50` }}
+          animate={{ rotate: -360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
         />
         {/* Central sphere */}
-        <div
+        <motion.div
           className={`
-            absolute inset-1/4 w-1/2 h-1/2 rounded-full
-            bg-gradient-to-br ${colorSchemes[color].primary} ${colorSchemes[color].secondary}
+            absolute top-1/2 left-1/2 w-1/2 h-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full
             ${colorSchemes[color].shadow} shadow-lg
-            animate-pulse
             transform-gpu
           `}
+          style={{
+            background: `linear-gradient(135deg, ${colorSchemes[color].primary}, ${colorSchemes[color].secondary})`
+          }}
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.7, 1, 0.7],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
         />
       </div>
     ),
@@ -147,37 +171,101 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     pulsing: (
       <div className="relative">
         {/* Pulsing spheres */}
-        <div
+        <motion.div
           className={`
             ${sizeClasses[size]} 
-            rounded-full animate-spin
-            bg-gradient-to-br ${colorSchemes[color].primary} ${colorSchemes[color].secondary}
+            rounded-full
             ${colorSchemes[color].shadow} shadow-2xl
             transform-gpu
-            before:content-[''] before:absolute before:inset-2
-            before:rounded-full before:bg-white/20
-            after:content-[''] after:absolute after:inset-4
-            after:rounded-full after:bg-white/10
           `}
-          style={{ animationDuration: '1.5s' }}
+          style={{
+            background: `linear-gradient(135deg, ${colorSchemes[color].primary}, ${colorSchemes[color].secondary})`
+          }}
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.8, 1, 0.8],
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
         />
         {/* Outer pulse ring */}
-        <div
+        <motion.div
           className={`
-            absolute inset-0 rounded-full
-            border-2 ${colorSchemes[color].primary}/30
-            animate-ping
+            absolute inset-0 rounded-full border-2
             transform-gpu
           `}
-          style={{ animationDuration: '2s' }}
+          style={{ borderColor: `${colorSchemes[color].primary}50` }}
+          animate={{
+            scale: [1, 1.5, 1],
+            opacity: [0.5, 0, 0.5],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
         />
       </div>
+    ),
+
+    dots: (
+      <div className="flex items-center justify-center">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            className={`
+              rounded-full
+              ${size === 'sm' ? 'w-1 h-1' : size === 'md' ? 'w-2 h-2' : size === 'lg' ? 'w-3 h-3' : 'w-4 h-4'}
+              ${i > 0 ? 'ml-1' : ''}
+            `}
+            style={{ backgroundColor: colorSchemes[color].primary }}
+            animate={{
+              scale: [1, 1.5, 1],
+              opacity: [0.5, 1, 0.5],
+            }}
+            transition={{
+              duration: 1.2,
+              repeat: Infinity,
+              delay: i * 0.2,
+              ease: "easeInOut"
+            }}
+          />
+        ))}
+      </div>
+    ),
+
+    morph: (
+      <motion.div
+        className={`
+          ${sizeClasses[size]}
+          ${colorSchemes[color].shadow} shadow-lg
+          transform-gpu
+        `}
+        style={{
+          background: `linear-gradient(135deg, ${colorSchemes[color].primary}, ${colorSchemes[color].secondary})`
+        }}
+        animate={{
+          borderRadius: ['20%', '50%', '20%', '50%'],
+          rotate: [0, 180, 360],
+          scale: [1, 1.1, 1],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
     )
   };
 
   const textColor = color === 'white' ? 'text-white' : 
                    color === 'gray' ? 'text-gray-600' : 
-                   `text-${colorSchemes[color].primary.split('-')[1]}-600`;
+                   color === 'purple' ? 'text-purple-600' :
+                   color === 'gradient' ? 'text-blue-600' :
+                   'text-blue-600';
 
   return (
     <div className="flex flex-col items-center justify-center space-y-4 p-4">
@@ -187,20 +275,29 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       
       {text && (
         <div className="text-center">
-          <p className={`text-sm font-medium ${textColor} animate-pulse`}>
+          <motion.p 
+            className={`text-sm font-medium ${textColor}`}
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
             {text}
-          </p>
+          </motion.p>
           {/* Loading dots animation */}
           <div className="flex justify-center space-x-1 mt-1">
             {[0, 1, 2].map((dot) => (
-              <div
+              <motion.div
                 key={dot}
                 className={`
                   w-1 h-1 rounded-full
-                  ${color === 'white' ? 'bg-white' : `bg-${colorSchemes[color].primary.split('-')[1]}-500`}
-                  animate-bounce
                 `}
-                style={{ animationDelay: `${dot * 0.2}s` }}
+                style={{ backgroundColor: colorSchemes[color].primary }}
+                animate={{ y: [0, -4, 0] }}
+                transition={{
+                  duration: 0.8,
+                  repeat: Infinity,
+                  delay: dot * 0.1,
+                  ease: "easeInOut"
+                }}
               />
             ))}
           </div>

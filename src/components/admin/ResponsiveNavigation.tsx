@@ -125,8 +125,29 @@ export const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={{ backgroundImage: 'none', backgroundColor: '#f9fafb' }}>
       <style>{`
+        body, html {
+          background-image: none !important;
+          background-color: #f9fafb !important;
+        }
+        
+        body::before, html::before,
+        body::after, html::after {
+          display: none !important;
+        }
+        
+        .min-h-screen {
+          background-image: none !important;
+          background-color: #f9fafb !important;
+        }
+        
+        /* Override any global background styles */
+        div[class*="min-h-screen"] {
+          background-image: none !important;
+          background-color: #f9fafb !important;
+        }
+        
         @keyframes slideIn {
           from {
             opacity: 0;
