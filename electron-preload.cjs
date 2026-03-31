@@ -26,6 +26,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openBrowser: (url) => ipcRenderer.invoke('open-browser', url),
   runAllSteps: (options) => ipcRenderer.invoke('run-all-steps', options),
   getPerformanceData: () => ipcRenderer.invoke('get-performance-data'),
+  checkDependencies: () => ipcRenderer.invoke('check-dependencies'),
+  installDependencies: () => ipcRenderer.invoke('install-dependencies'),
+  // Window control functions
+  minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
+  maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
+  closeWindow: () => ipcRenderer.invoke('close-window'),
+  isWindowMaximized: () => ipcRenderer.invoke('is-window-maximized'),
   onCommandOutput: (callback) => ipcRenderer.on('command-output', (event, data) => callback(data)),
   onIPChanged: (callback) => ipcRenderer.on('ip-changed', (event, data) => callback(data)),
   onIPRefreshed: (callback) => ipcRenderer.on('ip-refreshed', (event, data) => callback(data)),

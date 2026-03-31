@@ -31,7 +31,7 @@ function createWindow() {
         },
         icon: path.join(__dirname, 'public', 'favicon.ico'),
         show: false,
-        titleBarStyle: 'default',
+        frame: false, // Remove window frame (minimize, maximize, close buttons)
         autoHideMenuBar: true
     });
 
@@ -319,7 +319,290 @@ function updateEnvFile(ipAddress) {
     }
 }
 
-function runCommand(command, args, options) {
+// Dependency Management Functions
+function checkNodeModulesExists(projectPath) {
+    const nodeModulesPath = path.join(projectPath, 'node_modules');
+    return fs.existsSync(nodeModulesPath);
+}
+
+function checkPackageJsonExists(projectPath) {
+    const packageJsonPath = path.join(projectPath, 'package.json');
+    return fs.existsSync(packageJsonPath);
+}
+
+async function installNodeModules(projectPath, projectName) {
+    try {
+        console.log(`Installing dependencies for ${projectName}...`);
+        
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('command-output', {
+                type: 'info',
+                data: `📦 Installing dependencies for ${projectName}...`,
+                category: 'system'
+            });
+        }
+        
+        await runCommand('npm', ['install'], { 
+            cwd: projectPath,
+            category: 'system'
+        });
+        
+        console.log(`Dependencies installed for ${projectName}`);
+        
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('command-output', {
+                type: 'info',
+                data: `✅ Dependencies installed for ${projectName}`,
+                category: 'system'
+            });
+        }
+        
+        return { success: true };
+    } catch (error) {
+        console.error(`Failed to install dependencies for ${projectName}:`, error);
+        
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('command-output', {
+                type: 'error',
+                data: `❌ Failed to install dependencies for ${projectName}: ${error.message}`,
+                category: 'system'
+            });
+        }
+        
+        return { success: false, error: error.message };
+    }
+}
+
+async function checkGethInstallation() {
+    return new Promise((resolve) => {
+        console.log('Checking Geth installation...');
+        
+        exec('geth version', { timeout: 10000 }, (error, stdout, stderr) => {
+            if (!error && stdout) {
+                const versionMatch = stdout.match(/Version: ([\d.]+)/);
+                const version = versionMatch ? versionMatch[1] : 'Unknown';
+                console.log(`Geth found: version ${version}`);
+                
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('command-output', {
+                        type: 'info',
+                        data: `✅ Geth found: version ${version}`,
+                        category: 'system'
+                    });
+                }
+                
+                resolve({ installed: true, version: version });
+            } else {
+                console.log('Geth not found');
+                
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('command-output', {
+                        type: 'warning',
+                        data: `⚠️ Geth not found in system PATH`,
+                        category: 'system'
+                    });
+                }
+                
+                resolve({ installed: false, version: null });
+            }
+        });
+    });
+}
+
+async function installGeth() {
+    try {
+        console.log('Installing Geth...');
+        
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('command-output', {
+                type: 'info',
+                data: `📦 Installing Geth (Ethereum client)...`,
+                category: 'system'
+            });
+        }
+        
+        // Download and install Geth using PowerShell
+        const psScript = `
+            $url = "https://geth.ethereum.org/downloads/geth-windows-amd64-1.16.5.exe"
+            $output = "$env:TEMP\\geth-installer.exe"
+            
+            Write-Host "Downloading Geth..."
+            Invoke-WebRequest -Uri $url -OutFile $output
+            
+            Write-Host "Installing Geth..."
+            Start-Process -FilePath $output -Args "/S" -Wait
+            
+            Write-Host "Cleaning up..."
+            Remove-Item $output
+            
+            Write-Host "Geth installation completed"
+        `;
+        
+        await runCommand('powershell', ['-Command', psScript], { category: 'system' });
+        
+        // Verify installation
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        const gethCheck = await checkGethInstallation();
+        
+        if (gethCheck.installed) {
+            console.log('Geth successfully installed');
+            
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'info',
+                    data: `✅ Geth successfully installed: version ${gethCheck.version}`,
+                    category: 'system'
+                });
+            }
+            
+            return { success: true, version: gethCheck.version };
+        } else {
+            throw new Error('Geth installation verification failed');
+        }
+        
+    } catch (error) {
+        console.error('Failed to install Geth:', error);
+        
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('command-output', {
+                type: 'error',
+                data: `❌ Failed to install Geth: ${error.message}`,
+                category: 'system'
+            });
+        }
+        
+        return { success: false, error: error.message };
+    }
+}
+
+async function ensureDependencies() {
+    const results = {
+        frontend: { installed: true, needsInstall: false, error: null },
+        backend: { installed: true, needsInstall: false, error: null },
+        geth: { installed: true, needsInstall: false, error: null }
+    };
+    
+    try {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('command-output', {
+                type: 'info',
+                data: `🔍 Checking system dependencies...`,
+                category: 'system'
+            });
+        }
+        
+        // Check Frontend dependencies
+        const rootPath = __dirname;
+        if (!checkPackageJsonExists(rootPath)) {
+            results.frontend.installed = false;
+            results.frontend.needsInstall = false;
+            results.frontend.error = 'package.json not found in root directory';
+        } else if (!checkNodeModulesExists(rootPath)) {
+            results.frontend.installed = false;
+            results.frontend.needsInstall = true;
+            
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'warning',
+                    data: `⚠️ Frontend dependencies missing - will install`,
+                    category: 'system'
+                });
+            }
+        }
+        
+        // Check Backend dependencies
+        const serverPath = path.join(__dirname, 'server');
+        if (!checkPackageJsonExists(serverPath)) {
+            results.backend.installed = false;
+            results.backend.needsInstall = false;
+            results.backend.error = 'package.json not found in server directory';
+        } else if (!checkNodeModulesExists(serverPath)) {
+            results.backend.installed = false;
+            results.backend.needsInstall = true;
+            
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'warning',
+                    data: `⚠️ Backend dependencies missing - will install`,
+                    category: 'system'
+                });
+            }
+        }
+        
+        // Check Geth
+        const gethCheck = await checkGethInstallation();
+        if (!gethCheck.installed) {
+            results.geth.installed = false;
+            results.geth.needsInstall = true;
+            
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'warning',
+                    data: `⚠️ Geth not found - will install`,
+                    category: 'system'
+                });
+            }
+        } else {
+            results.geth.version = gethCheck.version;
+        }
+        
+        return results;
+        
+    } catch (error) {
+        console.error('Error checking dependencies:', error);
+        
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('command-output', {
+                type: 'error',
+                data: `❌ Error checking dependencies: ${error.message}`,
+                category: 'system'
+            });
+        }
+        
+        throw error;
+    }
+}
+
+async function installMissingDependencies(results) {
+    const installResults = {
+        frontend: { success: true, error: null },
+        backend: { success: true, error: null },
+        geth: { success: true, error: null }
+    };
+    
+    try {
+        // Install Frontend dependencies
+        if (results.frontend.needsInstall) {
+            const rootPath = __dirname;
+            const frontendResult = await installNodeModules(rootPath, 'Frontend');
+            installResults.frontend.success = frontendResult.success;
+            installResults.frontend.error = frontendResult.error;
+        }
+        
+        // Install Backend dependencies
+        if (results.backend.needsInstall) {
+            const serverPath = path.join(__dirname, 'server');
+            const backendResult = await installNodeModules(serverPath, 'Backend');
+            installResults.backend.success = backendResult.success;
+            installResults.backend.error = backendResult.error;
+        }
+        
+        // Install Geth
+        if (results.geth.needsInstall) {
+            const gethResult = await installGeth();
+            installResults.geth.success = gethResult.success;
+            installResults.geth.error = gethResult.error;
+        }
+        
+        return installResults;
+        
+    } catch (error) {
+        console.error('Error installing dependencies:', error);
+        throw error;
+    }
+}
+
+async function runCommand(command, args, options) {
     if (!args) args = [];
     if (!options) options = {};
     
@@ -393,6 +676,78 @@ ipcMain.handle('get-system-info', async function () {
     };
 });
 
+ipcMain.handle('check-dependencies', async function () {
+    try {
+        const results = await ensureDependencies();
+        return { success: true, results: results };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('install-dependencies', async function () {
+    try {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('command-output', {
+                type: 'info',
+                data: `🚀 Starting dependency installation process...`,
+                category: 'system'
+            });
+        }
+        
+        const checkResults = await ensureDependencies();
+        const installResults = await installMissingDependencies(checkResults);
+        
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('command-output', {
+                type: 'info',
+                data: `✅ Dependency installation process completed`,
+                category: 'system'
+            });
+        }
+        
+        return { success: true, results: installResults };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+// Window control handlers
+ipcMain.handle('minimize-window', async function () {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.minimize();
+        return { success: true };
+    }
+    return { success: false, error: 'Window not available' };
+});
+
+ipcMain.handle('maximize-window', async function () {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow.isMaximized()) {
+            mainWindow.unmaximize();
+        } else {
+            mainWindow.maximize();
+        }
+        return { success: true, maximized: mainWindow.isMaximized() };
+    }
+    return { success: false, error: 'Window not available' };
+});
+
+ipcMain.handle('close-window', async function () {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.close();
+        return { success: true };
+    }
+    return { success: false, error: 'Window not available' };
+});
+
+ipcMain.handle('is-window-maximized', async function () {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        return { success: true, maximized: mainWindow.isMaximized() };
+    }
+    return { success: false, maximized: false, error: 'Window not available' };
+});
+
 ipcMain.handle('refresh-ip', async function () {
     const newIP = await getLocalIP();
     const currentEnvIP = getCurrentEnvIP();
@@ -446,6 +801,23 @@ ipcMain.handle('clean-blockchain', async function () {
 
 ipcMain.handle('start-blockchain-node1', async function () {
     try {
+        // Check Geth installation before starting
+        const gethCheck = await checkGethInstallation();
+        if (!gethCheck.installed) {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'warning',
+                    data: `⚠️ Geth not found. Installing...`,
+                    category: 'system'
+                });
+            }
+            
+            const installResult = await installGeth();
+            if (!installResult.success) {
+                return { success: false, error: 'Failed to install Geth' };
+            }
+        }
+        
         const blockchainDir = path.join(__dirname, 'blockchain');
         const batchFile = path.join(blockchainDir, 'start-node1.bat');
         
@@ -484,6 +856,23 @@ ipcMain.handle('start-blockchain-node1', async function () {
 
 ipcMain.handle('start-blockchain-node2', async function () {
     try {
+        // Check Geth installation before starting
+        const gethCheck = await checkGethInstallation();
+        if (!gethCheck.installed) {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'warning',
+                    data: `⚠️ Geth not found. Installing...`,
+                    category: 'system'
+                });
+            }
+            
+            const installResult = await installGeth();
+            if (!installResult.success) {
+                return { success: false, error: 'Failed to install Geth' };
+            }
+        }
+        
         const blockchainDir = path.join(__dirname, 'blockchain');
         const batchFile = path.join(blockchainDir, 'start-node2.bat');
         
@@ -522,6 +911,23 @@ ipcMain.handle('start-blockchain-node2', async function () {
 
 ipcMain.handle('start-blockchain', async function () {
     try {
+        // Check Geth installation before starting
+        const gethCheck = await checkGethInstallation();
+        if (!gethCheck.installed) {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'warning',
+                    data: `⚠️ Geth not found. Installing...`,
+                    category: 'system'
+                });
+            }
+            
+            const installResult = await installGeth();
+            if (!installResult.success) {
+                return { success: false, error: 'Failed to install Geth' };
+            }
+        }
+        
         const blockchainDir = path.join(__dirname, 'blockchain');
         const node1Batch = path.join(blockchainDir, 'start-node1.bat');
         const node2Batch = path.join(blockchainDir, 'start-node2.bat');
@@ -736,6 +1142,22 @@ ipcMain.handle('start-backend', async function () {
     try {
         const serverDir = path.join(__dirname, 'server');
         
+        // Check dependencies before starting
+        if (!checkNodeModulesExists(serverDir)) {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'warning',
+                    data: `⚠️ Backend dependencies missing. Installing...`,
+                    category: 'system'
+                });
+            }
+            
+            const installResult = await installNodeModules(serverDir, 'Backend');
+            if (!installResult.success) {
+                return { success: false, error: 'Failed to install backend dependencies' };
+            }
+        }
+        
         console.log('Starting backend server in separate terminal...');
         
         // Open backend in new terminal window
@@ -812,6 +1234,23 @@ ipcMain.handle('stop-backend', async function () {
 
 ipcMain.handle('start-frontend', async function (event, ipAddress) {
     try {
+        // Check dependencies before starting
+        const rootPath = __dirname;
+        if (!checkNodeModulesExists(rootPath)) {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('command-output', {
+                    type: 'warning',
+                    data: `⚠️ Frontend dependencies missing. Installing...`,
+                    category: 'system'
+                });
+            }
+            
+            const installResult = await installNodeModules(rootPath, 'Frontend');
+            if (!installResult.success) {
+                return { success: false, error: 'Failed to install frontend dependencies' };
+            }
+        }
+        
         console.log('Starting frontend application in separate terminal...');
         
         // Open frontend in new terminal window
