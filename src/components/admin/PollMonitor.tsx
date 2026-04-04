@@ -726,7 +726,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
       
       {!isPollMonitor && (
         <>
-          {isSuperAdmin && (
+          {(isSuperAdmin || user?.role === 'auditor') && (
             <button
               onClick={exportVotes}
               className="flex items-center gap-2 px-3 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors min-w-[100px] justify-center"
@@ -1155,7 +1155,7 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                 
                 {!isPollMonitor && (
                   <>
-                    {isSuperAdmin && (
+                    {(isSuperAdmin || user?.role === 'auditor') && (
                       <button
                         onClick={exportVotes}
                         className="flex items-center gap-2 px-3 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors"

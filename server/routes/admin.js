@@ -85,8 +85,14 @@ router.get('/admins', authenticateAdmin, authenticateSuperAdmin, async (req, res
 router.post('/admins', authenticateAdmin, authenticateSuperAdmin, async (req, res) => {
   try {
     const { email, password, fullName, role } = req.body;
+    
+    // DEBUG: Log what we received
+    console.log('🔧 Create Admin - Received data:', { email, fullName, role, passwordLength: password?.length });
+    console.log('🔧 Request body keys:', Object.keys(req.body));
+    console.log('🔧 Request user:', req.user);
 
     if (!email || !password || !fullName || !role) {
+      console.log('❌ Validation failed:', { email: !!email, password: !!password, fullName: !!fullName, role: !!role });
       return res.status(400).json({ error: 'All fields are required' });
     }
 
@@ -98,8 +104,8 @@ router.post('/admins', authenticateAdmin, authenticateSuperAdmin, async (req, re
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await pool.execute(
-      'INSERT INTO admins (email, password, full_name, role, created_by) VALUES (?, ?, ?, ?, ?)',
-      [email, hashedPassword, fullName, role, req.user.id]
+      'INSERT INTO admins (email, password, full_name, role) VALUES (?, ?, ?, ?)',
+      [email, hashedPassword, fullName, role]
     );
 
     await logAuditAction(req.user.id, 'admin', 'CREATE_ADMIN', `Created admin: ${email}`, req);

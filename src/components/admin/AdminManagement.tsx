@@ -29,11 +29,16 @@ export const AdminManagement: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const notificationIdCounter = useRef(1);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    email: string;
+    password: string;
+    fullName: string;
+    role: 'admin' | 'auditor' | 'poll_monitor' | 'super_admin';
+  }>({
     email: '',
     password: '',
     fullName: '',
-    role: 'admin' as 'admin' | 'auditor' | 'poll_monitor' | 'super_admin'
+    role: 'admin'
   });
 
   // Notification functions
@@ -128,6 +133,11 @@ export const AdminManagement: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // DEBUG: Log what we're about to send
+    console.log('🔧 Frontend - Creating admin with data:', formData);
+    console.log('🔧 Frontend - editingAdmin:', editingAdmin);
+    
     try {
       if (editingAdmin) {
         await api.put(`/admin/admins/${editingAdmin.id}`, formData);
@@ -140,7 +150,9 @@ export const AdminManagement: React.FC = () => {
             : admin
         ));
       } else {
+        console.log('🔧 Frontend - Sending POST to /admin/admins');
         const newAdmin = await api.post('/admin/admins', formData);
+        console.log('🔧 Frontend - Response:', newAdmin);
         addNotification('Admin added successfully', 'success');
         
         // Optimistic update - add to local state immediately
@@ -172,7 +184,7 @@ export const AdminManagement: React.FC = () => {
       email: admin.email,
       password: '',
       fullName: admin.full_name,
-      role: admin.role
+      role: admin.role as 'admin' | 'auditor' | 'poll_monitor' | 'super_admin'
     });
     setShowModal(true);
     setShowMobileActions(null);
@@ -663,7 +675,7 @@ export const AdminManagement: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
             <select
               value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'auditor' | 'poll_monitor' })}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               required
             >

@@ -42,10 +42,11 @@ export const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
       ];
     }
 
-    // Auditor: ONLY Dashboard tab
+    // Auditor: Dashboard AND Poll Monitor (view-only, no export)
     if (userRole === 'auditor') {
       return [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'monitor', label: 'Monitor', icon: Monitor }
       ];
     }
 
