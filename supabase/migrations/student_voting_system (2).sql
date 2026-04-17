@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 04, 2026 at 02:31 PM
+-- Generation Time: Apr 17, 2026 at 11:37 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -112,6 +112,13 @@ CREATE TABLE `admins` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `admins`
+--
+
+INSERT INTO `admins` (`id`, `email`, `password`, `full_name`, `role`, `is_active`, `created_at`, `updated_at`) VALUES
+(1000, 'pollmonitor@gmail.com', '$2a$10$EL6.5MQUL/4sJ8.5pUqAOeywMt88s.Y4iO9pX9AcgYL2pIucW9t.G', 'poll monitor', 'poll_monitor', 1, '2026-04-04 12:44:19', '2026-04-04 12:44:19');
+
 -- --------------------------------------------------------
 
 --
@@ -129,6 +136,50 @@ CREATE TABLE `audit_logs` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `audit_logs`
+--
+
+INSERT INTO `audit_logs` (`id`, `user_id`, `user_type`, `action`, `details`, `ip_address`, `user_agent`, `created_at`) VALUES
+(1, 0, 'admin', 'CREATE_ADMIN', 'Created admin: pollmonitor@gmail.com', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 12:44:19'),
+(2, 1000, 'admin', 'LOGIN_FAILED', 'Invalid password', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 12:44:34'),
+(3, 1000, 'admin', 'LOGIN_FAILED', 'Invalid password', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 12:44:52'),
+(4, 1000, 'admin', 'LOGIN_SUCCESS', 'Admin logged in', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 12:45:16'),
+(5, 1000, 'admin', 'LOGIN_SUCCESS', 'Admin logged in', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 12:45:16'),
+(6, 1000, 'admin', 'LOGIN_SUCCESS', 'Admin logged in', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 12:45:36'),
+(7, 1000, 'admin', 'LOGIN_SUCCESS', 'Admin logged in', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 12:45:37'),
+(8, 0, 'admin', 'LOGIN_SUCCESS', 'Super admin logged in', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 12:58:59'),
+(9, 0, 'admin', 'LOGIN_SUCCESS', 'Super admin logged in', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 12:58:59'),
+(10, 0, 'admin', 'CREATE_VOTER', 'Created voter: 20-0001', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 13:10:38'),
+(11, 0, 'admin', 'CREATE_VOTER', 'Created voter: 20-0002', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 13:10:38'),
+(12, 0, 'admin', 'CREATE_VOTER', 'Created voter: 20-3333', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 13:10:38'),
+(13, 0, 'admin', 'CREATE_VOTER', 'Created voter: 20-4444', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 13:10:38'),
+(14, 0, 'admin', 'CREATE_VOTER', 'Created voter: 20-5555', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 13:10:38'),
+(15, 0, 'admin', 'CREATE_VOTER', 'Created voter: 20-6666', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 13:10:38'),
+(16, 0, 'admin', 'CREATE_VOTER', 'Created voter: 20-0007', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 13:10:38'),
+(17, 0, 'admin', 'CREATE_VOTER', 'Created voter: 20-0008', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 13:10:39'),
+(18, 0, 'admin', 'CREATE_VOTER', 'Created voter: 20-9999', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 13:10:39'),
+(19, 0, 'admin', 'CREATE_VOTER', 'Created voter: 20-1000', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 13:10:39'),
+(20, 0, 'admin', 'CREATE_VOTER', 'Created voter: 20-1111', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 13:10:39'),
+(21, 0, 'admin', 'CREATE_VOTER', 'Created voter: 20-1222', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 13:10:39'),
+(22, 0, 'admin', 'CREATE_VOTER', 'Created voter: 20-1333', '192.168.1.8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-04 13:10:39'),
+(23, 0, 'admin', 'LOGIN_SUCCESS', 'Super admin logged in', '192.168.1.6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', '2026-04-17 08:12:34'),
+(24, 0, 'admin', 'LOGIN_SUCCESS', 'Super admin logged in', '192.168.1.6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', '2026-04-17 08:12:34'),
+(25, 0, 'admin', 'CREATE_POSITION', 'Created position: Vice President', '192.168.1.6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', '2026-04-17 08:22:55'),
+(26, 0, 'admin', 'CREATE_CANDIDATE', 'Created candidate: Jomar Palarao', '192.168.1.6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', '2026-04-17 08:54:55'),
+(27, 0, 'admin', 'START_POLL', 'Poll started by super admin', '192.168.1.6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', '2026-04-17 08:55:02'),
+(28, 0, 'admin', 'START_POLL', 'Poll status updated', '192.168.1.6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', '2026-04-17 08:55:02'),
+(29, 10007, 'voter', 'LOGIN_SUCCESS', 'Voter logged in', '192.168.1.6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', '2026-04-17 08:55:45'),
+(30, 10007, 'voter', 'LOGIN_SUCCESS', 'Voter logged in', '192.168.1.6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', '2026-04-17 08:55:45'),
+(31, 20, 'voter', 'BLOCKCHAIN_VOTE_CAST', 'Vote cast in blockchain storage. TX: 0x9744fb0552ef61f63c9946fc7bd93a50eafe70550b0d34c08871df913a055512 (Node: node1) - Empty positions: 0', '192.168.1.6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', '2026-04-17 08:55:58'),
+(32, 10007, 'voter', 'MARK_VOTED', 'Voter 20-0008 marked as voted with ballot vote_mo2ob60y_i7nqcobti1q_xygbrwxdq48_byex', '192.168.1.6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', '2026-04-17 08:55:58'),
+(33, 0, 'admin', 'LOGIN_SUCCESS', 'Super admin logged in', '192.168.1.6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', '2026-04-17 08:56:32'),
+(34, 0, 'admin', 'LOGIN_SUCCESS', 'Super admin logged in', '192.168.1.6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', '2026-04-17 08:56:32'),
+(35, 10011, 'voter', 'LOGIN_SUCCESS', 'Voter logged in', '192.168.1.7', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2026-04-17 08:58:18'),
+(36, 10011, 'voter', 'LOGIN_SUCCESS', 'Voter logged in', '192.168.1.7', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2026-04-17 08:58:18'),
+(37, 20, 'voter', 'BLOCKCHAIN_VOTE_CAST', 'Vote cast in blockchain storage. TX: 0x8f9bbad0de35d442df777f556a9c9cd88ec1adf155d998217040f9578e223e2d (Node: node1) - Empty positions: 0', '192.168.1.7', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2026-04-17 08:58:53'),
+(38, 10011, 'voter', 'MARK_VOTED', 'Voter 20-1222 marked as voted with ballot vote_mo2oeuop_7qw8i3niyl_0eov2i13mfv_jxui', '192.168.1.7', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2026-04-17 08:58:53');
+
 -- --------------------------------------------------------
 
 --
@@ -141,12 +192,21 @@ CREATE TABLE `candidates` (
   `party` varchar(255) DEFAULT NULL,
   `position` varchar(255) NOT NULL,
   `position_id` int(10) UNSIGNED DEFAULT NULL,
+  `image_url` varchar(500) DEFAULT NULL,
+  `image_path` varchar(500) DEFAULT NULL,
   `photo_url` varchar(500) DEFAULT NULL,
   `vote_count` int(10) UNSIGNED DEFAULT 0,
   `is_active` tinyint(1) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `candidates`
+--
+
+INSERT INTO `candidates` (`id`, `name`, `party`, `position`, `position_id`, `image_url`, `image_path`, `photo_url`, `vote_count`, `is_active`, `created_at`, `updated_at`) VALUES
+(100, 'Jomar Palarao', 'party', 'Vice President', NULL, 'candidate-1776416095822-981125639.jpg', '/uploads/candidates/candidate-1776416095822-981125639.jpg', NULL, 0, 1, '2026-04-17 08:54:55', '2026-04-17 08:54:55');
 
 --
 -- Triggers `candidates`
@@ -185,12 +245,22 @@ CREATE TABLE `courses` (
 --
 
 INSERT INTO `courses` (`id`, `name`, `code`, `description`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'BS Computer Science', 'BSCS', NULL, 1, '2026-04-04 12:29:29', '2026-04-04 12:29:29'),
-(2, 'BS Information Technology', 'BSIT', NULL, 1, '2026-04-04 12:29:29', '2026-04-04 12:29:29'),
-(3, 'BS Business Administration', 'BSBA', NULL, 1, '2026-04-04 12:29:29', '2026-04-04 12:29:29'),
-(4, 'BS Accountancy', 'BSA', NULL, 1, '2026-04-04 12:29:29', '2026-04-04 12:29:29'),
-(5, 'BS Engineering', 'BSENG', NULL, 1, '2026-04-04 12:29:29', '2026-04-04 12:29:29'),
-(6, 'BS Nursing', 'BSN', NULL, 1, '2026-04-04 12:29:29', '2026-04-04 12:29:29');
+(7, 'BIT Automotive Technology', 'BIT-AT', NULL, 1, '2026-04-04 13:03:28', '2026-04-04 13:03:28'),
+(9, 'BIT Electrical Technology', 'BIT-ET', NULL, 1, '2026-04-04 13:04:30', '2026-04-04 13:04:30'),
+(10, 'BIT Electronics Technology', 'BIT-ET', NULL, 1, '2026-04-04 13:04:49', '2026-04-04 13:04:49'),
+(11, 'BSE Social Entrepreneurship', 'BSE-SE', NULL, 1, '2026-04-04 13:06:44', '2026-04-04 13:06:44'),
+(12, 'BSE Culinary Arts', 'BSE-CA', NULL, 1, '2026-04-04 13:07:08', '2026-04-04 13:07:08'),
+(13, 'BSE Hospitality Management', 'BSE-HM', NULL, 1, '2026-04-04 13:07:24', '2026-04-04 13:07:24'),
+(14, 'BS Information Technology', 'BSIT', NULL, 1, '2026-04-04 13:07:41', '2026-04-04 13:07:41'),
+(15, 'BS Office Administration', 'BSOA', NULL, 1, '2026-04-04 13:07:51', '2026-04-04 13:07:51'),
+(16, 'BS Accountancy', 'BSA', NULL, 1, '2026-04-04 13:08:00', '2026-04-04 13:08:00'),
+(17, 'BS Management Accounting', 'BSMA', NULL, 1, '2026-04-04 13:08:11', '2026-04-04 13:08:11'),
+(18, 'BTLED Home Economics', 'BTLED-HE', NULL, 1, '2026-04-04 13:08:39', '2026-04-04 13:08:39'),
+(19, 'BTLED Industrial Arts', 'BTLED-IA', NULL, 1, '2026-04-04 13:08:54', '2026-04-04 13:08:54'),
+(20, 'BSED Biological Science', 'BSED-BS', NULL, 1, '2026-04-04 13:09:21', '2026-04-04 13:09:21'),
+(21, 'BSED English', 'BSED-E', NULL, 1, '2026-04-04 13:09:32', '2026-04-04 13:09:32'),
+(22, 'BSED Filipino', 'BSED-F', NULL, 1, '2026-04-04 13:09:40', '2026-04-04 13:09:40'),
+(23, 'BSED Mathematics', 'BSED-M', NULL, 1, '2026-04-04 13:09:53', '2026-04-04 13:09:53');
 
 -- --------------------------------------------------------
 
@@ -236,7 +306,7 @@ CREATE TABLE `poll_settings` (
 --
 
 INSERT INTO `poll_settings` (`id`, `is_active`, `is_paused`, `start_time`, `end_time`, `paused_at`, `election_name`, `election_date`, `academic_year`, `created_at`, `updated_at`) VALUES
-(1, 0, 0, NULL, NULL, NULL, 'SSC Student Election', NULL, NULL, '2026-04-04 12:29:29', '2026-04-04 12:29:29');
+(1, 1, 0, NULL, NULL, NULL, 'SSC Student Election', NULL, NULL, '2026-04-04 12:29:29', '2026-04-17 08:55:02');
 
 -- --------------------------------------------------------
 
@@ -254,6 +324,13 @@ CREATE TABLE `positions` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `positions`
+--
+
+INSERT INTO `positions` (`id`, `name`, `max_votes`, `display_order`, `is_active`, `allowed_courses`, `created_at`, `updated_at`) VALUES
+(1, 'Vice President', 1, 0, 1, '[]', '2026-04-17 08:22:55', '2026-04-17 08:22:55');
 
 -- --------------------------------------------------------
 
@@ -319,6 +396,25 @@ CREATE TABLE `voters` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `voters`
+--
+
+INSERT INTO `voters` (`id`, `student_id`, `full_name`, `course`, `year_level`, `section`, `password`, `has_voted`, `voted_at`, `vote_hash`, `is_active`, `created_at`, `updated_at`) VALUES
+(10000, '20-0001', 'Servando S. Tio Iii', 'BS Information Technology', 4, 'A', '$2a$10$O4xVWk7dlychVOfghHAfhe9X9wYWzEwrWUGz5.C2cTWZDXeFiJlCS', 0, NULL, NULL, 1, '2026-04-04 13:10:38', '2026-04-04 13:10:38'),
+(10001, '20-0002', 'Jay Lou A. Terante', 'BS Office Administration', 4, 'A', '$2a$10$AVXB447GMQt4B9..HgSnR.CE0GK4ah8DEBgjxJ3NqflmG84E7Qhcm', 0, NULL, NULL, 1, '2026-04-04 13:10:38', '2026-04-04 13:10:38'),
+(10002, '20-3333', 'Jomar Palarao', 'BSED English', 4, 'B', '$2a$10$j.G7kF75MWfaBKYG19WXE.ne7BE5k0AIjzmDF3cufv.knsvPwOBfS', 0, NULL, NULL, 1, '2026-04-04 13:10:38', '2026-04-04 13:10:38'),
+(10003, '20-4444', 'Alyanna Marie Espoltero', 'BS Accountancy', 4, 'C', '$2a$10$MK85QZkWJeOldYOblyyuS.qrhW9qrDgW5ZJ8QBqr2qmJuSzbR1SAi', 0, NULL, NULL, 1, '2026-04-04 13:10:38', '2026-04-04 13:10:38'),
+(10004, '20-5555', 'James Yap', 'BS Information Technology', 3, 'A', '$2a$10$r9QOLswUjCHEBGgNhyJvFOn6d8aPefm9tlQP.fQ59ACMuWc3dxLjG', 0, NULL, NULL, 1, '2026-04-04 13:10:38', '2026-04-04 13:10:38'),
+(10005, '20-6666', 'Juan Dela Cruz', 'BTLED Home Economics', 4, 'A', '$2a$10$CGjcOKc6O4hYxHrWu5vJtOdLoYZ8Z6mzK6r7IxQsJzJWX.An9EI/C', 0, NULL, NULL, 1, '2026-04-04 13:10:38', '2026-04-04 13:10:38'),
+(10006, '20-0007', 'Jose Rizal', 'BSED Biological Science', 2, 'A', '$2a$10$ub0oXSfN0fAllYaM2isOfeZLT8Du9gelE5zEJDAmh3hStaOM8MBMu', 0, NULL, NULL, 1, '2026-04-04 13:10:38', '2026-04-04 13:10:38'),
+(10007, '20-0008', 'Rodrigo R. Duterte', 'BS Accountancy', 3, 'A', '$2a$10$S.CT4FlNvZgC2ni2pn9YuOtOIakUNrkSDX7MmCNy4HnAbtMsAM.t.', 1, '2026-04-17 08:55:58', 'vote_1776416158517_i18budqqj', 1, '2026-04-04 13:10:39', '2026-04-17 08:55:58'),
+(10008, '20-9999', 'Ferdinand Marcos Jr', 'BS Information Technology', 4, 'A', '$2a$10$0cpIF2.osoLmEgigcHHfPe6cg4yaL.r4IPWGIMRIHlqQ1iJQWlFXC', 0, NULL, NULL, 1, '2026-04-04 13:10:39', '2026-04-04 13:10:39'),
+(10009, '20-1000', 'Catherine Medilo', 'BIT Electrical Technology', 4, 'A', '$2a$10$982T53Kn/wEAXs8fktLvGe53wz6fiz3hojsvRxamWOkyb/dGk9znS', 0, NULL, NULL, 1, '2026-04-04 13:10:39', '2026-04-04 13:10:39'),
+(10010, '20-1111', 'Joshua A. Tan', 'BIT Automotive Technology', 4, 'A', '$2a$10$XVB8X4Vb715BXgVJd22rr.lhJVg9P69CeP6naYsJ5scz7JBsx7oIy', 0, NULL, NULL, 1, '2026-04-04 13:10:39', '2026-04-04 13:10:39'),
+(10011, '20-1222', 'Sweet Mary Terante', 'BTLED Home Economics', 4, 'B', '$2a$10$RqwRErGaXjue0RIoXsaCr.hyfUkUUlaTHvagFPwLV/JoeSn9H4JwK', 1, '2026-04-17 08:58:53', 'vote_1776416332960_16ly4drij', 1, '2026-04-04 13:10:39', '2026-04-17 08:58:53'),
+(10012, '20-1333', 'Kimberly Banalo', 'BS Information Technology', 4, 'C', '$2a$10$x6vEqvK30fOfIS4IXQ4.iutOmSOM5HH6W9frgEdRW53mqjIJ4nERe', 0, NULL, NULL, 1, '2026-04-04 13:10:39', '2026-04-04 13:10:39');
 
 --
 -- Triggers `voters`
@@ -520,25 +616,25 @@ ALTER TABLE `vote_verification`
 -- AUTO_INCREMENT for table `admins`
 --
 ALTER TABLE `admins`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1000;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1001;
 
 --
 -- AUTO_INCREMENT for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT for table `candidates`
 --
 ALTER TABLE `candidates`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=100;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=101;
 
 --
 -- AUTO_INCREMENT for table `courses`
 --
 ALTER TABLE `courses`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `election_data`
@@ -550,13 +646,13 @@ ALTER TABLE `election_data`
 -- AUTO_INCREMENT for table `positions`
 --
 ALTER TABLE `positions`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `voters`
 --
 ALTER TABLE `voters`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10000;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10013;
 
 --
 -- AUTO_INCREMENT for table `votes`
