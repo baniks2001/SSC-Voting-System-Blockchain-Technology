@@ -15,7 +15,6 @@
     "compile-contract": "node scripts/compile.js",
     "deploy-contract": "node scripts/deploy.js",
     "deploy-dev": "node scripts/deploy-dev.js",
-    "test-contract": "node scripts/test-contract.js",
     "setup-contract": "npm run compile-contract && npm run deploy-contract",
     "electron": "electron electron-main.cjs",
     "electron-dev": "electron electron-main.cjs --inspect",

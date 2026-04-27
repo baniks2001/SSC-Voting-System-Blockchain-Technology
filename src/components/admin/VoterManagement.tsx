@@ -83,6 +83,7 @@ export const VoterManagement: React.FC = () => {
   const [statusAction, setStatusAction] = useState<'activate' | 'deactivate' | null>(null);
   const [resetVoteAction, setResetVoteAction] = useState<'all' | 'selected' | null>(null);
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
+  const [bulkCourseSelection, setBulkCourseSelection] = useState<string>('');
   const { showToast } = useToast();
   const { pollStatus } = usePoll();
 
@@ -1047,10 +1048,28 @@ export const VoterManagement: React.FC = () => {
     );
   };
 
+  const applyBulkCourseSelection = () => {
+    if (!bulkCourseSelection) {
+      showToast('error', 'Please select a course first');
+      return;
+    }
+
+    const updatedStudents = importedStudents.map((student, index) => {
+      if (student.status === 'new') {
+        return { ...student, course: bulkCourseSelection };
+      }
+      return student;
+    });
+
+    setImportedStudents(updatedStudents);
+    showToast('success', `Course "${bulkCourseSelection}" applied to all new voters`);
+  };
+
   const resetImport = () => {
     setImportedStudents([]);
     setImportStep('upload');
     setImportSummary({ success: 0, duplicates: 0, errors: 0 });
+    setBulkCourseSelection('');
   };
 
   const toggleExportOption = (option: keyof ExportOptions) => {
@@ -2893,6 +2912,53 @@ export const VoterManagement: React.FC = () => {
                     </p>
                   </div>
                 </div>
+              </div>
+
+              {/* Bulk Course Selection */}
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-start space-x-3">
+                    <GraduationCap className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm text-blue-800 font-medium">Apply Course to All Voters</p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Select a course to apply to all new voters at once, or select individual courses below.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    <div className="relative">
+                      <select
+                        value={bulkCourseSelection}
+                        onChange={(e) => setBulkCourseSelection(e.target.value)}
+                        className="w-full sm:w-48 px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm appearance-none bg-white"
+                      >
+                        <option value="">Select course for all</option>
+                        {courses.map(course => (
+                          <option key={course.id} value={course.name}>
+                            {course.name} ({course.code})
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-400 pointer-events-none" />
+                    </div>
+                    <button
+                      onClick={applyBulkCourseSelection}
+                      disabled={!bulkCourseSelection || importedStudents.filter(s => s.status === 'new').length === 0}
+                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 text-sm flex items-center justify-center shadow-sm hover:shadow-md"
+                    >
+                      <CheckSquare className="w-4 h-4 mr-2" />
+                      Apply to All
+                    </button>
+                  </div>
+                </div>
+                {bulkCourseSelection && (
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <p className="text-xs text-blue-700">
+                      <span className="font-medium">Selected:</span> {bulkCourseSelection} will be applied to {importedStudents.filter(s => s.status === 'new').length} new voter(s)
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
