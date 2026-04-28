@@ -43,6 +43,11 @@ async function deployToBothNodes() {
         let NODE1_ACCOUNT = accountsNode1[0];
         let NODE2_ACCOUNT = accountsNode2[0];
         
+        // Check if we have any accounts at all
+        if (!NODE1_ACCOUNT || !NODE2_ACCOUNT) {
+            throw new Error('❌ No accounts found on nodes. Please restart the nodes after creating accounts.');
+        }
+        
         // If we have multiple accounts, use different ones
         if (accountsNode1.length > 1 && accountsNode2.length > 1) {
             NODE1_ACCOUNT = accountsNode1[0];

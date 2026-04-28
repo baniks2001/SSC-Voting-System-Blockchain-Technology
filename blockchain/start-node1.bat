@@ -1,37 +1,33 @@
 @echo off
-title Ethereum Node 1 - Port 8545 (MASTER - PERSISTENT)
+title Ethereum Node 1 - Port 8545 (MASTER - DEV MODE + PERSISTENT)
 echo ========================================
-echo NODE 1 - ETHEREUM NODE (MASTER - PERSISTENT)
+echo NODE 1 - ETHEREUM NODE (MASTER - DEV MODE + PERSISTENT)
 echo ========================================
 echo.
 echo Geth Version: 1.16.5 Compatible
-echo Network: Persistent Development (Chain ID: 1337)
+echo Network: Development Mode with Persistent Storage (Chain ID: 1337)
 echo Storage: Persistent on disk
 echo Ports: HTTP 8545, WS 8546, Auth 8551
 echo.
-echo Starting Node 1 as MASTER node with persistent storage...
+echo Starting Node 1 as MASTER node in DEV MODE with persistent storage...
 echo.
 
-if not exist "node1" mkdir node1
+cd /d "%~dp0"
+if not exist "node1-data" mkdir node1-data
+if not exist "node1" mklink /d "node1" "node1-data"
+if not exist "shared-chain" mkdir shared-chain
+if not exist "node1\geth\chaindata" mklink /d "node1\geth\chaindata" "shared-chain\chaindata"
+if not exist "node1\geth\nodes" mklink /d "node1\geth\nodes" "shared-chain\nodes"
 
-echo [INIT] Checking if Node 1 needs genesis initialization...
-if not exist "node1\geth\chaindata" (
-    echo [INIT] Initializing Node 1 with genesis block...
-    geth --datadir node1 init genesis.json
-    if %errorlevel% neq 0 (
-        echo ❌ Failed to initialize Node 1 with genesis
-        pause
-        exit /b %errorlevel%
-    )
-    echo ✅ Node 1 initialized with genesis block
-) else (
-    echo ✅ Node 1 already has blockchain data
-)
+echo [INIT] Development mode will auto-create genesis...
+echo ✅ Node 1 ready for development mode
 
 echo [START] Launching Geth for Node 1 as MASTER...
 echo.
 
 geth --datadir node1 ^
+--dev ^
+--dev.period 5 ^
 --http ^
 --http.port 8545 ^
 --http.addr 0.0.0.0 ^
@@ -48,8 +44,6 @@ geth --datadir node1 ^
 --rpc.allow-unprotected-txs ^
 --miner.gasprice 1000000000 ^
 --port 30303 ^
---dev ^
---dev.period 5 ^
 --nodiscover ^
 --maxpeers 0 ^
 console

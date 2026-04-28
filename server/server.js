@@ -59,8 +59,36 @@ import positionsRoutes from './routes/positions.js';
 // Import database configuration
 import { testConnection, cleanupPool } from './config/database.js';
 
+// Import database pool configuration
+import { pool } from './config/database.js';
+
 const app = express();
 const PORT = process.env.SERVER_PORT || 5000;
+
+// Database connection limits
+const optimalConnectionLimit = pool.options?.connectionLimit || 10;
+const optimalQueueLimit = pool.options?.queueLimit || 0;
+
+// Utility function for BigInt serialization
+function serializeBigInt(obj) {
+    if (obj === null || obj === undefined) {
+        return obj;
+    }
+    if (typeof obj === 'bigint') {
+        return obj.toString();
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(item => serializeBigInt(item));
+    }
+    if (typeof obj === 'object') {
+        const result = {};
+        for (const [key, value] of Object.entries(obj)) {
+            result[key] = serializeBigInt(value);
+        }
+        return result;
+    }
+    return obj;
+}
 
 // Cluster setup for handling massive load
 const numCPUs = os.cpus().length;
@@ -303,27 +331,6 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
             const { ethereumService } = await import('./services/ethereumService.js');
             const blockchainInfo = await ethereumService.getBlockchainInfo();
 
-            // Add BigInt serialization helper function
-            function serializeBigInt(obj) {
-                if (obj === null || obj === undefined) {
-                    return obj;
-                }
-                if (typeof obj === 'bigint') {
-                    return obj.toString();
-                }
-                if (Array.isArray(obj)) {
-                    return obj.map(item => serializeBigInt(item));
-                }
-                if (typeof obj === 'object') {
-                    const result = {};
-                    for (const [key, value] of Object.entries(obj)) {
-                        result[key] = serializeBigInt(value);
-                    }
-                    return result;
-                }
-                return obj;
-            }
-
             res.json({
                 success: true,
                 blockchain: serializeBigInt(blockchainInfo),
@@ -354,27 +361,6 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
         res.json({ message: 'Initiating graceful shutdown' });
         console.log('🔄 Manual graceful shutdown initiated');
         process.exit(0);
-    });
-
-    // Error handling middleware
-    app.use((err, req, res, next) => {
-        console.error('Error stack:', err.stack);
-
-        if (err.message && err.message.includes('heap')) {
-            console.error('Memory error detected, consider increasing Node.js memory limit');
-            // Force garbage collection if available
-            if (global.gc) {
-                global.gc();
-            }
-            return res.status(500).json({
-                error: 'Server is experiencing high load. Please try again later.'
-            });
-        }
-
-        res.status(500).json({
-            error: 'Something went wrong!',
-            ...(process.env.NODE_ENV === 'development' && { details: err.message })
-        });
     });
 
     // 404 handler

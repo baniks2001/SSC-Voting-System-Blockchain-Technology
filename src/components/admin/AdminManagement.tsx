@@ -640,7 +640,7 @@ export const AdminManagement: React.FC = () => {
           resetForm();
         }}
         title={editingAdmin ? 'Edit Admin' : 'Add New Admin'}
-        size="md"
+        size="fullscreen"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

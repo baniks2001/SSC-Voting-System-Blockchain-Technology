@@ -682,104 +682,25 @@ class MultiNodeEthereumService {
             
             console.log(`📊 Node1 votes: ${node1VoteCount}, Node2 votes: ${node2VoteCount}`);
             
-            // If votes are equal, no sync needed
+            // With shared blockchain data, votes should be identical
             if (node1VoteCount === node2VoteCount) {
-                return { synced: false, reason: 'Nodes already in sync' };
+                console.log(`✅ All nodes synchronized with ${node1VoteCount} votes each`);
+                console.log(`✅ All data is currently synchronized, continuing to monitor for changes`);
+                return { synced: true, votesSynced: 0, reason: 'Nodes already in sync' };
             }
             
-            // Determine which node has more votes (source) and which has fewer (target)
-            let sourceNode, targetNode, sourceVoteCount, targetVoteCount, sourceName, targetName;
+            // If votes differ, log the discrepancy
+            console.log(`⚠️ Vote count discrepancy detected: node1=${node1VoteCount}, node2=${node2VoteCount}`);
+            console.log(`ℹ️ This may indicate a sync issue or blockchain data inconsistency`);
             
-            if (node1VoteCount > node2VoteCount) {
-                sourceNode = node1;
-                targetNode = node2;
-                sourceVoteCount = node1VoteCount;
-                targetVoteCount = node2VoteCount;
-                sourceName = 'node1';
-                targetName = 'node2';
-            } else {
-                sourceNode = node2;
-                targetNode = node1;
-                sourceVoteCount = node2VoteCount;
-                targetVoteCount = node1VoteCount;
-                sourceName = 'node2';
-                targetName = 'node1';
-            }
-            
-            console.log(`🔄 AutoSync detected: ${sourceName} has ${sourceVoteCount} votes, ${targetName} has ${targetVoteCount} votes`);
-            console.log(`🔄 Syncing missing votes from ${sourceName} to ${targetName}...`);
-            
-            // Get all votes from source node
-            const allVotesData = await sourceNode.contract.methods.getAllVotes().call();
-            const ballotIds = allVotesData[0];
-            
-            let votesSynced = 0;
-            let errors = 0;
-            
-            // Sync missing votes to target node
-            for (const ballotId of ballotIds) {
-                try {
-                    // Check if vote exists on target node
-                    const voteExists = await targetNode.contract.methods.voteExists(ballotId).call();
-                    
-                    if (!voteExists) {
-                        // Get vote details from source node
-                        const voteDetails = await sourceNode.contract.methods.getVote(ballotId).call();
-                        
-                        // Submit to target node
-                        await targetNode.contract.methods.submitVote(
-                            voteDetails[0], // voterId
-                            voteDetails[1], // ballotId
-                            voteDetails[2], // votes
-                            voteDetails[3], // timestamp
-                            voteDetails[4]  // voterHash
-                        ).send({
-                            from: targetNode.discoveredAccount,
-                            gas: 200000
-                        });
-                        
-                        votesSynced++;
-                        console.log(`✅ AutoSynced vote ${ballotId} from ${sourceName} to ${targetName} (${votesSynced}/${sourceVoteCount - targetVoteCount})`);
-                    }
-                } catch (voteError) {
-                    errors++;
-                    if (!voteError.message.includes('already voted') && 
-                        !voteError.message.includes('vote already exists')) {
-                        console.log(`⚠️ AutoSync failed for vote ${ballotId}:`, voteError.message);
-                    }
-                }
-                
-                // Small delay to prevent overwhelming the network
-                await new Promise(resolve => setTimeout(resolve, 50));
-            }
-            
-            // Update target node sync status
-            if (votesSynced > 0) {
-                targetNode.syncStatus = 'synced';
-                targetNode.lastSync = new Date().toISOString();
-                targetNode.lastDataReceived = new Date().toISOString();
-                
-                console.log(`✅ AutoSync completed: ${votesSynced} votes synced from ${sourceName} to ${targetName}`);
-                
-                // Record sync history
-                this.recordSyncHistory('node1_node2_autosync', votesSynced, errors);
-                
-                return {
-                    synced: true,
-                    votesSynced: votesSynced,
-                    sourceNode: sourceName,
-                    targetNodes: [targetName],
-                    errors: errors
-                };
-            } else {
-                console.log(`ℹ️ AutoSync: No new votes to sync from ${sourceName} to ${targetName}`);
-                return {
-                    synced: false,
-                    reason: 'No new votes to sync',
-                    sourceNode: sourceName,
-                    targetNodes: [targetName]
-                };
-            }
+            // For now, just return the status without attempting to sync
+            // In a shared blockchain setup, this should not happen
+            return { 
+                synced: false, 
+                reason: 'Vote count discrepancy in shared blockchain',
+                node1Votes: node1VoteCount,
+                node2Votes: node2VoteCount
+            };
             
         } catch (error) {
             console.error('❌ Node1-Node2 AutoSync failed:', error.message);

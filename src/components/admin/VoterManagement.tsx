@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { UserPlus, Edit, Trash2, Search, Download, User, GraduationCap, Hash, Key, RefreshCw, CheckSquare, Square, AlertCircle, ChevronDown, Check, Filter, MoreVertical, CheckCircle, XCircle, Upload, Plus, X, BookOpen, UserX, UserCheck } from 'lucide-react';
 import { Voter } from '../../types';
 import { api } from '../../utils/api';
@@ -84,6 +84,12 @@ export const VoterManagement: React.FC = () => {
   const [resetVoteAction, setResetVoteAction] = useState<'all' | 'selected' | null>(null);
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
   const [bulkCourseSelection, setBulkCourseSelection] = useState<string>('');
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    itemsPerPage: 50,
+    totalItems: 0
+  });
+  const [paginationLoading, setPaginationLoading] = useState(false);
   const { showToast } = useToast();
   const { pollStatus } = usePoll();
 
@@ -336,49 +342,68 @@ export const VoterManagement: React.FC = () => {
   const [allVoters, setAllVoters] = useState<Voter[]>([]);
   const [displayedVoters, setDisplayedVoters] = useState<Voter[]>([]);
 
+  // Memoized filtering function for better performance
+  const filterVoters = useMemo(() => {
+    return (voters: Voter[], term: string, currentFilters: typeof filters) => {
+      let filtered = voters;
+      
+      // Early return if no filters
+      if (!term && !Object.values(currentFilters).some(Boolean)) {
+        return filtered;
+      }
+      
+      // Search term filtering (optimized)
+      if (term) {
+        const searchTermLower = term.toLowerCase();
+        filtered = filtered.filter(v => 
+          (v.full_name?.toLowerCase().includes(searchTermLower)) ||
+          (v.student_id?.toLowerCase().includes(searchTermLower))
+        );
+      }
+      
+      // Course filtering
+      if (currentFilters.course) {
+        filtered = filtered.filter(v => v.course === currentFilters.course);
+      }
+      
+      // Year filtering
+      if (currentFilters.year) {
+        filtered = filtered.filter(v => v.year_level?.toString() === currentFilters.year);
+      }
+      
+      // Section filtering
+      if (currentFilters.section) {
+        filtered = filtered.filter(v => v.section === currentFilters.section);
+      }
+      
+      // Voting status filtering
+      if (currentFilters.hasVoted) {
+        filtered = filtered.filter(v => 
+          currentFilters.hasVoted === 'voted' ? v.has_voted : !v.has_voted
+        );
+      }
+      
+      // Active status filtering
+      if (currentFilters.isActive) {
+        filtered = filtered.filter(v => 
+          currentFilters.isActive === 'active' ? v.is_active : !v.is_active
+        );
+      }
+      
+      return filtered;
+    };
+  }, []);
+
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (!loading && allVoters.length > 0) {
-        // Apply client-side filtering
-        let filtered = [...allVoters];
-        
-        if (searchTerm) {
-          filtered = filtered.filter(v => 
-            (v.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-            (v.student_id?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-          );
-        }
-        
-        if (filters.course) {
-          filtered = filtered.filter(v => v.course === filters.course);
-        }
-        
-        if (filters.year) {
-          filtered = filtered.filter(v => v.year_level?.toString() === filters.year);
-        }
-        
-        if (filters.section) {
-          filtered = filtered.filter(v => v.section === filters.section);
-        }
-        
-        if (filters.hasVoted) {
-          filtered = filtered.filter(v => 
-            filters.hasVoted === 'voted' ? v.has_voted : !v.has_voted
-          );
-        }
-        
-        if (filters.isActive) {
-          filtered = filtered.filter(v => 
-            filters.isActive === 'active' ? v.is_active : !v.is_active
-          );
-        }
-        
+        const filtered = filterVoters(allVoters, searchTerm, filters);
         setDisplayedVoters(filtered);
       }
-    }, 300);
+    }, 300); // Debounce delay
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, filters.course, filters.year, filters.section, filters.hasVoted, filters.isActive, allVoters]);
+  }, [searchTerm, filters, allVoters, loading, filterVoters]);
 
   const getUniqueCoursesFromVoters = () => {
     const courses = [...new Set(allVoters.map((v: Voter) => v.course || '').filter(Boolean))];
@@ -389,6 +414,299 @@ export const VoterManagement: React.FC = () => {
     const yearLevels = [...new Set(allVoters.map((v: Voter) => v.year_level?.toString() || '').filter(Boolean))];
     return yearLevels.sort();
   };
+
+  // Memoized voter row component for desktop
+  const VoterRow = React.memo(({ voter, isSelected, onToggle, onEdit, onStatusChange, onDelete, canEditPasswordOnly }: {
+    voter: Voter;
+    isSelected: boolean;
+    onToggle: () => void;
+    onEdit: () => void;
+    onStatusChange: () => void;
+    onDelete: () => void;
+    canEditPasswordOnly: boolean;
+  }) => (
+    <tr className={`transition-colors duration-150 ${isSelected
+      ? 'bg-blue-50/50 border-l-2 border-l-blue-500'
+      : 'hover:bg-gray-50/80'
+      } ${!voter.is_active ? 'bg-gray-50/50' : ''}`}>
+      <td className="px-6 py-4">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={onToggle}
+          disabled={canEditPasswordOnly}
+          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-colors"
+        />
+      </td>
+      <td className="px-6 py-4">
+        <div className="flex items-center space-x-4">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${voter.is_active
+            ? 'bg-gradient-to-br from-blue-500 to-blue-600'
+            : 'bg-gradient-to-br from-gray-400 to-gray-500'
+            }`}>
+            <User className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className={`font-medium ${voter.is_active ? 'text-gray-900' : 'text-gray-500'} ${!voter.is_active ? 'line-through' : ''}`}>
+              {voter.full_name}
+            </p>
+            <p className="text-sm text-gray-500 flex items-center mt-1">
+              <Hash className="w-3 h-3 mr-1" />
+              {voter.student_id}
+            </p>
+          </div>
+        </div>
+      </td>
+      <td className="px-6 py-4">
+        <div className="flex items-center space-x-3">
+          <GraduationCap className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <div>
+            <p className={`font-medium text-sm ${voter.is_active ? 'text-gray-900' : 'text-gray-500'}`}>
+              {voter.course}
+            </p>
+            <p className="text-xs text-gray-500">Year {voter.year_level}</p>
+          </div>
+        </div>
+      </td>
+      <td className="px-6 py-4">
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${voter.is_active
+          ? 'bg-gray-100 text-gray-800 border-gray-200'
+          : 'bg-gray-50 text-gray-500 border-gray-300'
+          }`}>
+          Section {voter.section}
+        </span>
+      </td>
+      <td className="px-6 py-4">
+        <StatusBadge isActive={voter.is_active} />
+      </td>
+      <td className="px-6 py-4">
+        <div className="flex flex-col space-y-1">
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${voter.has_voted
+            ? 'bg-green-100 text-green-800 border border-green-200'
+            : 'bg-amber-100 text-amber-800 border border-amber-200'
+            } ${!voter.is_active ? 'opacity-50' : ''}`}>
+            {voter.has_voted ? (
+              <>
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></div>
+                Voted
+              </>
+            ) : (
+              <>
+                <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mr-2"></div>
+                Not Voted
+              </>
+            )}
+          </span>
+          {voter.has_voted && voter.voted_at && (
+            <span className="text-xs text-gray-500">
+              {new Date(voter.voted_at).toLocaleString()}
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="px-6 py-4">
+        <span className="text-sm text-gray-600">
+          {new Date(voter.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          })}
+        </span>
+      </td>
+      <td className="px-6 py-4">
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={onEdit}
+            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200 transform hover:scale-105"
+            title={canEditPasswordOnly ? "Update Password and Status" : "Edit Voter"}
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          {voter.is_active ? (
+            <button
+              onClick={onStatusChange}
+              disabled={canEditPasswordOnly}
+              className={`p-2 rounded-xl transition-all duration-200 transform hover:scale-105 ${canEditPasswordOnly
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                }`}
+              title={canEditPasswordOnly ? "Cannot deactivate during voting" : "Deactivate Voter"}
+            >
+              <UserX className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={onStatusChange}
+              disabled={canEditPasswordOnly}
+              className={`p-2 rounded-xl transition-all duration-200 transform hover:scale-105 ${canEditPasswordOnly
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
+                }`}
+              title={canEditPasswordOnly ? "Cannot activate during voting" : "Activate Voter"}
+            >
+              <UserCheck className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={onDelete}
+            disabled={canEditPasswordOnly}
+            className={`p-2 rounded-xl transition-all duration-200 transform hover:scale-105 ${canEditPasswordOnly
+              ? 'text-gray-400 cursor-not-allowed'
+              : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
+              }`}
+            title={canEditPasswordOnly ? "Cannot delete during voting" : "Delete Voter"}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  ));
+
+  // Memoized voter card component for mobile
+  const VoterCard = React.memo(({ voter, isSelected, onToggle, onEdit, onStatusChange, onDelete, canEditPasswordOnly, showMobileActions, setShowMobileActions }: {
+    voter: Voter;
+    isSelected: boolean;
+    onToggle: () => void;
+    onEdit: () => void;
+    onStatusChange: () => void;
+    onDelete: () => void;
+    canEditPasswordOnly: boolean;
+    showMobileActions: boolean;
+    setShowMobileActions: (show: boolean) => void;
+  }) => (
+    <div className={`bg-white border border-gray-200 rounded-2xl p-4 space-y-4 transition-all duration-200 ${isSelected
+      ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50/30'
+      : 'hover:shadow-md'
+      } ${!voter.is_active ? 'bg-gray-50/50 border-gray-300' : ''}`}>
+      <div className="flex items-start justify-between">
+        <div className="flex items-center space-x-3 flex-1">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onToggle}
+            disabled={canEditPasswordOnly}
+            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1 transition-colors"
+          />
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0 ${voter.is_active
+            ? 'bg-gradient-to-br from-blue-500 to-blue-600'
+            : 'bg-gradient-to-br from-gray-400 to-gray-500'
+            }`}>
+            <User className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`font-semibold truncate ${voter.is_active ? 'text-gray-900' : 'text-gray-500'} ${!voter.is_active ? 'line-through' : ''}`}>
+              {voter.full_name}
+            </p>
+            <p className="text-sm text-gray-600 flex items-center truncate">
+              <Hash className="w-3 h-3 mr-1 flex-shrink-0" />
+              {voter.student_id}
+            </p>
+            <div className="mt-1">
+              <StatusBadge isActive={voter.is_active} />
+            </div>
+          </div>
+        </div>
+        <div className="relative">
+          <button
+            onClick={() => setShowMobileActions(!showMobileActions)}
+            className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:scale-110 relative group"
+          >
+            <MoreVertical className="w-4 h-4 text-gray-500 group-hover:text-gray-700" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+          </button>
+          {showMobileActions && (
+            <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-xl shadow-lg z-10 w-48 overflow-hidden animate-slideDown">
+              <button
+                onClick={onEdit}
+                className="w-full text-left px-4 py-3 text-sm hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 flex items-center space-x-3 transition-all duration-200 group"
+              >
+                <Edit className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform duration-200" />
+                <span className="text-gray-700 group-hover:text-blue-700 font-medium">{canEditPasswordOnly ? 'Update Password & Status' : 'Edit'}</span>
+              </button>
+              {voter.is_active ? (
+                <button
+                  onClick={onStatusChange}
+                  disabled={canEditPasswordOnly}
+                  className={`w-full text-left px-4 py-3 text-sm flex items-center space-x-3 transition-all duration-200 group ${
+                    canEditPasswordOnly
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : 'text-gray-600 hover:bg-gradient-to-r hover:from-amber-50 hover:to-amber-100 hover:text-amber-700'
+                    }`}
+                >
+                  <UserX className={`w-4 h-4 ${canEditPasswordOnly ? 'text-gray-400' : 'text-amber-600 group-hover:scale-110 transition-transform duration-200'}`} />
+                  <span className={`font-medium ${canEditPasswordOnly ? '' : 'group-hover:text-amber-700'}`}>Deactivate</span>
+                </button>
+              ) : (
+                <button
+                  onClick={onStatusChange}
+                  disabled={canEditPasswordOnly}
+                  className={`w-full text-left px-4 py-3 text-sm flex items-center space-x-3 transition-all duration-200 group ${
+                    canEditPasswordOnly
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : 'text-gray-600 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 hover:text-green-700'
+                    }`}
+                >
+                  <UserCheck className={`w-4 h-4 ${canEditPasswordOnly ? 'text-gray-400' : 'text-green-600 group-hover:scale-110 transition-transform duration-200'}`} />
+                  <span className={`font-medium ${canEditPasswordOnly ? '' : 'group-hover:text-green-700'}`}>Activate</span>
+                </button>
+              )}
+              <button
+                onClick={onDelete}
+                disabled={canEditPasswordOnly}
+                className={`w-full text-left px-4 py-3 text-sm flex items-center space-x-3 transition-all duration-200 group border-t border-gray-100 ${
+                  canEditPasswordOnly
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:text-red-700'
+                }`}
+              >
+                <Trash2 className={`w-4 h-4 ${canEditPasswordOnly ? 'text-gray-400' : 'text-red-600 group-hover:scale-110 transition-transform duration-200'}`} />
+                <span className={`font-medium ${canEditPasswordOnly ? '' : 'group-hover:text-red-700'}`}>Delete</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="flex items-center space-x-2">
+          <GraduationCap className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <div className="min-w-0">
+            <p className={`font-medium truncate ${voter.is_active ? 'text-gray-900' : 'text-gray-500'}`}>
+              {voter.course}
+            </p>
+            <p className="text-gray-600">Year {voter.year_level}</p>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${voter.is_active
+            ? 'bg-gray-100 text-gray-800 border-gray-200'
+            : 'bg-gray-50 text-gray-500 border-gray-300'
+            }`}>
+            Section {voter.section}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${voter.has_voted
+          ? 'bg-green-100 text-green-800 border border-green-200'
+          : 'bg-amber-100 text-amber-800 border border-amber-200'
+          } ${!voter.is_active ? 'opacity-50' : ''}`}>
+          {voter.has_voted ? 'Voted' : 'Not Voted'}
+        </span>
+        <span className="text-xs text-gray-500">
+          {new Date(voter.created_at).toLocaleDateString()}
+        </span>
+      </div>
+
+      {voter.has_voted && voter.voted_at && (
+        <p className="text-xs text-gray-500 text-center pt-2 border-t border-gray-100">
+          Voted on {new Date(voter.voted_at).toLocaleString()}
+        </p>
+      )}
+    </div>
+  ));
 
   const getUniqueSectionsFromVoters = () => {
     const sections = [...new Set(allVoters.map((v: Voter) => v.section || '').filter(Boolean))];
@@ -1327,10 +1645,31 @@ export const VoterManagement: React.FC = () => {
     </span>
   );
 
-  const filteredVoters = displayedVoters;
-  const uniqueCourses = getUniqueCoursesFromVoters();
-  const uniqueYears = [...new Set(allVoters.map((v: Voter) => v.year_level?.toString() || ''))];
-  const uniqueSections = [...new Set(allVoters.map((v: Voter) => v.section || ''))];
+  // Memoized calculations for performance
+  const filteredVoters = useMemo(() => displayedVoters, [displayedVoters]);
+  
+  const paginatedVoters = useMemo(() => {
+    const startIndex = (pagination.currentPage - 1) * pagination.itemsPerPage;
+    const endIndex = startIndex + pagination.itemsPerPage;
+    return filteredVoters.slice(startIndex, endIndex);
+  }, [filteredVoters, pagination.currentPage, pagination.itemsPerPage]);
+
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredVoters.length / pagination.itemsPerPage);
+  }, [filteredVoters.length, pagination.itemsPerPage]);
+
+  // Update pagination when data changes
+  useEffect(() => {
+    setPagination(prev => ({
+      ...prev,
+      totalItems: filteredVoters.length,
+      currentPage: 1 // Reset to first page when data changes
+    }));
+  }, [filteredVoters.length]);
+
+  const uniqueCourses = useMemo(() => getUniqueCoursesFromVoters(), [displayedVoters]);
+  const uniqueYears = useMemo(() => [...new Set(allVoters.map((v: Voter) => v.year_level?.toString() || ''))], [allVoters]);
+  const uniqueSections = useMemo(() => [...new Set(allVoters.map((v: Voter) => v.section || ''))], [allVoters]);
 
   if (loading || coursesLoading) {
     return (
@@ -1866,8 +2205,9 @@ export const VoterManagement: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="hidden lg:table w-full">
-            <thead>
+          <div className="max-h-[600px] overflow-y-auto">
+            <table className="hidden lg:table w-full">
+            <thead className="sticky top-0 z-10 bg-white">
               <tr className="bg-gray-50/80 border-b border-gray-100">
                 <th className="w-12 px-6 py-4 text-left">
                   <input
@@ -1908,7 +2248,7 @@ export const VoterManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredVoters.length === 0 ? (
+              {paginatedVoters.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center space-y-3">
@@ -1926,319 +2266,167 @@ export const VoterManagement: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredVoters.map((voter) => (
-                  <tr
+                paginatedVoters.map((voter) => (
+                  <VoterRow
                     key={voter.id}
-                    className={`transition-colors duration-150 ${selectedStudents.includes(voter.id)
-                      ? 'bg-blue-50/50 border-l-2 border-l-blue-500'
-                      : 'hover:bg-gray-50/80'
-                      } ${!voter.is_active ? 'bg-gray-50/50' : ''}`}
-                  >
-                    <td className="px-6 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedStudents.includes(voter.id)}
-                        onChange={() => toggleStudentSelection(voter.id)}
-                        disabled={canEditPasswordOnly}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-colors"
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-4">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${voter.is_active
-                          ? 'bg-gradient-to-br from-blue-500 to-blue-600'
-                          : 'bg-gradient-to-br from-gray-400 to-gray-500'
-                          }`}>
-                          <User className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className={`font-medium ${voter.is_active ? 'text-gray-900' : 'text-gray-500'} ${!voter.is_active ? 'line-through' : ''}`}>
-                            {voter.full_name}
-                          </p>
-                          <p className="text-sm text-gray-500 flex items-center mt-1">
-                            <Hash className="w-3 h-3 mr-1" />
-                            {voter.student_id}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-3">
-                        <GraduationCap className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <div>
-                          <p className={`font-medium text-sm ${voter.is_active ? 'text-gray-900' : 'text-gray-500'}`}>
-                            {voter.course}
-                          </p>
-                          <p className="text-xs text-gray-500">Year {voter.year_level}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${voter.is_active
-                        ? 'bg-gray-100 text-gray-800 border-gray-200'
-                        : 'bg-gray-50 text-gray-500 border-gray-300'
-                        }`}>
-                        Section {voter.section}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusBadge isActive={voter.is_active} />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col space-y-1">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${voter.has_voted
-                          ? 'bg-green-100 text-green-800 border border-green-200'
-                          : 'bg-amber-100 text-amber-800 border border-amber-200'
-                          } ${!voter.is_active ? 'opacity-50' : ''}`}>
-                          {voter.has_voted ? (
-                            <>
-                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></div>
-                              Voted
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mr-2"></div>
-                              Not Voted
-                            </>
-                          )}
-                        </span>
-                        {voter.has_voted && voter.voted_at && (
-                          <span className="text-xs text-gray-500">
-                            {new Date(voter.voted_at).toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-600">
-                        {new Date(voter.created_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleEdit(voter)}
-                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200 transform hover:scale-105"
-                          title={canEditPasswordOnly ? "Update Password and Status" : "Edit Voter"}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        {voter.is_active ? (
-                          <button
-                            onClick={() => handleStatusChange(voter.id, false)}
-                            disabled={canEditPasswordOnly}
-                            className={`p-2 rounded-xl transition-all duration-200 transform hover:scale-105 ${canEditPasswordOnly
-                              ? 'text-gray-400 cursor-not-allowed'
-                              : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                              }`}
-                            title={canEditPasswordOnly ? "Cannot deactivate during voting" : "Deactivate Voter"}
-                          >
-                            <UserX className="w-4 h-4" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleStatusChange(voter.id, true)}
-                            disabled={canEditPasswordOnly}
-                            className={`p-2 rounded-xl transition-all duration-200 transform hover:scale-105 ${canEditPasswordOnly
-                              ? 'text-gray-400 cursor-not-allowed'
-                              : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
-                              }`}
-                            title={canEditPasswordOnly ? "Cannot activate during voting" : "Activate Voter"}
-                          >
-                            <UserCheck className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDelete(voter.id)}
-                          disabled={canEditPasswordOnly}
-                          className={`p-2 rounded-xl transition-all duration-200 transform hover:scale-105 ${canEditPasswordOnly
-                            ? 'text-gray-400 cursor-not-allowed'
-                            : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
-                            }`}
-                          title={canEditPasswordOnly ? "Cannot delete during voting" : "Delete Voter"}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                    voter={voter}
+                    isSelected={selectedStudents.includes(voter.id)}
+                    onToggle={() => toggleStudentSelection(voter.id)}
+                    onEdit={() => handleEdit(voter)}
+                    onStatusChange={() => handleStatusChange(voter.id, !voter.is_active)}
+                    onDelete={() => handleDelete(voter.id)}
+                    canEditPasswordOnly={canEditPasswordOnly}
+                  />
                 ))
               )}
             </tbody>
-          </table>
+            </table>
+          </div>
 
-          <div className="lg:hidden space-y-3 p-4">
-            {filteredVoters.length === 0 ? (
+          <div className="lg:hidden space-y-3 p-4 max-h-[600px] overflow-y-auto">
+            {paginatedVoters.length === 0 ? (
               <div className="text-center py-12">
                 <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500 font-medium">No voters found</p>
               </div>
             ) : (
-              filteredVoters.map((voter) => (
-                <div
+              paginatedVoters.map((voter) => (
+                <VoterCard
                   key={voter.id}
-                  className={`bg-white border border-gray-200 rounded-2xl p-4 space-y-4 transition-all duration-200 ${selectedStudents.includes(voter.id)
-                    ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50/30'
-                    : 'hover:shadow-md'
-                    } ${!voter.is_active ? 'bg-gray-50/50 border-gray-300' : ''}`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3 flex-1">
-                      <input
-                        type="checkbox"
-                        checked={selectedStudents.includes(voter.id)}
-                        onChange={() => toggleStudentSelection(voter.id)}
-                        disabled={canEditPasswordOnly}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1 transition-colors"
-                      />
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0 ${voter.is_active
-                        ? 'bg-gradient-to-br from-blue-500 to-blue-600'
-                        : 'bg-gradient-to-br from-gray-400 to-gray-500'
-                        }`}>
-                        <User className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`font-semibold truncate ${voter.is_active ? 'text-gray-900' : 'text-gray-500'} ${!voter.is_active ? 'line-through' : ''}`}>
-                          {voter.full_name}
-                        </p>
-                        <p className="text-sm text-gray-600 flex items-center truncate">
-                          <Hash className="w-3 h-3 mr-1 flex-shrink-0" />
-                          {voter.student_id}
-                        </p>
-                        <div className="mt-1">
-                          <StatusBadge isActive={voter.is_active} />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowMobileActions(showMobileActions === voter.id ? null : voter.id)}
-                        className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:scale-110 relative group"
-                      >
-                        <MoreVertical className="w-4 h-4 text-gray-500 group-hover:text-gray-700" />
-                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
-                      </button>
-                      {showMobileActions === voter.id && (
-                        <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-xl shadow-lg z-10 w-48 overflow-hidden animate-slideDown">
-                          <button
-                            onClick={() => handleEdit(voter)}
-                            className="w-full text-left px-4 py-3 text-sm hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 flex items-center space-x-3 transition-all duration-200 group"
-                          >
-                            <Edit className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform duration-200" />
-                            <span className="text-gray-700 group-hover:text-blue-700 font-medium">{canEditPasswordOnly ? 'Update Password & Status' : 'Edit'}</span>
-                          </button>
-                          {voter.is_active ? (
-                            <button
-                              onClick={() => handleStatusChange(voter.id, false)}
-                              disabled={canEditPasswordOnly}
-                              className={`w-full text-left px-4 py-3 text-sm flex items-center space-x-3 transition-all duration-200 group ${
-                                canEditPasswordOnly
-                                  ? 'text-gray-400 cursor-not-allowed'
-                                  : 'text-gray-600 hover:bg-gradient-to-r hover:from-amber-50 hover:to-amber-100 hover:text-amber-700'
-                                }`}
-                            >
-                              <UserX className={`w-4 h-4 ${canEditPasswordOnly ? 'text-gray-400' : 'text-amber-600 group-hover:scale-110 transition-transform duration-200'}`} />
-                              <span className={`font-medium ${canEditPasswordOnly ? '' : 'group-hover:text-amber-700'}`}>Deactivate</span>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleStatusChange(voter.id, true)}
-                              disabled={canEditPasswordOnly}
-                              className={`w-full text-left px-4 py-3 text-sm flex items-center space-x-3 transition-all duration-200 group ${
-                                canEditPasswordOnly
-                                  ? 'text-gray-400 cursor-not-allowed'
-                                  : 'text-gray-600 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 hover:text-green-700'
-                                }`}
-                            >
-                              <UserCheck className={`w-4 h-4 ${canEditPasswordOnly ? 'text-gray-400' : 'text-green-600 group-hover:scale-110 transition-transform duration-200'}`} />
-                              <span className={`font-medium ${canEditPasswordOnly ? '' : 'group-hover:text-green-700'}`}>Activate</span>
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDelete(voter.id)}
-                            disabled={canEditPasswordOnly}
-                            className={`w-full text-left px-4 py-3 text-sm flex items-center space-x-3 transition-all duration-200 group border-t border-gray-100 ${
-                              canEditPasswordOnly
-                                ? 'text-gray-400 cursor-not-allowed'
-                                : 'text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:text-red-700'
-                              }`}
-                          >
-                            <Trash2 className={`w-4 h-4 ${canEditPasswordOnly ? 'text-gray-400' : 'text-red-600 group-hover:scale-110 transition-transform duration-200'}`} />
-                            <span className={`font-medium ${canEditPasswordOnly ? '' : 'group-hover:text-red-700'}`}>Delete</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <GraduationCap className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className={`font-medium truncate ${voter.is_active ? 'text-gray-900' : 'text-gray-500'}`}>
-                          {voter.course}
-                        </p>
-                        <p className="text-gray-600">Year {voter.year_level}</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-end">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${voter.is_active
-                        ? 'bg-gray-100 text-gray-800 border-gray-200'
-                        : 'bg-gray-50 text-gray-500 border-gray-300'
-                        }`}>
-                        Section {voter.section}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${voter.has_voted
-                      ? 'bg-green-100 text-green-800 border border-green-200'
-                      : 'bg-amber-100 text-amber-800 border border-amber-200'
-                      } ${!voter.is_active ? 'opacity-50' : ''}`}>
-                      {voter.has_voted ? 'Voted' : 'Not Voted'}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {new Date(voter.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  {voter.has_voted && voter.voted_at && (
-                    <p className="text-xs text-gray-500 text-center pt-2 border-t border-gray-100">
-                      Voted on {new Date(voter.voted_at).toLocaleString()}
-                    </p>
-                  )}
-                </div>
+                  voter={voter}
+                  isSelected={selectedStudents.includes(voter.id)}
+                  onToggle={() => toggleStudentSelection(voter.id)}
+                  onEdit={() => handleEdit(voter)}
+                  onStatusChange={() => handleStatusChange(voter.id, !voter.is_active)}
+                  onDelete={() => handleDelete(voter.id)}
+                  canEditPasswordOnly={canEditPasswordOnly}
+                  showMobileActions={showMobileActions === voter.id}
+                  setShowMobileActions={(show) => setShowMobileActions(show ? voter.id : null)}
+                />
               ))
             )}
           </div>
         </div>
 
         {filteredVoters.length > 0 && (
-          <div className="px-4 sm:px-6 py-4 border-t border-gray-100 bg-gray-50/50">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-gray-600">
-              <div>
-                Showing <span className="font-semibold">{filteredVoters.length}</span> voters
-              </div>
-              {selectedStudents.length > 0 && (
-                <div className="flex items-center space-x-3">
-                  <span className="font-medium text-blue-700">
-                    {selectedStudents.length} voters selected
-                  </span>
-                  <button
-                    onClick={clearAllStudents}
-                    className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
-                  >
-                    Clear selection
-                  </button>
+          <>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="px-4 sm:px-6 py-3 border-t border-gray-100 bg-white">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                    <span>Items per page:</span>
+                    <select
+                      value={pagination.itemsPerPage}
+                      onChange={(e) => {
+                        const newItemsPerPage = parseInt(e.target.value);
+                        setPagination(prev => ({
+                          ...prev,
+                          itemsPerPage: newItemsPerPage,
+                          currentPage: 1
+                        }));
+                      }}
+                      className="px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    >
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value={200}>200</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setPagination(prev => ({ ...prev, currentPage: 1 }))}
+                      disabled={pagination.currentPage === 1}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      First
+                    </button>
+                    <button
+                      onClick={() => setPagination(prev => ({ ...prev, currentPage: Math.max(1, prev.currentPage - 1) }))}
+                      disabled={pagination.currentPage === 1}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+                    
+                    {/* Page Numbers */}
+                    <div className="flex items-center space-x-1">
+                      {(() => {
+                        const pages = [];
+                        const maxVisiblePages = 5;
+                        let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisiblePages / 2));
+                        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                        
+                        if (endPage - startPage + 1 < maxVisiblePages) {
+                          startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                        }
+                        
+                        for (let i = startPage; i <= endPage; i++) {
+                          pages.push(
+                            <button
+                              key={i}
+                              onClick={() => setPagination(prev => ({ ...prev, currentPage: i }))}
+                              className={`px-3 py-1 text-sm border rounded-md transition-colors ${
+                                i === pagination.currentPage
+                                  ? 'bg-blue-500 text-white border-blue-500'
+                                  : 'border-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              {i}
+                            </button>
+                          );
+                        }
+                        return pages;
+                      })()}
+                    </div>
+                    
+                    <button
+                      onClick={() => setPagination(prev => ({ ...prev, currentPage: Math.min(totalPages, prev.currentPage + 1) }))}
+                      disabled={pagination.currentPage === totalPages}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                    <button
+                      onClick={() => setPagination(prev => ({ ...prev, currentPage: totalPages }))}
+                      disabled={pagination.currentPage === totalPages}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Last
+                    </button>
+                  </div>
                 </div>
-              )}
+              </div>
+            )}
+            
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-gray-600">
+                <div>
+                  Showing <span className="font-semibold">{paginatedVoters.length}</span> of <span className="font-semibold">{filteredVoters.length}</span> voters
+                  {totalPages > 1 && (
+                    <span className="ml-2">
+                      (Page {pagination.currentPage} of {totalPages})
+                    </span>
+                  )}
+                </div>
+                {selectedStudents.length > 0 && (
+                  <div className="flex items-center space-x-3">
+                    <span className="font-medium text-blue-700">
+                      {selectedStudents.length} voters selected
+                    </span>
+                    <button
+                      onClick={clearAllStudents}
+                      className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                    >
+                      Clear selection
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
@@ -2250,7 +2438,7 @@ export const VoterManagement: React.FC = () => {
           resetForm();
         }}
         title={editingVoter ? (canEditPasswordOnly ? 'Update Password and Status' : 'Edit Voter') : 'Add New Voter'}
-        size="md"
+        size="fullscreen"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2504,7 +2692,7 @@ export const VoterManagement: React.FC = () => {
           setSelectedExportSections([]);
         }}
         title="Export Voters Data"
-        size="xl"
+        size="fullscreen"
       >
         <div className="space-y-4">
           <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl">
@@ -2856,21 +3044,43 @@ export const VoterManagement: React.FC = () => {
       <Modal
         isOpen={showImportModal}
         onClose={() => {
-          setShowImportModal(false);
-          resetImport();
+          if (!importing) {
+            setShowImportModal(false);
+            resetImport();
+          }
         }}
         title="Import Voters"
-        size="lg"
+        size="fullscreen"
+        closeOnOverlayClick={!importing}
+        showCloseButton={!importing}
       >
-        <div className="space-y-4">
+        <div className="h-full flex flex-col">
+          {/* Importing Loading Overlay */}
+          {importing && (
+            <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+              <div className="w-20 h-20 mx-auto mb-6 relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full animate-pulse opacity-20" />
+                <LoadingSpinner size="lg" variant="pulse" color="primary" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Importing Voters</h3>
+              <p className="text-gray-600 text-center max-w-md">
+                Please wait while we process and import the voter data. This may take a few moments depending on the number of voters.
+              </p>
+              <div className="mt-6 flex items-center space-x-2 text-sm text-blue-600">
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
+                <span>Processing import data...</span>
+              </div>
+            </div>
+          )}
+
           {importStep === 'upload' && (
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
-                <div className="flex items-start space-x-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 space-y-6">
+              <div className="bg-blue-50 border border-blue-200 p-6 rounded-xl max-w-2xl mx-auto">
+                <div className="flex items-start space-x-4">
+                  <AlertCircle className="w-6 h-6 text-blue-600 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-blue-800 font-medium">Import Instructions</p>
-                    <p className="text-xs text-blue-700 mt-1">
+                    <p className="text-base text-blue-800 font-medium">Import Instructions</p>
+                    <p className="text-sm text-blue-700 mt-2">
                       Upload an Excel, CSV, or Word file containing student data. The system will automatically detect columns for Student ID, Name, Year Level, and Section.
                       <strong> Course will be left blank and must be selected for each voter in the next step using the dropdown menu.</strong>
                     </p>
@@ -2878,7 +3088,7 @@ export const VoterManagement: React.FC = () => {
                 </div>
               </div>
 
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors max-w-2xl mx-auto">
                 <input
                   type="file"
                   id="file-import"
@@ -2887,11 +3097,11 @@ export const VoterManagement: React.FC = () => {
                   className="hidden"
                 />
                 <label htmlFor="file-import" className="cursor-pointer">
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-sm font-medium text-gray-700">
+                  <Upload className="w-16 h-16 text-gray-400 mx-auto mb-6" />
+                  <p className="text-lg font-medium text-gray-700">
                     Click to upload file
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 mt-2">
                     Supports Excel, CSV, and Word documents
                   </p>
                 </label>
@@ -2900,14 +3110,14 @@ export const VoterManagement: React.FC = () => {
           )}
 
           {importStep === 'review' && (
-            <div className="space-y-4">
-              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl">
-                <div className="flex items-start space-x-3">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 space-y-6 overflow-y-auto">
+              <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-xl max-w-4xl mx-auto">
+                <div className="flex items-start space-x-4">
+                  <AlertCircle className="w-6 h-6 text-yellow-600 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-yellow-800 font-medium">Review Import Data</p>
-                    <p className="text-xs text-yellow-700 mt-1">
-                      Please review the imported data and select a course for each voter using the dropdown menu before proceeding.
+                    <p className="text-base text-yellow-800 font-medium">Review Import Data</p>
+                    <p className="text-sm text-yellow-700 mt-2">
+                      Please review imported data and select a course for each voter using dropdown menu before proceeding.
                       New records will be created, duplicates will be skipped.
                     </p>
                   </div>
@@ -2915,23 +3125,23 @@ export const VoterManagement: React.FC = () => {
               </div>
 
               {/* Bulk Course Selection */}
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex items-start space-x-3">
-                    <GraduationCap className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="bg-blue-50 border border-blue-200 p-6 rounded-xl max-w-4xl mx-auto">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                  <div className="flex items-start space-x-4">
+                    <GraduationCap className="w-6 h-6 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm text-blue-800 font-medium">Apply Course to All Voters</p>
-                      <p className="text-xs text-blue-700 mt-1">
+                      <p className="text-base text-blue-800 font-medium">Apply Course to All Voters</p>
+                      <p className="text-sm text-blue-700 mt-2">
                         Select a course to apply to all new voters at once, or select individual courses below.
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                  <div className="flex flex-col lg:flex-row gap-3 lg:gap-4">
                     <div className="relative">
                       <select
                         value={bulkCourseSelection}
                         onChange={(e) => setBulkCourseSelection(e.target.value)}
-                        className="w-full sm:w-48 px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm appearance-none bg-white"
+                        className="w-full lg:w-64 px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base appearance-none bg-white"
                       >
                         <option value="">Select course for all</option>
                         {courses.map(course => (
@@ -3101,13 +3311,15 @@ export const VoterManagement: React.FC = () => {
             {importStep === 'review' && (
               <button
                 onClick={handleImportSubmit}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center"
+                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center relative overflow-hidden"
                 disabled={importing || importedStudents.filter(s => s.status === 'new' && !s.course).length > 0}
               >
                 {importing ? (
                   <>
-                    <LoadingSpinner size="sm" variant="pulse" color="primary" />
-                    <span className="ml-2">Importing...</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-700 opacity-90" />
+                    <LoadingSpinner size="sm" variant="pulse" color="white" />
+                    <span className="ml-2 relative z-10">Importing Voters... Please Wait</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 animate-pulse" />
                   </>
                 ) : (
                   <>
@@ -3129,7 +3341,7 @@ export const VoterManagement: React.FC = () => {
           setNewCourse({ name: '', code: '' });
         }}
         title="Manage Courses"
-        size="md"
+        size="fullscreen"
       >
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
@@ -3145,30 +3357,30 @@ export const VoterManagement: React.FC = () => {
           </div>
 
           {/* Add Course Form */}
-          <div className="border border-gray-200 rounded-xl p-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Add New Course</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="border border-gray-200 rounded-2xl p-6 max-w-2xl mx-auto">
+            <h3 className="text-lg font-semibold text-gray-800 mb-6">Add New Course</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Course Name
                 </label>
                 <input
                   type="text"
                   value={newCourse.name}
                   onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base lg:text-lg"
                   placeholder="e.g., Computer Science"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Course Code
                 </label>
                 <input
                   type="text"
                   value={newCourse.code}
                   onChange={(e) => setNewCourse({ ...newCourse, code: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base lg:text-lg"
                   placeholder="e.g., CS"
                 />
               </div>
@@ -3176,29 +3388,29 @@ export const VoterManagement: React.FC = () => {
             <button
               onClick={addCourse}
               disabled={addingCourse || !newCourse.name.trim() || !newCourse.code.trim()}
-              className="w-full mt-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="w-full mt-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-4 lg:py-5 px-6 lg:px-8 rounded-2xl transition-all duration-200 transform hover:scale-105 shadow-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {addingCourse ? (
                 <>
                   <LoadingSpinner size="sm" variant="pulse" color="primary" />
-                  <span className="ml-2">Adding...</span>
+                  <span className="ml-3 text-lg">Adding...</span>
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Course
+                  <Plus className="w-5 h-5 lg:w-6 lg:h-6 mr-3" />
+                  <span className="text-lg">Add Course</span>
                 </>
               )}
             </button>
           </div>
 
           {/* Courses List */}
-          <div className="border border-gray-200 rounded-xl p-4">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-sm font-medium text-gray-700">Existing Courses</h3>
-              <span className="text-xs text-gray-500">{courses.length} course(s)</span>
+          <div className="border border-gray-200 rounded-2xl p-6 max-w-4xl mx-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold text-gray-800">Existing Courses</h3>
+              <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{courses.length} course(s)</span>
             </div>
-            <div className="max-h-48 overflow-y-auto space-y-2">
+            <div className="max-h-64 lg:max-h-96 overflow-y-auto space-y-3">
               {courses.length === 0 ? (
                 <div className="text-center py-6">
                   <BookOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
@@ -3209,26 +3421,26 @@ export const VoterManagement: React.FC = () => {
                 courses.map(course => (
                   <div
                     key={course.id}
-                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-300 hover:scale-[1.02] group"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{course.name}</p>
-                      <div className="flex items-center space-x-2">
-                        <p className="text-xs text-gray-500">Code: {course.code}</p>
-                        <span className="text-xs text-gray-400">•</span>
-                        <p className="text-xs text-gray-500">ID: {course.id}</p>
+                      <p className="text-base font-semibold text-gray-900 truncate">{course.name}</p>
+                      <div className="flex items-center space-x-3 mt-2">
+                        <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">Code: {course.code}</span>
+                        <span className="text-gray-400">•</span>
+                        <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">ID: {course.id}</span>
                       </div>
                     </div>
                     <button
                       onClick={() => deleteCourse(course)}
                       disabled={canEditPasswordOnly}
-                      className={`p-2 rounded-lg transition-all duration-200 ${canEditPasswordOnly
+                      className={`p-3 rounded-xl transition-all duration-200 ${canEditPasswordOnly
                         ? 'text-gray-300 cursor-not-allowed'
-                        : 'text-gray-400 hover:text-red-600 hover:bg-red-50 group-hover:opacity-100 opacity-70'
+                        : 'text-red-600 hover:text-red-800 hover:bg-red-50 group-hover:opacity-100 opacity-70'
                         }`}
                       title={canEditPasswordOnly ? "Cannot delete during voting" : "Delete course"}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
                 ))

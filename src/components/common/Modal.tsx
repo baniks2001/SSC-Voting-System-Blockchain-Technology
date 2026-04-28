@@ -50,14 +50,14 @@ export const Modal: React.FC<ModalProps> = ({
     md: 'max-w-lg',
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
-    fullscreen: 'max-w-full mx-4 h-[95vh]'
+    fullscreen: 'w-full h-full sm:w-full sm:h-full'
   };
 
   // Mobile-aware positioning to avoid bottom navigation
   const getPositionClasses = () => {
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       // On mobile, position modal to avoid bottom navigation
-      return 'items-end justify-center pb-20'; // Add padding for bottom nav
+      return 'items-end justify-start'; // Better positioning for mobile fullscreen
     }
     return 'items-center justify-center';
   };
@@ -93,7 +93,8 @@ export const Modal: React.FC<ModalProps> = ({
               duration: 0.3
             }}
             className={cn(
-              "relative w-full overflow-hidden rounded-2xl",
+              "relative w-full overflow-hidden",
+              size === 'fullscreen' ? "rounded-none" : "rounded-2xl",
               "bg-white/95 backdrop-blur-xl border border-white/20",
               "shadow-2xl shadow-black/10",
               sizeClasses[size],
@@ -130,7 +131,7 @@ export const Modal: React.FC<ModalProps> = ({
             </div>
             
             {/* Content */}
-            <div className="relative p-6 max-h-[60vh] lg:max-h-[70vh] overflow-y-auto">
+            <div className="relative p-4 sm:p-6 h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)] overflow-y-auto">
               {/* Scroll indicator */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-600 transform origin-left transition-transform duration-300" 
                    style={{ transform: 'scaleX(0)' }} />

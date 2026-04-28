@@ -994,7 +994,7 @@ export const CandidateManagement: React.FC = () => {
           resetCandidateForm();
         }}
         title={editingCandidate ? 'Edit Candidate' : 'Add New Candidate'}
-        size="md"
+        size="fullscreen"
       >
         <form onSubmit={handleCandidateSubmit} className="space-y-4" encType="multipart/form-data">
           {/* Profile Picture Upload */}
@@ -1199,7 +1199,7 @@ export const CandidateManagement: React.FC = () => {
           resetPositionForm();
         }}
         title={editingPosition ? 'Edit Position' : 'Create New Position'}
-        size="md"
+        size="fullscreen"
       >
         <form onSubmit={handlePositionSubmit} className="space-y-4">
           <div>

@@ -1,37 +1,33 @@
 @echo off
-title Ethereum Node 2 - Port 8547 (PEER - PERSISTENT)
+title Ethereum Node 2 - Port 8547 (PEER - DEV MODE + PERSISTENT)
 echo ========================================
-echo NODE 2 - ETHEREUM NODE (PEER - PERSISTENT)
+echo NODE 2 - ETHEREUM NODE (PEER - DEV MODE + PERSISTENT)
 echo ========================================
 echo.
 echo Geth Version: 1.16.5 Compatible
-echo Network: Persistent Development (Chain ID: 1337)
+echo Network: Development Mode with Persistent Storage (Chain ID: 1337)
 echo Storage: Persistent on disk
 echo Ports: HTTP 8547, WS 8548, Auth 8552
 echo.
-echo Starting Node 2 as PEER with persistent storage...
+echo Starting Node 2 as PEER in DEV MODE with persistent storage...
 echo.
 
-if not exist "node2" mkdir node2
+cd /d "%~dp0"
+if not exist "node2-data" mkdir node2-data
+if not exist "node2" mklink /d "node2" "node2-data"
+if not exist "shared-chain" mkdir shared-chain
+if not exist "node2\geth\chaindata" mklink /d "node2\geth\chaindata" "shared-chain\chaindata"
+if not exist "node2\geth\nodes" mklink /d "node2\geth\nodes" "shared-chain\nodes"
 
-echo [INIT] Checking if Node 2 needs genesis initialization...
-if not exist "node2\geth\chaindata" (
-    echo [INIT] Initializing Node 2 with genesis block...
-    geth --datadir node2 init genesis.json
-    if %errorlevel% neq 0 (
-        echo ❌ Failed to initialize Node 2 with genesis
-        pause
-        exit /b %errorlevel%
-    )
-    echo ✅ Node 2 initialized with genesis block
-) else (
-    echo ✅ Node 2 already has blockchain data
-)
+echo [INIT] Development mode will auto-create genesis...
+echo ✅ Node 2 ready for development mode
 
 echo [START] Launching Geth for Node 2 as PEER...
 echo.
 
 geth --datadir node2 ^
+--dev ^
+--dev.period 5 ^
 --http ^
 --http.port 8547 ^
 --http.addr 0.0.0.0 ^
@@ -48,8 +44,6 @@ geth --datadir node2 ^
 --rpc.allow-unprotected-txs ^
 --miner.gasprice 1000000000 ^
 --port 30304 ^
---dev ^
---dev.period 5 ^
 --nodiscover ^
 --maxpeers 0 ^
 console

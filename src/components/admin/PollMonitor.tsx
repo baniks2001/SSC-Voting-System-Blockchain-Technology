@@ -773,16 +773,14 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
   );
 
   // Modern candidate card - mobile optimized with image support
-  const CandidateCard = ({ candidate, totalVotes }: {
-    candidate: Candidate,
-    totalVotes: number
+  const CandidateCard = ({ candidate }: {
+    candidate: Candidate
   }) => {
     const voteCount = candidate.vote_count || 0;
-    const percentage = getVotePercentage(voteCount, totalVotes || 0);
 
     return (
-      <div className="bg-white rounded-xl p-3 border-2 border-gray-100 transition-all duration-300">
-        <div className="flex items-center justify-between mb-2">
+      <div className="bg-white rounded-xl p-3 border-2 border-gray-300 shadow-lg hover:shadow-xl transition-all duration-300">
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 flex-1 min-w-0">
             {/* Candidate Image or Fallback Icon */}
             {candidate.image_url ? (
@@ -810,22 +808,13 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
               <p className="text-gray-600 text-xs truncate">{candidate.party}</p>
             </div>
           </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-gray-600">Votes</span>
-            <span className="font-bold text-gray-900">{voteCount}</span>
-          </div>
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-gray-600">Percentage</span>
-            <span className="font-bold text-gray-900">{percentage}%</span>
-          </div>
-          <div className="w-full bg-gray-100 rounded-full h-1.5">
-            <div
-              className="h-1.5 rounded-full bg-blue-500 transition-all duration-1000"
-              style={{ width: `${percentage}%` }}
-            />
+          
+          {/* Vote Count on the right side */}
+          <div className="text-right ml-3">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600 text-xs">Votes</span>
+              <span className="font-bold text-4xl text-blue-600 ml-2">{voteCount}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -995,13 +984,13 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
         )}
 
         {/* Results by Position */}
-        <div className="space-y-4 lg:space-y-6">
+        <div className="space-y-3 lg:space-y-4">
           {Object.entries(groupedCandidates).map(([position, positionCandidates]) => {
             const sortedCandidates = positionCandidates.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
 
             return (
               <div key={position} className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 lg:gap-3 mb-4 lg:mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 lg:gap-3 mb-3 lg:mb-4">
                   <h2 className="text-lg lg:text-xl font-bold text-gray-900">{position}</h2>
                 </div>
 
@@ -1060,12 +1049,11 @@ export const PollMonitor: React.FC<PollMonitorProps> = ({ isReadOnly = false }) 
                   </div>
                 ) : (
                   // Card format for other roles
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 lg:gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2 lg:gap-3">
                     {sortedCandidates.map((candidate) => (
                       <CandidateCard
                         key={candidate.id}
                         candidate={candidate}
-                        totalVotes={totalVotes}
                       />
                     ))}
                   </div>

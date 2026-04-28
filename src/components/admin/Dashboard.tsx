@@ -1565,9 +1565,9 @@ export const Dashboard: React.FC = () => {
       {showElectionHistory && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-0 sm:p-4 overflow-y-auto lg:items-center lg:justify-center items-end justify-start">
           {/* Modal Container */}
-          <div className="w-full h-full sm:w-full sm:max-w-6xl sm:max-h-[90vh] sm:rounded-2xl bg-white border border-gray-200 shadow-xl flex flex-col">
+          <div className="w-full h-full sm:w-full sm:h-full sm:max-w-full sm:max-h-full sm:rounded-none bg-white border border-gray-200 shadow-2xl flex flex-col">
             {/* Header - Fixed for mobile */}
-            <div className="p-4 sm:p-6 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+            <div className="p-4 sm:p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Election History</h3>
@@ -1604,22 +1604,22 @@ export const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Search and Filter - Mobile optimized */}
-              <div className="flex flex-col sm:flex-row gap-3">
+              {/* Search and Filter - Responsive optimized */}
+              <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
                 <div className="flex-1 relative">
-                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Search elections..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
+                    className="w-full pl-12 pr-4 py-3 lg:py-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base lg:text-lg"
                   />
                 </div>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
-                  className="px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
+                  className="px-4 py-3 lg:py-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base lg:text-lg min-w-[150px]"
                 >
                   <option value="all">All Years</option>
                   {academicYears.map(year => (
@@ -1630,13 +1630,13 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Content Area - Mobile scrollable */}
-            <div className="flex-1 overflow-y-auto bg-gray-50/50 p-4 sm:p-6">
+            <div className="flex-1 overflow-y-auto bg-white p-4 sm:p-6">
               {loadingElections ? (
                 <div className="flex justify-center items-center py-12">
                   <LoadingSpinner size="lg" text="Loading election history..." />
                 </div>
               ) : filteredElectionHistory.length === 0 ? (
-                <div className="text-center py-12 bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200">
+                <div className="text-center py-12 bg-white rounded-xl sm:rounded-2xl border border-gray-200">
                   <Calendar className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500 mb-2 text-base sm:text-lg font-medium">No election history found</p>
                   <p className="text-gray-400 text-sm sm:text-base">
@@ -1647,21 +1647,20 @@ export const Dashboard: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredElectionHistory.map((election) => (
                     <div
                       key={election.id}
-                      className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200 hover:shadow-md transition-all duration-300"
+                      className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
                     >
-                      <div className="flex flex-col lg:flex-row justify-between items-start gap-4 sm:gap-6">
+                      <div className="flex flex-col justify-between items-start gap-6">
                         {/* Election Info */}
                         <div className="flex-1 min-w-0 w-full">
-                          <h4 className="text-base sm:text-xl font-bold text-gray-900 mb-3 break-words">
+                          <h4 className="text-lg lg:text-xl font-bold text-gray-900 mb-4 break-words line-clamp-2">
                             {election.election_name}
                           </h4>
-
-                          {/* Mobile Compact Grid */}
-                          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-gray-600 mb-4">
+                          {/* Responsive Info Grid */}
+                          <div className="grid grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
                             <div className="bg-blue-50 p-2 sm:p-3 rounded-lg sm:rounded-xl border border-blue-200">
                               <span className="font-medium text-xs text-blue-600 block mb-1">Date</span>
                               <p className="text-xs sm:text-sm font-semibold text-blue-900 truncate">
@@ -1690,14 +1689,14 @@ export const Dashboard: React.FC = () => {
                           </div>
 
                           {/* Stats */}
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-emerald-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-emerald-200">
-                              <span className="font-medium text-xs text-emerald-700 block mb-1">Candidates</span>
-                              <p className="text-base sm:text-lg font-bold text-emerald-900">{election.total_candidates}</p>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200 hover:bg-emerald-100 transition-colors">
+                              <span className="font-medium text-sm text-emerald-700 block mb-2">Candidates</span>
+                              <p className="text-lg lg:text-xl font-bold text-emerald-900">{election.total_candidates}</p>
                             </div>
-                            <div className="bg-green-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-green-200">
-                              <span className="font-medium text-xs text-green-700 block mb-1">Total Votes</span>
-                              <p className="text-base sm:text-lg font-bold text-green-900">{election.total_votes}</p>
+                            <div className="bg-green-50 p-4 rounded-xl border border-green-200 hover:bg-green-100 transition-colors">
+                              <span className="font-medium text-sm text-green-700 block mb-2">Total Votes</span>
+                              <p className="text-lg lg:text-xl font-bold text-green-900">{election.total_votes}</p>
                             </div>
                           </div>
                         </div>
@@ -1706,11 +1705,12 @@ export const Dashboard: React.FC = () => {
                         <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full lg:w-auto mt-4 sm:mt-0">
                           <button
                             onClick={() => fetchElectionDetails(election.id)}
-                            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-blue-200 rounded-lg sm:rounded-xl transition-all duration-200 hover:shadow-md text-sm font-medium"
+                            className="flex items-center justify-center gap-2 px-4 py-3 lg:px-6 lg:py-4 text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-blue-200 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg text-sm lg:text-base font-medium"
                             title="View election details"
                           >
-                            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            <span>View Details</span>
+                            <Eye className="w-4 h-4 lg:w-5 lg:h-5" />
+                            <span className="hidden sm:inline">View Details</span>
+                            <span className="sm:hidden lg:hidden">View</span>
                           </button>
                           <div className="relative">
                             <select
@@ -1732,11 +1732,12 @@ export const Dashboard: React.FC = () => {
                           </div>
                           <button
                             onClick={() => showDeleteConfirmation(election)}
-                            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-rose-600 hover:text-rose-800 hover:bg-rose-50 border border-rose-200 rounded-lg sm:rounded-xl transition-all duration-200 hover:shadow-md text-sm font-medium"
+                            className="flex items-center justify-center gap-2 px-4 py-3 lg:px-6 lg:py-4 text-rose-600 hover:text-rose-800 hover:bg-rose-50 border border-rose-200 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg text-sm lg:text-base font-medium"
                             title="Delete election record"
                           >
-                            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            <span>Delete</span>
+                            <Trash2 className="w-4 h-4 lg:w-5 lg:h-5" />
+                            <span className="hidden sm:inline">Delete</span>
+                            <span className="sm:hidden lg:hidden">Remove</span>
                           </button>
                         </div>
                       </div>
