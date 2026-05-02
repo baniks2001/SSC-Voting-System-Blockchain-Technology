@@ -42,6 +42,25 @@ export const CandidateManagement: React.FC = () => {
   const [voterSearch, setVoterSearch] = useState('');
   const [showVoterDropdown, setShowVoterDropdown] = useState(false);
   const { pollStatus } = usePoll();
+
+  // Helper function to get ordinal suffix
+  const getOrdinalSuffix = (year: number): string => {
+    if (year === 1) return 'st';
+    if (year === 2) return 'nd';
+    if (year === 3) return 'rd';
+    return 'th';
+  };
+
+  // Helper function to format eligible years for display
+  const formatEligibleYears = (years?: number[]): string => {
+    if (!years || years.length === 0) return 'All Years';
+    
+    const yearLabels = years.map(year => `${year}${getOrdinalSuffix(year)} Year`);
+    
+    if (yearLabels.length === 1) return yearLabels[0];
+    if (yearLabels.length === 2) return yearLabels.join(' and ');
+    return yearLabels.slice(0, -1).join(', ') + ' and ' + yearLabels[yearLabels.length - 1];
+  };
   
   // Notification state
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -75,7 +94,8 @@ export const CandidateManagement: React.FC = () => {
     maxVotes: 1,
     order: 0,
     is_active: true,
-    allowed_courses: [] as string[]
+    allowed_courses: [] as string[],
+    allowed_years: [] as number[]
   });
 
   const [courses, setCourses] = useState<string[]>([]);
@@ -409,7 +429,8 @@ export const CandidateManagement: React.FC = () => {
         maxVotes: maxVotes,
         order: positionFormData.order,
         is_active: positionFormData.is_active,
-        allowed_courses: positionFormData.allowed_courses
+        allowed_courses: positionFormData.allowed_courses,
+        allowed_years: positionFormData.allowed_years
       };
 
       if (editingPosition) {
@@ -468,7 +489,8 @@ export const CandidateManagement: React.FC = () => {
       maxVotes: position.maxVotes || 1,
       order: position.order || 0,
       is_active: position.is_active ?? true,
-      allowed_courses: position.allowed_courses || []
+      allowed_courses: position.allowed_courses || [],
+      allowed_years: position.allowed_years || []
     });
     setShowPositionModal(true);
   };
@@ -550,7 +572,8 @@ export const CandidateManagement: React.FC = () => {
       maxVotes: 1,
       order: 0,
       is_active: true,
-      allowed_courses: []
+      allowed_courses: [],
+      allowed_years: []
     });
     setEditingPosition(null);
   };
@@ -795,6 +818,12 @@ export const CandidateManagement: React.FC = () => {
                       <span>Candidates:</span>
                       <span className="font-medium">
                         {candidates.filter(c => c.position === position.name).length}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>Eligible Years:</span>
+                      <span className="font-medium">
+                        {formatEligibleYears(position.allowed_years)}
                       </span>
                     </div>
                   </div>
@@ -1297,6 +1326,41 @@ export const CandidateManagement: React.FC = () => {
             </div>
             <p className="text-sm text-gray-600 mt-1">
               Select courses that can vote for this position. Leave empty to allow all courses.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Users className="w-4 h-4 inline mr-2" />
+              Eligible Year Levels
+            </label>
+            <div className="space-y-2 border border-gray-300 rounded-lg p-3">
+              {[1, 2, 3, 4].map((year) => (
+                <label key={year} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                  <input
+                    type="checkbox"
+                    checked={positionFormData.allowed_years.includes(year)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setPositionFormData({
+                          ...positionFormData,
+                          allowed_years: [...positionFormData.allowed_years, year]
+                        });
+                      } else {
+                        setPositionFormData({
+                          ...positionFormData,
+                          allowed_years: positionFormData.allowed_years.filter(y => y !== year)
+                        });
+                      }
+                    }}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">{year}{getOrdinalSuffix(year)} Year</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-sm text-gray-600 mt-1">
+              Select year levels that can vote for this position. Leave empty to allow all years.
             </p>
           </div>
 

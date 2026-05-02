@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users, Vote, UserCheck, Activity, Download, Play, Pause, StopCircle,
   AlertCircle, X, Save, Calendar, History, Trash2, Eye, Search,
-  FileText, Shield, BarChart3, Clock, CheckCircle, XCircle, Info,
+  FileText, Shield, BarChart3, Clock, CheckCircle, XCircle, Info
 } from 'lucide-react';
 import { DashboardStats, AuditLog } from '../../types';
 import { api } from '../../utils/api';
@@ -54,7 +54,11 @@ interface Notification {
 
 type ExportType = 'xlsx' | 'docs' | 'json';
 
-export const Dashboard: React.FC = () => {
+interface DashboardProps {
+  onTabChange?: (tab: string) => void;
+}
+
+export const Dashboard: React.FC<DashboardProps> = ({ onTabChange }) => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -244,13 +248,6 @@ export const Dashboard: React.FC = () => {
     if (action.includes('DELETE')) return 'bg-rose-500';
     if (action.includes('VOTE')) return 'bg-purple-500';
     return 'bg-gray-500';
-  }, []);
-
-  // FIXED: Calculate turnout rate based on number of voters who have voted
-  const calculateTurnoutRate = useCallback((totalVoters: number, hasVotedCount: number) => {
-    if (totalVoters <= 0) return 0;
-    const turnout = (hasVotedCount / totalVoters) * 100;
-    return Math.min(Math.round(turnout), 100);
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -2065,13 +2062,9 @@ export const Dashboard: React.FC = () => {
             color="purple"
             description="Active candidates"
           />
-
           <StatCard
             title="Turnout Rate"
-            value={`${calculateTurnoutRate(
-              stats?.totalVoters || 0,
-              stats?.hasVotedCount || 0
-            )}%`}
+            value={`${((stats?.hasVotedCount || 0) / (stats?.totalVoters || 1) * 100).toFixed(1)}%`}
             icon={Activity}
             color="orange"
             description={`${stats?.hasVotedCount || 0} of ${stats?.totalVoters || 0} voters have voted`}

@@ -118,14 +118,18 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
         return a.name.localeCompare(b.name);
       });
 
-      // Filter positions based on user's course
+      // Filter positions based on user's course and year level
       const filteredPositions = sortedPositions.filter((position: Position) => {
-        // If position has no course restrictions, show it to everyone
-        if (!position.allowed_courses || position.allowed_courses.length === 0) {
-          return true;
-        }
-        // If position has course restrictions, only show to users from allowed courses
-        return position.allowed_courses.includes(user?.course || '');
+        // Check course restrictions
+        const courseMatch = !position.allowed_courses || position.allowed_courses.length === 0 || 
+                           position.allowed_courses.includes(user?.course || '');
+        
+        // Check year level restrictions
+        const yearMatch = !position.allowed_years || position.allowed_years.length === 0 || 
+                        position.allowed_years.includes(user?.yearLevel || 0);
+        
+        // Position must match both course and year level restrictions
+        return courseMatch && yearMatch;
       });
 
       setPositions(filteredPositions);
@@ -221,6 +225,22 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
     const selectedCount = getSelectedCountForPosition(positionName);
     const maxVotes = getMaxVotesForPosition(positionName);
     return selectedCount < maxVotes;
+  };
+
+  // Helper function to format eligible years for display
+  const formatEligibleYears = (years?: number[]): string => {
+    if (!years || years.length === 0) return 'All Years';
+    
+    const yearLabels = years.map(year => {
+      if (year === 1) return '1st Year';
+      if (year === 2) return '2nd Year';
+      if (year === 3) return '3rd Year';
+      return `${year}th Year`;
+    });
+    
+    if (yearLabels.length === 1) return yearLabels[0];
+    if (yearLabels.length === 2) return yearLabels.join(' and ');
+    return yearLabels.slice(0, -1).join(', ') + ' and ' + yearLabels[yearLabels.length - 1];
   };
 
   const getVoteStatusForPosition = (positionName: string) => {
@@ -474,6 +494,9 @@ export const CastVote: React.FC<CastVoteProps> = ({ onVoteCast, onLogout }) => {
                                 : 'Select one candidate'
                               }
                               <span className="ml-2 text-blue-200 italic">(Optional)</span>
+                            </p>
+                            <p className="text-blue-200 text-xs mt-1">
+                              Eligible: {formatEligibleYears(position.allowed_years)}
                             </p>
                           </div>
                         </div>

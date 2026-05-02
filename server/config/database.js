@@ -5,10 +5,11 @@ import os from 'os';
 
 dotenv.config();
 
-// Calculate optimal connection limit based on CPU cores for high performance
+// Calculate optimal connection limit for 50+ desktop PCs on network
 const cpuCores = os.cpus().length;
-const optimalConnectionLimit = Math.min(2000, cpuCores * 100); // Max 2000 connections for high load
-const optimalQueueLimit = Math.min(20000, cpuCores * 1000); // Max 20000 queue for high load
+// For 50 PCs: ~50 concurrent users + buffer = 100 connections minimum
+const optimalConnectionLimit = Math.min(500, Math.max(100, cpuCores * 25)); // 100-500 connections
+const optimalQueueLimit = Math.min(2000, cpuCores * 100); // 2000 queue for network deployment
 
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
@@ -19,18 +20,18 @@ const dbConfig = {
   charset: 'utf8mb4',
   timezone: '+00:00',
   
-  // Ultra high-performance connection pool for massive load
+  // Optimized connection pool for 50+ desktop PCs on network
   waitForConnections: true,
   connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || optimalConnectionLimit,
   queueLimit: parseInt(process.env.DB_QUEUE_LIMIT) || optimalQueueLimit,
-  idleTimeout: 10000, // Reduced to 10s for faster recycling
-  maxIdle: parseInt(process.env.DB_MAX_IDLE) || Math.max(300, cpuCores * 10), // Keep many idle connections for high performance
+  idleTimeout: 60000, // Increased to 60s for network stability
+  maxIdle: parseInt(process.env.DB_MAX_IDLE) || Math.max(50, cpuCores * 5), // Keep idle connections ready
   enableKeepAlive: true,
-  keepAliveInitialDelay: 10000, // 10 seconds
+  keepAliveInitialDelay: 30000, // 30 seconds for network stability
   
-  // MySQL-specific performance optimizations for massive load
-  acquireTimeout: 60000, // Increased for high load
-  timeout: 120000, // Increased for high load
+  // MySQL-specific performance optimizations for network deployment
+  acquireTimeout: 120000, // 2 minutes for network latency
+  timeout: 300000, // 5 minutes for network operations
   decimalNumbers: true, // Better decimal handling
   typeCast: true, // Better type casting
   

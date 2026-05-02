@@ -942,75 +942,76 @@ export const ReviewVote: React.FC<ReviewVoteProps> = ({
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="lg:col-span-1 space-y-4 sm:space-y-6"
+            className="lg:col-span-1"
           >
-            {/* Voter Information */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-lg border border-white/30 p-4 sm:p-6"
-            >
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
-                <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-800" />
-                Voter Information
-              </h2>
+            {/* Combined Voter Info & Actions - Sticky */}
+            <div className="lg:sticky lg:top-6 space-y-4 sm:space-y-6">
+              {/* Voter Information */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-lg border border-white/30 p-4 sm:p-6"
+              >
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-800" />
+                  Voter Information
+                </h2>
 
-              <div className="space-y-3 sm:space-y-4">
-                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-blue-100">
-                  <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Student ID</p>
-                  <p className="font-bold text-gray-900 text-sm sm:text-base lg:text-lg">{user.studentId}</p>
-                </div>
-
-                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-blue-100">
-                  <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Full Name</p>
-                  <p className="font-bold text-gray-900 text-sm sm:text-base lg:text-lg">{user.fullName}</p>
-                </div>
-
-                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-blue-100">
-                  <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Course & Section</p>
-                  <p className="font-bold text-gray-900 text-sm sm:text-base lg:text-lg">{user.course} - {user.section}</p>
-                </div>
-              </div>
-
-              {/* Ballot Information */}
-              <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200">
                 <div className="space-y-3 sm:space-y-4">
-                  <div className="flex items-start space-x-3">
-                    <Hash className="w-3 h-3 sm:w-4 sm:h-4 text-blue-800 mt-1 flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Ballot ID</p>
-                      <div className="flex items-center space-x-2">
-                        <p className="font-mono text-xs sm:text-sm text-gray-900 break-all bg-gray-50 rounded-lg px-3 py-2 flex-1">
-                          {formatBallotId(ballotId)}
-                        </p>
-                        {!ballotId && (
-                          <LoadingSpinner size="sm" variant="pulse" color="primary" />
-                        )}
-                      </div>
-                    </div>
+                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-blue-100">
+                    <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Student ID</p>
+                    <p className="font-bold text-gray-900 text-sm sm:text-base lg:text-lg">{user.studentId}</p>
                   </div>
 
-                  <div className="flex items-start space-x-3">
-                    <ShieldCheck className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 mt-1 flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Secure Hash</p>
-                      <div className="flex items-center space-x-2">
-                        <p className="font-mono text-xs sm:text-sm text-gray-900 break-all bg-green-50 rounded-lg px-3 py-2 flex-1">
-                          {formatHashedBallotId(hashedBallotId)}
-                        </p>
-                        {!hashedBallotId && (
-                          <LoadingSpinner size="sm" variant="pulse" color="primary" />
-                        )}
+                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-blue-100">
+                    <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Full Name</p>
+                    <p className="font-bold text-gray-900 text-sm sm:text-base lg:text-lg">{user.fullName}</p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-blue-100">
+                    <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Course & Section</p>
+                    <p className="font-bold text-gray-900 text-sm sm:text-base lg:text-lg">{user.course} - {user.section}</p>
+                  </div>
+                </div>
+
+                {/* Ballot Information */}
+                <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200">
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex items-start space-x-3">
+                      <Hash className="w-3 h-3 sm:w-4 sm:h-4 text-blue-800 mt-1 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Ballot ID</p>
+                        <div className="flex items-center space-x-2">
+                          <p className="font-mono text-xs sm:text-sm text-gray-900 break-all bg-gray-50 rounded-lg px-3 py-2 flex-1">
+                            {formatBallotId(ballotId)}
+                          </p>
+                          {!ballotId && (
+                            <LoadingSpinner size="sm" variant="pulse" color="primary" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3">
+                      <ShieldCheck className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 mt-1 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Secure Hash</p>
+                        <div className="flex items-center space-x-2">
+                          <p className="font-mono text-xs sm:text-sm text-gray-900 break-all bg-green-50 rounded-lg px-3 py-2 flex-1">
+                            {formatHashedBallotId(hashedBallotId)}
+                          </p>
+                          {!hashedBallotId && (
+                            <LoadingSpinner size="sm" variant="pulse" color="primary" />
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
 
-            {/* Action Buttons - Sticky */}
-            <div className="lg:sticky lg:top-6">
+              {/* Action Buttons - Part of the same sticky container */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

@@ -10,6 +10,7 @@ import { AdminManagement } from './components/admin/AdminManagement';
 import { CandidateManagement } from './components/admin/CandidateManagement';
 import { VoterManagement } from './components/admin/VoterManagement';
 import { PollMonitor } from './components/admin/PollMonitor';
+import { TurnoutRatePage } from './components/admin/TurnoutRatePage';
 import { CastVote } from './components/voter/CastVote';
 import { useSecurity } from './hooks/useSecurity';
 import './styles/globals.css';
@@ -190,6 +191,11 @@ function AppContent() {
     if (urlParams.get('admin') === 'true') {
       setShowAdminLogin(true);
     }
+    // Handle tab query parameter for navigation
+    const tabParam = urlParams.get('tab');
+    if (tabParam && ['dashboard', 'admins', 'candidates', 'voters', 'monitor', 'turnout'].includes(tabParam)) {
+      setActiveAdminTab(tabParam);
+    }
   }, []);
 
   // Set minimum loading time of 2 seconds
@@ -307,11 +313,12 @@ function AppContent() {
         onTabChange={setActiveAdminTab}
         onLogout={handleLogout}
       >
-        {activeAdminTab === 'dashboard' && <Dashboard />}
+        {activeAdminTab === 'dashboard' && <Dashboard onTabChange={setActiveAdminTab} />}
         {activeAdminTab === 'admins' && <AdminManagement />}
         {activeAdminTab === 'candidates' && <CandidateManagement />}
         {activeAdminTab === 'voters' && <VoterManagement />}
         {activeAdminTab === 'monitor' && <PollMonitor />}
+        {activeAdminTab === 'turnout' && <TurnoutRatePage />}
       </AdminLayout>
     );
   }

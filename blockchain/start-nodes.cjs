@@ -3,10 +3,9 @@ const path = require('path');
 const fs = require('fs');
 const Web3 = require('web3');
 
-console.log('🚀 Starting 2 Persistent Ethereum Nodes...');
-console.log('🔧 Persistent Mode - Data survives restarts');
+console.log('🚀 Starting 2 Independent Ethereum Nodes...');
+console.log('🔧 Development Mode - Independent Nodes');
 console.log('📝 Chain ID: 1337');
-console.log('💾 Storage: Persistent on disk');
 console.log('');
 
 const scriptPath = path.join(__dirname, 'blockchain');
@@ -84,19 +83,13 @@ setTimeout(() => {
             console.log('   Node 1: http://localhost:8545');
             console.log('   Node 2: http://localhost:8547');
             console.log('');
-            console.log('💡 Persistent Mode:');
-            console.log('   - Nodes run with persistent storage');
-            console.log('   - Data survives restarts');
+            console.log('💡 Development Mode:');
+            console.log('   - Nodes run independently');
             console.log('   - Contracts deployed on both nodes separately');
             console.log('   - System uses failover between nodes');
             console.log('');
-            console.log('🎯 Key Benefits:');
-            console.log('   ✅ Vote data persists across restarts');
-            console.log('   ✅ Blockchain state maintained on disk');
-            console.log('   ✅ No data loss when stopping/starting nodes');
-            console.log('');
-            console.log('🚨 Important: First time setup will create');
-            console.log('   persistent blockchain from genesis file.');
+            console.log('🚨 Important: In this mode, contract deployment');
+            console.log('   will happen separately on each node.');
             console.log('');
             console.log('🔧 Next steps:');
             console.log('   1. Run: npm run compile-contract');

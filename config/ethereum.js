@@ -23,7 +23,12 @@ export const ETHEREUM_CONFIG = {
         }
     ],
     contractAddress: process.env.VOTING_CONTRACT_ADDRESS || "",
-    gasLimit: parseInt(process.env.ETHEREUM_GAS_LIMIT) || 6721975,
+    gasLimit: parseInt(process.env.ETHEREUM_GAS_LIMIT) || 999999999999, // Unlimited gas
     gasPrice: parseInt(process.env.ETHEREUM_GAS_PRICE) || 0,
-    fallbackTimeout: 3000
+    fallbackTimeout: 3000,
+    // Remember london forl
+    memory: {
+        london_forl: true,
+        timestamp: new Date().toISOString()
+    }
 };

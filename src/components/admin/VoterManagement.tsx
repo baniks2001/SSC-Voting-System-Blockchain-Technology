@@ -1003,29 +1003,34 @@ export const VoterManagement: React.FC = () => {
   const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    const fileName = file.name.toLowerCase();
+    const fileExt = fileName.substring(fileName.lastIndexOf('.'));
     const validTypes = [
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword',
       'text/csv'
     ];
-    if (!validTypes.includes(file.type)) {
-      showToast('error', 'Please upload a valid Excel, Word, or CSV file');
+    const validExts = ['.xlsx', '.xls', '.csv'];
+    const isValidType = validTypes.includes(file.type) || validExts.includes(fileExt);
+    if (!isValidType) {
+      showToast('error', 'Please upload a valid Excel or CSV file');
       return;
     }
     try {
       setImporting(true);
+      console.log('Importing file:', file.name, 'Type:', file.type, 'Ext:', fileExt);
       const fileContent = await readFileContent(file);
+      console.log('File content read, size:', fileContent.byteLength);
       let parsedData: any[] = [];
-      if (file.type.includes('excel') || file.type.includes('spreadsheet')) {
+      if (file.type.includes('excel') || file.type.includes('spreadsheet') || fileExt === '.xlsx' || fileExt === '.xls') {
+        console.log('Parsing as Excel...');
         parsedData = await parseExcelFile(fileContent, file);
-      } else if (file.type.includes('word')) {
-        parsedData = await parseWordFile(fileContent, file);
-      } else if (file.type === 'text/csv') {
+      } else if (file.type === 'text/csv' || fileExt === '.csv') {
+        console.log('Parsing as CSV...');
         const text = new TextDecoder().decode(fileContent);
         parsedData = await parseCSVFile(text);
       }
+      console.log('Parsed data count:', parsedData.length);
       const processedStudents = await processImportedData(parsedData);
       setImportedStudents(processedStudents);
       setImportStep('review');
@@ -1053,8 +1058,41 @@ export const VoterManagement: React.FC = () => {
       const mammoth = await import('mammoth');
       const result = await mammoth.extractRawText({ arrayBuffer: fileContent });
       return parseTextToTable(result.value);
-    } catch (error) {
-      throw new Error('Failed to parse Word file');
+    } catch (error: any) {
+      console.error('Word parsing error:', error);
+      throw new Error(`Failed to parse Word file: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const parsePDFFile = async (fileContent: ArrayBuffer): Promise<any[]> => {
+    try {
+      const text = await extractTextFromPDF(fileContent);
+      console.log('PDF extracted text (first 500 chars):', text.substring(0, 500));
+      console.log('PDF text length:', text.length);
+      return parseTextToTable(text);
+    } catch (error: any) {
+      console.error('PDF parsing error:', error);
+      throw new Error(`Failed to parse PDF file: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const extractTextFromPDF = async (arrayBuffer: ArrayBuffer): Promise<string> => {
+    try {
+      const pdfjsLib = await import('pdfjs-dist');
+      // Use jsDelivr CDN with correct .mjs extension
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+      return fullText;
+    } catch (error: any) {
+      console.error('PDF text extraction error:', error);
+      throw new Error(`Failed to extract text from PDF: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -1072,17 +1110,109 @@ export const VoterManagement: React.FC = () => {
   };
 
   const parseTextToTable = (text: string): any[] => {
-    const lines = text.split('\n').filter(line => line.trim());
     const data = [];
-    for (let i = 0; i < lines.length; i++) {
-      const cells = lines[i].split('\t').filter(cell => cell.trim());
-      if (cells.length >= 2) {
-        data.push({
-          'Student ID': cells[0],
-          'Name': cells.slice(1).join(' ')
-        });
+    
+    // Remove university header/footer text to isolate student data
+    let cleanedText = text
+      .replace(/Southern Leyte State University.*?Semester:/gs, '')
+      .replace(/NOTHING FOLLOWS.*/gs, '')
+      .replace(/Excellence \| Service \| Leadership.*?Spirituality/gs, '');
+    
+    // Try to extract students using regex patterns
+    // Pattern: # StudentNo Surname FirstName MiddleName Sex Course ...
+    // Student numbers are typically 4+ digits (like 20230001)
+    const studentPattern = /#?\s*(\d{8,})\s+([A-Za-z]+)\s+([A-Za-z]+)\s+([A-Z])?(?:\s+[MF])?\s+([A-Za-z]+\d?)/g;
+    
+    let match;
+    while ((match = studentPattern.exec(cleanedText)) !== null) {
+      const studentNo = match[1];
+      const surname = match[2];
+      const firstName = match[3];
+      const middleInitial = match[4] || '';
+      const course = match[5];
+      
+      const fullName = middleInitial 
+        ? `${surname}, ${firstName} ${middleInitial}.`
+        : `${surname}, ${firstName}`;
+      
+      // Try to find year level near this match
+      const contextStart = Math.max(0, match.index - 50);
+      const contextEnd = Math.min(cleanedText.length, match.index + match[0].length + 100);
+      const context = cleanedText.substring(contextStart, contextEnd);
+      
+      const yearMatch = context.match(/\b([1-5])\s+(?:st|nd|rd|th)\s*year/i) || 
+                        context.match(/\bYear\s*([1-5])\b/i) ||
+                        context.match(/\s([1-5])\s/);
+      const yearLevel = yearMatch ? parseInt(yearMatch[1]) : 1;
+      
+      data.push({
+        'student_id': studentNo,
+        'student_no': studentNo,
+        'name': fullName,
+        'fullname': fullName,
+        'first_name': firstName,
+        'last_name': surname,
+        'course': course.toUpperCase(),
+        'program': course.toUpperCase(),
+        'year_level': yearLevel,
+        'year': yearLevel,
+        'level': yearLevel
+      });
+      console.log(`Parsed student: ${studentNo} - ${fullName} - ${course} - Year ${yearLevel}`);
+    }
+    
+    // If no students found with pattern, try line-by-line parsing
+    if (data.length === 0) {
+      console.log('Pattern matching failed, trying line-by-line parsing...');
+      
+      let lines = text.split(/\r?\n/).filter(line => line.trim());
+      
+      // If few lines, try splitting by university header
+      if (lines.length < 10) {
+        const pages = text.split(/Southern Leyte State University/);
+        lines = pages.flatMap(page => page.split(/\r?\n/)).filter(l => l.trim());
+      }
+      
+      for (const line of lines) {
+        const trimmed = line.trim();
+        
+        // Skip headers
+        if (trimmed.includes('StudentNo') || trimmed.includes('University') || 
+            trimmed.includes('Email:') || trimmed.includes('Website:') ||
+            trimmed.includes('NOTHING FOLLOWS')) {
+          continue;
+        }
+        
+        // Look for student number pattern (8+ digits)
+        const studentMatch = trimmed.match(/#?\s*(\d{8,})\s+([A-Za-z]+)\s+([A-Za-z]+)/);
+        if (studentMatch) {
+          const studentNo = studentMatch[1];
+          const surname = studentMatch[2];
+          const firstName = studentMatch[3];
+          
+          // Look for course and year in the rest of the line
+          const rest = trimmed.substring(studentMatch[0].length);
+          const courseMatch = rest.match(/(BSE|BS|BEED|AB|BSBA|BSHM|BSIT|BSCS|BSN|BSP|BSA)\d?/i);
+          const yearMatch = rest.match(/\b([1-5])\s/);
+          
+          data.push({
+            'student_id': studentNo,
+            'student_no': studentNo,
+            'name': `${surname}, ${firstName}`,
+            'fullname': `${surname}, ${firstName}`,
+            'first_name': firstName,
+            'last_name': surname,
+            'course': courseMatch ? courseMatch[1].toUpperCase() : '',
+            'program': courseMatch ? courseMatch[1].toUpperCase() : '',
+            'year_level': yearMatch ? parseInt(yearMatch[1]) : 1,
+            'year': yearMatch ? parseInt(yearMatch[1]) : 1,
+            'level': yearMatch ? parseInt(yearMatch[1]) : 1
+          });
+        }
       }
     }
+    
+    console.log('Total parsed data count:', data.length);
     return data;
   };
 
@@ -1124,7 +1254,7 @@ export const VoterManagement: React.FC = () => {
           continue;
         }
 
-        const course = '';
+        const course = extractCourse(row);
         const yearLevel = extractYearLevel(row);
         const section = extractSection(row);
 
@@ -1173,9 +1303,9 @@ export const VoterManagement: React.FC = () => {
   };
 
   const extractYearLevel = (row: any): number => {
-    const yearPatterns = ['year', 'yearlevel', 'year_level', 'level', 'yr'];
+    const yearPatterns = ['year', 'yearlevel', 'year_level', 'level', 'yr', 'year level'];
     for (const key of Object.keys(row)) {
-      const lowerKey = key.toLowerCase();
+      const lowerKey = key.toLowerCase().replace(/[._\s]/g, '');
       if (yearPatterns.some(pattern => lowerKey.includes(pattern))) {
         const value = row[key]?.toString().trim();
         if (value) {
@@ -1199,6 +1329,18 @@ export const VoterManagement: React.FC = () => {
     return '';
   };
 
+  const extractCourse = (row: any): string => {
+    const coursePatterns = ['course', 'program', 'degree'];
+    for (const key of Object.keys(row)) {
+      const lowerKey = key.toLowerCase();
+      if (coursePatterns.some(pattern => lowerKey.includes(pattern))) {
+        const value = row[key]?.toString().trim();
+        if (value) return value;
+      }
+    }
+    return '';
+  };
+
   const isLikelyStudentId = (value: string): boolean => {
     if (!value) return false;
     const cleanValue = value.toString().trim();
@@ -1211,10 +1353,10 @@ export const VoterManagement: React.FC = () => {
 
   const extractFullName = (row: any): string => {
     const namePatterns = {
-      firstName: ['firstname', 'first_name', 'fname', 'givenname', 'given_name', 'first name'],
+      firstName: ['firstname', 'first_name', 'fname', 'givenname', 'given_name', 'first name', 'first'],
       lastName: ['lastname', 'last_name', 'lname', 'familyname', 'family_name', 'last name'],
-      middleName: ['middlename', 'middle_name', 'mname', 'middle name'],
-      surname: ['surname', 'middleinitial', 'middle_initial', 'mi', 'initial'],
+      middleName: ['middlename', 'middle_name', 'mname', 'middle name', 'middle'],
+      surname: ['surname'],
       fullName: ['name', 'fullname', 'full_name', 'studentname', 'student_name', 'complete_name']
     };
     const components = {
@@ -1227,9 +1369,9 @@ export const VoterManagement: React.FC = () => {
     for (const [key, value] of Object.entries(row)) {
       const stringValue = value?.toString().trim();
       if (!stringValue) continue;
-      const lowerKey = key.toLowerCase().trim();
+      const lowerKey = key.toLowerCase().trim().replace(/[._\s]/g, '');
       for (const [type, patterns] of Object.entries(namePatterns)) {
-        if (patterns.some(pattern => lowerKey.includes(pattern))) {
+        if (patterns.some(pattern => lowerKey === pattern || lowerKey.includes(pattern))) {
           if (!isLikelyStudentId(stringValue)) {
             components[type as keyof typeof components] = stringValue;
           }
@@ -1242,9 +1384,9 @@ export const VoterManagement: React.FC = () => {
     }
     const nameParts = [];
     if (components.firstName) nameParts.push(components.firstName);
-    const middlePart = components.middleName || components.surname;
-    if (middlePart) nameParts.push(formatMiddleName(middlePart));
-    if (components.lastName) nameParts.push(components.lastName);
+    if (components.middleName) nameParts.push(formatMiddleName(components.middleName));
+    if (components.surname) nameParts.push(components.surname);
+    else if (components.lastName) nameParts.push(components.lastName);
     if (nameParts.length === 0) return '';
     const fullName = nameParts.join(' ');
     return formatName(fullName);
@@ -1276,8 +1418,8 @@ export const VoterManagement: React.FC = () => {
 
   const extractStudentId = (row: any): string => {
     const idPatterns = [
-      'studentid', 'student_id', 'id', 'student', 'student no', 'studentno',
-      'student number', 'studentnumber', 'matric', 'matriculation', 'studentidno'
+      'studentid', 'student_id', 'id', 'student', 'student no', 'studentno', 'studentno.',
+      'student number', 'studentnumber', 'matric', 'matriculation', 'studentidno', 'no.', 'no'
     ];
     for (const key of Object.keys(row)) {
       const lowerKey = key.toLowerCase();
@@ -3081,7 +3223,7 @@ export const VoterManagement: React.FC = () => {
                   <div>
                     <p className="text-base text-blue-800 font-medium">Import Instructions</p>
                     <p className="text-sm text-blue-700 mt-2">
-                      Upload an Excel, CSV, or Word file containing student data. The system will automatically detect columns for Student ID, Name, Year Level, and Section.
+                      Upload an Excel or CSV file containing student data. The system will automatically detect columns for Student No, First Name, Middle Name, Surname, Course, Year Level, and Section. Name columns will be combined as: First Name + Middle Name + Surname.
                       <strong> Course will be left blank and must be selected for each voter in the next step using the dropdown menu.</strong>
                     </p>
                   </div>
@@ -3093,7 +3235,7 @@ export const VoterManagement: React.FC = () => {
                   type="file"
                   id="file-import"
                   onChange={handleFileImport}
-                  accept=".xlsx,.xls,.csv,.docx,.doc"
+                  accept=".xlsx,.xls,.csv"
                   className="hidden"
                 />
                 <label htmlFor="file-import" className="cursor-pointer">
@@ -3102,7 +3244,7 @@ export const VoterManagement: React.FC = () => {
                     Click to upload file
                   </p>
                   <p className="text-sm text-gray-500 mt-2">
-                    Supports Excel, CSV, and Word documents
+                    Supports Excel (.xlsx, .xls) and CSV files
                   </p>
                 </label>
               </div>

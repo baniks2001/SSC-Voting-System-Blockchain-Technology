@@ -16,11 +16,14 @@ router.post('/admin/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    console.log('🔐 Admin login attempt for:', email);
+    // Debug logging only in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔐 Admin login attempt for:', email);
+    }
 
     // Check for super admin
     if (email === process.env.SUPER_ADMIN_EMAIL && password === process.env.SUPER_ADMIN_PASSWORD) {
-      console.log('🔓 Super admin login detected');
+      // Super admin login - silent in production
       
       const userData = {
         id: 0,
@@ -104,7 +107,10 @@ router.post('/voter/login', async (req, res) => {
       return res.status(400).json({ error: 'Student ID and password required' });
     }
 
-    console.log('🔐 Voter login attempt for:', actualStudentId);
+      // Debug logging only in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔐 Voter login attempt for:', actualStudentId);
+    }
 
     const [rows] = await pool.execute(
       'SELECT * FROM voters WHERE student_id = ?',
@@ -120,7 +126,7 @@ router.post('/voter/login', async (req, res) => {
     
     // Check if voter is active
     if (!voter.is_active) {
-      console.log('❌ Login blocked: Voter account is inactive', { studentId: actualStudentId, is_active: voter.is_active });
+      // Silent logging for inactive accounts in production
       await logAuditAction(voter.id, 'voter', 'LOGIN_FAILED', 'Login attempted with inactive account', req);
       return res.status(401).json({ error: 'Account is inactive. Please contact administrator.' });
     }
@@ -190,7 +196,7 @@ router.post('/super-admin/verify', authenticateAdmin, async (req, res) => {
     const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
 
     if (password === superAdminPassword) {
-      console.log('✅ Super admin password verified successfully');
+      // Super admin verified - silent in production
       
       await logAuditAction(
         req.user.id, 
@@ -206,7 +212,7 @@ router.post('/super-admin/verify', authenticateAdmin, async (req, res) => {
         message: 'Super admin verified successfully'
       });
     } else {
-      console.log('❌ Super admin password verification failed');
+      // Failed verification - silent in production
       
       await logAuditAction(
         req.user.id, 
@@ -301,14 +307,14 @@ const generateToken = (user) => {
     role: user.role
   };
   
-  console.log('🔐 Generating token for:', payload);
+  // Debug logging only in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔐 Generating token for:', payload);
+  }
   
   const token = jwt.sign(payload, process.env.JWT_SECRET || 'sscvoting@2025blockchain', { expiresIn: '24h' });
   
-  console.log('✅ Token generated:', {
-    tokenLength: token.length,
-    payload: payload
-  });
+  // Silent in production
   
   return token;
 };

@@ -8,6 +8,14 @@ import { fileURLToPath } from 'url';
 import cluster from 'cluster';
 import os from 'os';
 
+// Debug logging utility - silent in production for performance with 50+ PCs
+const DEBUG = process.env.NODE_ENV === 'development' || process.env.ENABLE_DEBUG_LOGS === 'true';
+const debug = {
+  log: (...args) => DEBUG && console.log(...args),
+  error: (...args) => console.error(...args),
+  warn: (...args) => console.warn(...args)
+};
+
 // FIXED: Load environment variables FIRST and properly
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,7 +33,7 @@ for (const envPath of envPaths) {
     try {
         const result = dotenv.config({ path: envPath });
         if (!result.error) {
-            console.log(`✅ Loaded .env from: ${envPath}`);
+            debug.log(`✅ Loaded .env from: ${envPath}`);
             envLoaded = true;
             break;
         }
@@ -35,15 +43,17 @@ for (const envPath of envPaths) {
 }
 
 if (!envLoaded) {
-    console.log('⚠️ No .env file found, using process environment');
+    debug.warn('⚠️ No .env file found, using process environment');
 }
 
-// DEBUG: Verify critical environment variables
-console.log('🔧 Environment Verification:');
-console.log('📝 Contract address:', process.env.VOTING_CONTRACT_ADDRESS || 'NOT SET');
-console.log('🔐 JWT Secret:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
-console.log('🔗 Node1 URL:', process.env.ETHEREUM_NODE1_URL || 'NOT SET');
-console.log('🔗 Node2 URL:', process.env.ETHEREUM_NODE2_URL || 'NOT SET');
+// DEBUG: Verify critical environment variables (silent in production)
+if (DEBUG) {
+    console.log('🔧 Environment Verification:');
+    console.log('📝 Contract address:', process.env.VOTING_CONTRACT_ADDRESS || 'NOT SET');
+    console.log('🔐 JWT Secret:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
+    console.log('🔗 Node1 URL:', process.env.ETHEREUM_NODE1_URL || 'NOT SET');
+    console.log('🔗 Node2 URL:', process.env.ETHEREUM_NODE2_URL || 'NOT SET');
+}
 
 // NOW import routes after environment is loaded
 import authRoutes from './routes/auth.js';
@@ -98,8 +108,7 @@ const isMaster = cluster.isPrimary || cluster.isMaster;
 const DEBUG_NO_CLUSTER = false;
 
 if (isMaster && !DEBUG_NO_CLUSTER) {
-    console.log(`🚀 Master ${process.pid} is running`);
-    console.log(`🖥️ Starting ${numCPUs} worker processes for maximum performance`);
+    console.log(`🚀 Master ${process.pid} is running with ${numCPUs} workers for 50+ PCs`);
     
     // Fork workers for high performance
     for (let i = 0; i < numCPUs; i++) {
@@ -107,19 +116,18 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
     }
     
     cluster.on('exit', (worker, code, signal) => {
-        console.log(`⚠️ Worker ${worker.process.pid} died with code ${code} and signal ${signal}`);
-        console.log('🔄 Restarting worker for high availability');
+        console.error(`⚠️ Worker ${worker.process.pid} died (${code}), restarting...`);
         cluster.fork();
     });
     
-    // Monitor cluster performance
+    // Monitor cluster performance (silent in production)
     cluster.on('listening', (worker, address) => {
-        console.log(`🔧 Worker ${worker.process.pid} listening on ${address.address}:${address.port}`);
+        debug.log(`🔧 Worker ${worker.process.pid} listening on ${address.address}:${address.port}`);
     });
     
 } else {
     // Worker process optimized for high performance
-    console.log(`🔧 Worker ${process.pid} started for high performance`);
+    debug.log(`🔧 Worker ${process.pid} started`);
     
     // Performance optimization: Disable x-powered-by
     app.disable('x-powered-by');
@@ -140,10 +148,10 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
         maxAge: 3600
     }));
 
-    // Rate limiting optimized for massive load
+    // Rate limiting optimized for 50+ desktop PCs on network
     const globalLimiter = rateLimit({
         windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 5000, // Increased to 5000 requests per window
+        max: 15000, // 15,000 requests per window for 50+ PCs (300 req/PC)
         message: {
             error: 'Too many requests from this IP, please try again later.',
             retryAfter: '15 minutes'
@@ -161,10 +169,10 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
 
     app.use(globalLimiter);
 
-    // Voting-specific rate limiting for high load
+    // Voting-specific rate limiting for 50+ PCs
     const votingLimiter = rateLimit({
         windowMs: 60 * 1000, // 1 minute
-        max: 1000, // Increased to 1000 votes per minute per IP
+        max: 3000, // 3,000 votes per minute per IP for network deployment
         message: {
             error: 'Too many vote attempts, please try again later.',
             retryAfter: '1 minute'
@@ -198,13 +206,13 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
         parameterLimit: 100 // Increased for complex forms
     }));
 
-    // Optimized request timeout middleware for high load
+    // Optimized request timeout middleware for 50+ PCs
     app.use((req, res, next) => {
         const timeout = setTimeout(() => {
             if (!res.headersSent) {
                 res.status(408).json({ error: 'Request timeout' });
             }
-        }, 30000); // 30 seconds timeout
+        }, 45000); // 45 seconds timeout for network latency
 
         // Clean up timeout on response completion
         const originalEnd = res.end;
@@ -216,10 +224,101 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
         next();
     });
 
-    // Enhanced connection handling for high load
+    // Simple in-memory cache for frequently accessed endpoints
+    const cache = new Map();
+    const CACHE_TTL = 5000; // 5 seconds for dynamic data
+    const STATIC_CACHE_TTL = 30000; // 30 seconds for semi-static data
+
+    const getCachedResponse = (key) => {
+        const cached = cache.get(key);
+        if (cached && Date.now() - cached.timestamp < cached.ttl) {
+            return cached.data;
+        }
+        cache.delete(key);
+        return null;
+    };
+
+    const setCachedResponse = (key, data, ttl = CACHE_TTL) => {
+        cache.set(key, { data, timestamp: Date.now(), ttl });
+    };
+
+    // Cache middleware for poll and results endpoints
+    const cacheMiddleware = (ttl = CACHE_TTL) => (req, res, next) => {
+        if (req.method !== 'GET') return next();
+        
+        const cacheKey = `${req.path}:${JSON.stringify(req.query)}`;
+        const cached = getCachedResponse(cacheKey);
+        
+        if (cached) {
+            res.setHeader('X-Cache', 'HIT');
+            return res.json(cached);
+        }
+        
+        const originalJson = res.json;
+        res.json = function(data) {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+                setCachedResponse(cacheKey, data, ttl);
+            }
+            return originalJson.call(this, data);
+        };
+        
+        next();
+    };
+
+    // Apply caching to frequently accessed endpoints
+    app.use('/api/poll/status', cacheMiddleware(2000)); // 2s for poll status
+    app.use('/api/voting/results', cacheMiddleware(5000)); // 5s for results
+    app.use('/api/candidates', cacheMiddleware(STATIC_CACHE_TTL)); // 30s for candidates
+    app.use('/api/positions', cacheMiddleware(STATIC_CACHE_TTL)); // 30s for positions
+    app.use('/api/blockchain-status', cacheMiddleware(3000)); // 3s for blockchain status
+
+    // Cache invalidation endpoint for admin use
+    app.post('/api/admin/clear-cache', async (req, res) => {
+      try {
+        const { pattern } = req.body;
+        let cleared = 0;
+        
+        if (pattern) {
+          // Clear specific pattern
+          for (const key of cache.keys()) {
+            if (key.includes(pattern)) {
+              cache.delete(key);
+              cleared++;
+            }
+          }
+        } else {
+          // Clear all cache
+          cleared = cache.size;
+          cache.clear();
+        }
+        
+        res.json({
+          success: true,
+          message: `Cache cleared successfully`,
+          clearedEntries: cleared,
+          pattern: pattern || 'all'
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to clear cache: ' + error.message
+        });
+      }
+    });
+
+    // Expose cache stats endpoint
+    app.get('/api/admin/cache-stats', async (req, res) => {
+      res.json({
+        cacheSize: cache.size,
+        cacheKeys: Array.from(cache.keys()).slice(0, 100), // Limit output
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    // Enhanced connection handling for 50+ desktop PCs on network
     app.use((req, res, next) => {
         res.setHeader('Connection', 'keep-alive');
-        res.setHeader('Keep-Alive', 'timeout=60, max=1000');
+        res.setHeader('Keep-Alive', 'timeout=120, max=5000'); // Increased for 50+ concurrent clients
         next();
     });
 
@@ -472,73 +571,66 @@ if (isMaster && !DEBUG_NO_CLUSTER) {
     let server;
     const startServer = async () => {
         try {
-            console.log(`🔧 Starting Worker ${process.pid} for high load...`);
+            debug.log(`🔧 Starting Worker ${process.pid}...`);
 
             // Initialize memory monitoring
             setupMemoryMonitoring();
 
             const dbConnected = await testConnection();
             if (!dbConnected) {
-                console.error('❌ Failed to connect to database. Please check your database configuration.');
-                console.log('🔄 Retrying in 5 seconds...');
+                console.error('❌ Database connection failed. Retrying in 5s...');
                 setTimeout(startServer, 5000);
                 return;
             }
 
-            console.log('✅ Database connection established');
-
             server = app.listen(PORT, '0.0.0.0', () => {
-                console.log(`🚀 Worker ${process.pid} running on port ${PORT}`);
-                console.log(`🌐 Access the server: http://localhost:${PORT}`);
-                console.log(`📊 API Documentation: http://localhost:${PORT}/api/health`);
-                console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
-                console.log(`🗳️ Voting API: http://localhost:${PORT}/api/voting`);
-                console.log(`⛓️ Blockchain API: http://localhost:${PORT}/api/blockchain`);
-                console.log(`📝 Contract Address: ${process.env.VOTING_CONTRACT_ADDRESS || 'Not configured'}`);
-                console.log(`🔗 Node 1: ${process.env.ETHEREUM_NODE1_URL || 'http://localhost:8545'}`);
-                console.log(`🔗 Node 2: ${process.env.ETHEREUM_NODE2_URL || 'http://localhost:8547'}`);
-                console.log(`⚡ Performance: 5000 requests per 15 minutes`);
-                console.log(`🖥️ Cluster Mode: ${numCPUs} workers active for maximum performance`);
-                console.log(`🔧 Database Pool: ${optimalConnectionLimit} connections, ${optimalQueueLimit} queue limit`);
+                console.log(`🚀 Worker ${process.pid} ready on port ${PORT} (50+ PCs config)`);
+                debug.log(`� Health: http://localhost:${PORT}/api/health`);
+                debug.log(`🔧 DB Pool: ${optimalConnectionLimit} connections`);
 
-                // Initialize blockchain service
+                // Initialize blockchain service (silent in production)
                 import('./services/ethereumService.js')
                     .then(({ ethereumService }) => {
-                        console.log('🔗 Blockchain service initialized');
+                        debug.log('🔗 Blockchain service initialized');
                     })
                     .catch(error => {
-                        console.error('❌ Failed to initialize blockchain service:', error);
+                        console.error('❌ Blockchain service failed:', error.message);
                     });
             });
 
             // Handle server errors
             server.on('error', (error) => {
                 if (error.code === 'EADDRINUSE') {
-                    console.error(`❌ Port ${PORT} is already in use`);
-                    console.log('💡 Try using a different port or stop the existing process');
+                    console.error(`❌ Port ${PORT} already in use`);
                 } else {
-                    console.error('❌ Server error:', error);
+                    console.error('❌ Server error:', error.message);
                 }
                 process.exit(1);
             });
 
             server.on('close', () => {
-                console.log(`🛑 Worker ${process.pid} closed`);
+                debug.log(`🛑 Worker ${process.pid} closed`);
                 if (memoryCheckInterval) {
                     clearInterval(memoryCheckInterval);
                 }
             });
 
-            // Optimized connection handling for high load
+            // Optimized connection handling for 50+ desktop PCs
             server.on('connection', (socket) => {
-                socket.setTimeout(60000); // Increased timeout for high load
-                socket.setKeepAlive(true, 30000); // Reduced keepalive for better resource management
+                socket.setTimeout(120000); // 2 minute timeout for network clients
+                socket.setKeepAlive(true, 60000); // 1 minute keepalive for network stability
                 socket.setNoDelay(true); // Disable Nagle's algorithm for better performance
+                
+                // Increase socket buffer sizes for network throughput
+                socket.setKeepAlive(true, 60000);
             });
+            
+            // Set server-level keepalive timeout
+            server.keepAliveTimeout = 120000; // 2 minutes
+            server.headersTimeout = 65000; // 65 seconds
 
         } catch (error) {
-            console.error('❌ Failed to start server:', error);
-            console.log('🔄 Retrying in 5 seconds...');
+            console.error('❌ Server start failed:', error.message);
             setTimeout(startServer, 5000);
         }
     };

@@ -8,6 +8,14 @@ import crypto from 'crypto';
 
 dotenv.config();
 
+// Debug logging utility - silent in production
+const DEBUG = process.env.NODE_ENV === 'development' || process.env.ENABLE_DEBUG_LOGS === 'true';
+const debug = {
+  log: (...args) => DEBUG && console.log(...args),
+  error: (...args) => console.error(...args),
+  warn: (...args) => console.warn(...args)
+};
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -494,7 +502,7 @@ class MultiNodeEthereumService {
     async submitVoteToAllNodes(voteData) {
         await this.ensureInitialized();
 
-        console.log('� Fast vote submission to blockchain nodes...');
+        console.log('🚀 Submitting vote to blockchain...');
 
         // Get both node1 and node2 specifically
         const node1 = this.nodes.find(node => node.name === 'node1');
@@ -512,112 +520,124 @@ class MultiNodeEthereumService {
             throw new Error('No blockchain nodes available for vote submission');
         }
 
-        console.log(`🎯 Submitting to primary node: ${primaryNode.name}`);
+        console.log(`🎯 Primary node: ${primaryNode.name}, Fallback: ${fallbackNode?.name || 'none'}`);
 
         try {
-            const votesString = JSON.stringify(voteData.votes);
-            const transaction = primaryNode.contract.methods.submitVote(
-                voteData.voterId,
-                voteData.ballotId,
-                votesString,
-                Math.floor(Date.now() / 1000),
-                voteData.voterHash
-            );
-
-            // Optimized gas estimation and submission
-            const [gas] = await Promise.all([
-                transaction.estimateGas({ from: primaryNode.discoveredAccount }),
-            ]);
+            const result = await this.submitVoteToNodeWithRetry(primaryNode, voteData);
             
-            // Ensure gas is a number, not BigInt
-            const gasLimit = typeof gas === 'bigint' ? Number(gas) : gas;
-            const gasBuffer = Math.floor(gasLimit * 1.1);
-            
-            const receipt = await transaction.send({
-                from: primaryNode.discoveredAccount,
-                gas: gasBuffer
-            });
-
-            console.log(`✅ Success on ${primaryNode.name}:`, receipt.transactionHash);
-
-            // Update node timestamp
-            primaryNode.lastDataReceived = new Date().toISOString();
-
-            // Serialize BigInt values in receipt before creating response
-            const serializedReceipt = this.serializeBigInt({
-                transactionHash: receipt.transactionHash,
-                blockNumber: receipt.blockNumber?.toString(),
-                gasUsed: receipt.gasUsed?.toString(),
-                cumulativeGasUsed: receipt.cumulativeGasUsed?.toString(),
-                effectiveGasPrice: receipt.effectiveGasPrice?.toString(),
-                voterHash: voteData.voterHash,
-                node: primaryNode.name,
-                ballotId: voteData.ballotId,
-                simulated: false,
-                status: receipt.status,
-                logs: receipt.logs
-            });
-
-            const results = [{
-                success: true,
-                node: primaryNode.name,
-                receipt: serializedReceipt
-            }];
-
-            // Async fallback submission (non-blocking)
+            // Async fallback submission (non-blocking) - wait for it
             if (fallbackNode) {
                 this.submitToFallbackNodeAsync(fallbackNode, voteData).catch(err => {
-                    console.log(`⚠️ Fallback submission to ${fallbackNode.name} failed:`, err.message);
+                    console.log(`⚠️ Fallback to ${fallbackNode.name} failed:`, err.message);
                 });
             }
 
-            return {
-                success: true,
-                results: results,
-                errors: [],
-                submittedTo: 1,
-                totalNodes: fallbackNode ? 2 : 1,
-                primaryNode: primaryNode.name
-            };
+            return result;
 
         } catch (error) {
-            console.warn(`❌ Primary node ${primaryNode.name} submission failed:`, error.message);
+            console.warn(`❌ Primary node ${primaryNode.name} failed:`, error.message);
             
             // Try fallback node if available
             if (fallbackNode) {
                 console.log(`🔄 Trying fallback node: ${fallbackNode.name}`);
                 try {
-                    return await this.submitToNode(fallbackNode, voteData);
+                    return await this.submitVoteToNodeWithRetry(fallbackNode, voteData);
                 } catch (fallbackError) {
                     console.error(`❌ Fallback node ${fallbackNode.name} also failed:`, fallbackError.message);
                 }
             }
             
-            throw new Error(`Vote submission failed on all nodes: ${error.message}`);
+            throw new Error(`Vote submission failed: ${error.message}`);
         }
+    }
+
+    // ENHANCED: Submit vote with retry and better gas handling
+    async submitVoteToNodeWithRetry(node, voteData, maxRetries = 3) {
+        let lastError = null;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return await this.submitVoteToNode(node, voteData);
+            } catch (error) {
+                lastError = error;
+                console.warn(`⚠️ Node ${node.name} attempt ${attempt} failed:`, error.message);
+                
+                // Don't retry if voter already voted
+                if (error.message.includes('Voter has already voted')) {
+                    console.log('ℹ️ Voter already voted, not retrying');
+                    throw error;
+                }
+                
+                if (attempt < maxRetries) {
+                    console.log(`🔄 Retrying in ${attempt * 1000}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+                }
+            }
+        }
+        
+        throw lastError;
     }
 
     async submitToNode(node, voteData) {
         const votesString = JSON.stringify(voteData.votes);
+        const timestamp = Math.floor(Date.now() / 1000);
+        
+        debug.log(`📤 Submitting vote to ${node.name} for ${voteData.voterId}`);
+
         const transaction = node.contract.methods.submitVote(
             voteData.voterId,
             voteData.ballotId,
             votesString,
-            Math.floor(Date.now() / 1000),
+            timestamp,
             voteData.voterHash
         );
 
-        const gas = await transaction.estimateGas({ from: node.discoveredAccount });
+        // ENHANCED: Gas estimation with fallback
+        let gasLimit;
+        try {
+            const gas = await transaction.estimateGas({ from: node.discoveredAccount });
+            gasLimit = typeof gas === 'bigint' ? Number(gas) : gas;
+            debug.log(`⛽ Gas estimated: ${gasLimit}`);
+        } catch (gasError) {
+            // ENHANCED: Fallback gas calculation if estimation fails
+            console.warn(`⚠️ Gas estimation failed, using fallback: ${gasError.message}`);
+            // Conservative estimate for vote submission (typically 200k-500k)
+            gasLimit = 500000;
+        }
         
-        // Ensure gas is a number, not BigInt
-        const gasLimit = typeof gas === 'bigint' ? Number(gas) : gas;
-        const gasBuffer = Math.floor(gasLimit * 1.1);
+        // Add 20% buffer for safety (increased from 10%)
+        const gasBuffer = Math.floor(gasLimit * 1.2);
+        const finalGas = Math.min(gasBuffer, 800000); // Cap at 800k to prevent runaway
         
-        const receipt = await transaction.send({
-            from: node.discoveredAccount,
-            gas: gasBuffer
-        });
+        debug.log(`⛽ Final gas limit: ${finalGas}`);
 
+        let receipt;
+        try {
+            receipt = await transaction.send({
+                from: node.discoveredAccount,
+                gas: finalGas
+            });
+        } catch (sendError) {
+            // ENHANCED: Check if it's an "already voted" error
+            if (sendError.message.includes('Voter has already voted') || 
+                sendError.message.includes('revert') && sendError.message.includes('already')) {
+                console.log(`ℹ️ Voter ${voteData.voterId} already voted on ${node.name}`);
+                throw new Error(`Voter has already voted on ${node.name}`);
+            }
+            
+            // ENHANCED: Check if it's an out of gas error and retry with more gas
+            if (sendError.message.includes('out of gas') && finalGas < 800000) {
+                console.warn(`⚠️ Out of gas, retrying with higher limit...`);
+                receipt = await transaction.send({
+                    from: node.discoveredAccount,
+                    gas: 800000
+                });
+            } else {
+                throw sendError;
+            }
+        }
+
+        debug.log(`✅ Vote submitted to ${node.name}: ${receipt.transactionHash}`);
         node.lastDataReceived = new Date().toISOString();
 
         // Serialize BigInt values in receipt before creating response
@@ -647,6 +667,11 @@ class MultiNodeEthereumService {
             totalNodes: 1,
             primaryNode: node.name
         };
+    }
+
+    // Alias for backward compatibility
+    async checkIfVoterHasVoted(voterId) {
+        return this.checkVoterHasVoted(voterId);
     }
 
     async submitToFallbackNodeAsync(node, voteData) {
@@ -682,25 +707,104 @@ class MultiNodeEthereumService {
             
             console.log(`📊 Node1 votes: ${node1VoteCount}, Node2 votes: ${node2VoteCount}`);
             
-            // With shared blockchain data, votes should be identical
+            // If votes are equal, no sync needed
             if (node1VoteCount === node2VoteCount) {
-                console.log(`✅ All nodes synchronized with ${node1VoteCount} votes each`);
-                console.log(`✅ All data is currently synchronized, continuing to monitor for changes`);
-                return { synced: true, votesSynced: 0, reason: 'Nodes already in sync' };
+                return { synced: false, reason: 'Nodes already in sync' };
             }
             
-            // If votes differ, log the discrepancy
-            console.log(`⚠️ Vote count discrepancy detected: node1=${node1VoteCount}, node2=${node2VoteCount}`);
-            console.log(`ℹ️ This may indicate a sync issue or blockchain data inconsistency`);
+            // Determine which node has more votes (source) and which has fewer (target)
+            let sourceNode, targetNode, sourceVoteCount, targetVoteCount, sourceName, targetName;
             
-            // For now, just return the status without attempting to sync
-            // In a shared blockchain setup, this should not happen
-            return { 
-                synced: false, 
-                reason: 'Vote count discrepancy in shared blockchain',
-                node1Votes: node1VoteCount,
-                node2Votes: node2VoteCount
-            };
+            if (node1VoteCount > node2VoteCount) {
+                sourceNode = node1;
+                targetNode = node2;
+                sourceVoteCount = node1VoteCount;
+                targetVoteCount = node2VoteCount;
+                sourceName = 'node1';
+                targetName = 'node2';
+            } else {
+                sourceNode = node2;
+                targetNode = node1;
+                sourceVoteCount = node2VoteCount;
+                targetVoteCount = node1VoteCount;
+                sourceName = 'node2';
+                targetName = 'node1';
+            }
+            
+            console.log(`🔄 AutoSync detected: ${sourceName} has ${sourceVoteCount} votes, ${targetName} has ${targetVoteCount} votes`);
+            console.log(`🔄 Syncing missing votes from ${sourceName} to ${targetName}...`);
+            
+            // Get all votes from source node
+            const allVotesData = await sourceNode.contract.methods.getAllVotes().call();
+            const ballotIds = allVotesData[0];
+            
+            let votesSynced = 0;
+            let errors = 0;
+            
+            // Sync missing votes to target node
+            for (const ballotId of ballotIds) {
+                try {
+                    // Check if vote exists on target node
+                    const voteExists = await targetNode.contract.methods.voteExists(ballotId).call();
+                    
+                    if (!voteExists) {
+                        // Get vote details from source node
+                        const voteDetails = await sourceNode.contract.methods.getVote(ballotId).call();
+                        
+                        // Submit to target node
+                        await targetNode.contract.methods.submitVote(
+                            voteDetails[0], // voterId
+                            voteDetails[1], // ballotId
+                            voteDetails[2], // votes
+                            voteDetails[3], // timestamp
+                            voteDetails[4]  // voterHash
+                        ).send({
+                            from: targetNode.discoveredAccount,
+                            gas: 200000
+                        });
+                        
+                        votesSynced++;
+                        console.log(`✅ AutoSynced vote ${ballotId} from ${sourceName} to ${targetName} (${votesSynced}/${sourceVoteCount - targetVoteCount})`);
+                    }
+                } catch (voteError) {
+                    errors++;
+                    if (!voteError.message.includes('already voted') && 
+                        !voteError.message.includes('vote already exists')) {
+                        console.log(`⚠️ AutoSync failed for vote ${ballotId}:`, voteError.message);
+                    }
+                }
+                
+                // Small delay to prevent overwhelming the network
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            // Update target node sync status
+            if (votesSynced > 0) {
+                targetNode.syncStatus = 'synced';
+                targetNode.lastSync = new Date().toISOString();
+                targetNode.lastDataReceived = new Date().toISOString();
+                
+                console.log(`✅ AutoSync completed: ${votesSynced} votes synced from ${sourceName} to ${targetName}`);
+                
+                // Record sync history
+                this.recordSyncHistory('node1_node2_autosync', votesSynced, errors);
+                
+                return {
+                    synced: true,
+                    votesSynced: votesSynced,
+                    sourceNode: sourceName,
+                    targetNodes: [targetName],
+                    errors: errors
+                };
+            } else {
+                console.log(`ℹ️ AutoSync: No new votes to sync from ${sourceName} to ${targetName}`);
+                return {
+                    synced: false,
+                    reason: 'No new votes to sync',
+                    sourceNode: sourceName,
+                    targetNodes: [targetName]
+                };
+            }
             
         } catch (error) {
             console.error('❌ Node1-Node2 AutoSync failed:', error.message);

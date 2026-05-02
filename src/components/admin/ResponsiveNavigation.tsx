@@ -8,7 +8,8 @@ import {
   Menu, 
   X,
   LogOut,
-  Eye
+  Eye,
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../lib/utils';
@@ -50,24 +51,26 @@ export const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
       ];
     }
 
-    // Admin: Dashboard, Add Candidates, Add Voters, Poll Monitor
+    // Admin: Dashboard, Add Candidates, Add Voters, Poll Monitor, Turnout
     if (userRole === 'admin') {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'candidates', label: 'Candidates', icon: Vote },
         { id: 'voters', label: 'Voters', icon: Users },
-        { id: 'monitor', label: 'Monitor', icon: Monitor }
+        { id: 'monitor', label: 'Monitor', icon: Monitor },
+        { id: 'turnout', label: 'Turnout', icon: BarChart3 }
       ];
     }
 
-    // Super Admin: Everything including Add Admin
+    // Super Admin: Everything including Add Admin and Turnout
     if (userRole === 'super_admin' || userRole === 'super_admin') {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'admins', label: 'Admins', icon: UserPlus },
         { id: 'candidates', label: 'Candidates', icon: Vote },
         { id: 'voters', label: 'Voters', icon: Users },
-        { id: 'monitor', label: 'Monitor', icon: Monitor }
+        { id: 'monitor', label: 'Monitor', icon: Monitor },
+        { id: 'turnout', label: 'Turnout', icon: BarChart3 }
       ];
     }
 

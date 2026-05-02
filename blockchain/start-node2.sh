@@ -1,38 +1,28 @@
 #!/bin/bash
 
-# Change to the directory where this script is located
-cd "$(dirname "$0")"
-
 echo "🚀 Starting Ethereum Node 2..."
 
 # Create data directory if it doesn't exist
 mkdir -p node2
 
-# Development mode will auto-create genesis
-echo "📦 Development mode will auto-create genesis..."
-echo "✅ Node 2 ready for development mode"
+# Initialize node with genesis block (only first time)
+if [ ! -d "node2/geth" ]; then
+    echo "📦 Initializing Node 2 with genesis block..."
+    geth --datadir node2 init node2/genesis.json
+fi
 
-# Start node with development mode and persistent storage
+# Start node with IPC disabled
 echo "🔑 Starting Node 2..."
 geth --datadir node2 \
-     --dev \
-     --dev.period 5 \
+     --networkid 1337 \
      --port 30304 \
      --http \
      --http.port 8547 \
      --http.addr 0.0.0.0 \
      --http.corsdomain "*" \
      --http.api "web3,eth,net,personal,admin,debug" \
-     --ws \
-     --ws.port 8548 \
-     --ws.addr 0.0.0.0 \
-     --ws.api "web3,eth,net,admin,debug,personal" \
-     --authrpc.port 8552 \
-     --authrpc.addr 0.0.0.0 \
      --ipcdisable \
-     --verbosity 3 \
-     --rpc.allow-unprotected-txs \
-     --miner.gasprice 1000000000 \
-     --nodiscover \
-     --maxpeers 0 \
+     --allow-insecure-unlock \
+     --unlock "0x8e6fde38f1233b19e4b7653a5a335a1e3b97a9e2" \
+     --password password.txt \
      console

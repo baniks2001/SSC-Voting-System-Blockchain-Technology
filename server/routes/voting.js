@@ -7,6 +7,14 @@ import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// Debug logging utility - silent in production for performance
+const DEBUG = process.env.NODE_ENV === 'development' || process.env.ENABLE_DEBUG_LOGS === 'true';
+const debug = {
+  log: (...args) => DEBUG && console.log(...args),
+  error: (...args) => console.error(...args), // Always log errors
+  warn: (...args) => console.warn(...args)    // Always log warnings
+};
+
 async function waitForTransactionReceipt(web3, txHash, options = {}) {
   const {
     maxAttempts = 30,
@@ -21,8 +29,8 @@ async function waitForTransactionReceipt(web3, txHash, options = {}) {
     throw new Error('Valid transaction hash is required');
   }
 
-  console.log(`🔍 Waiting for transaction receipt: ${txHash}`);
-  console.log(`⏰ Timeout: ${timeout / 1000}s, Max attempts: ${maxAttempts}`);
+  debug.log(`🔍 Waiting for transaction receipt: ${txHash}`);
+  debug.log(`⏰ Timeout: ${timeout / 1000}s, Max attempts: ${maxAttempts}`);
 
   const startTime = Date.now();
   let lastBlockNumber = 0;
@@ -41,22 +49,22 @@ async function waitForTransactionReceipt(web3, txHash, options = {}) {
         // Transaction mined!
         const miningTime = Date.now() - startTime;
 
-        console.log('✅ Transaction mined successfully!');
-        console.log(`📦 Block: ${receipt.blockNumber}`);
-        console.log(`⛽ Gas used: ${receipt.gasUsed}`);
-        console.log(`⏱️  Mining time: ${miningTime}ms`);
+        debug.log('✅ Transaction mined successfully!');
+        debug.log(`📦 Block: ${receipt.blockNumber}`);
+        debug.log(`⛽ Gas used: ${receipt.gasUsed}`);
+        debug.log(`⏱️  Mining time: ${miningTime}ms`);
 
         if (receipt.status) {
-          console.log(`🎯 Status: SUCCESS`);
+          debug.log(`🎯 Status: SUCCESS`);
           if (receipt.contractAddress) {
-            console.log(`🏭 Contract: ${receipt.contractAddress}`);
+            debug.log(`🏭 Contract: ${receipt.contractAddress}`);
           }
         } else {
-          console.log(`❌ Status: FAILED`);
+          debug.error(`❌ Status: FAILED`);
           // Try to get more error details
           try {
             const tx = await web3.eth.getTransaction(txHash);
-            console.log(`📝 From: ${tx.from}, To: ${tx.to}`);
+            debug.error(`📝 From: ${tx.from}, To: ${tx.to}`);
           } catch (txError) {
             // Ignore tx details error
           }
@@ -67,22 +75,22 @@ async function waitForTransactionReceipt(web3, txHash, options = {}) {
 
       // Show progress
       attempts++;
-      if (showProgress) {
+      if (showProgress && DEBUG) {
         try {
           const currentBlock = await web3.eth.getBlockNumber();
           if (currentBlock > lastBlockNumber) {
-            console.log(`⛏️  Block #${currentBlock} (Attempt ${attempts}/${maxAttempts})`);
+            debug.log(`⛏️  Block #${currentBlock} (Attempt ${attempts}/${maxAttempts})`);
             lastBlockNumber = currentBlock;
           } else {
-            console.log(`⏰ Waiting... (Attempt ${attempts}/${maxAttempts})`);
+            debug.log(`⏰ Waiting... (Attempt ${attempts}/${maxAttempts})`);
           }
         } catch (blockError) {
-          console.log(`⏰ Waiting... (Attempt ${attempts}/${maxAttempts})`);
+          debug.log(`⏰ Waiting... (Attempt ${attempts}/${maxAttempts})`);
         }
       }
 
     } catch (error) {
-      console.log(`⚠️  Attempt ${attempts}/${maxAttempts}: ${error.message}`);
+      debug.warn(`⚠️  Attempt ${attempts}/${maxAttempts}: ${error.message}`);
       attempts++;
     }
 
@@ -112,7 +120,7 @@ router.post('/mark-voted', auth, async (req, res) => {
       });
     }
 
-    console.log('🔄 Marking voter as voted in SQL database:', { voterId, ballotId });
+    debug.log('🔄 Marking voter as voted in SQL database:', { voterId, ballotId });
 
     // Update voter's status in database
     const [result] = await pool.execute(
@@ -140,7 +148,7 @@ router.post('/mark-voted', auth, async (req, res) => {
       req
     );
 
-    console.log('✅ Voter marked as voted successfully:', voterId);
+    debug.log('✅ Voter marked as voted successfully:', voterId);
 
     res.json({
       success: true,
@@ -161,197 +169,195 @@ router.post('/mark-voted', auth, async (req, res) => {
   }
 });
 
-// Submit vote to Ethereum blockchain (UPDATED to handle empty votes)
+// Submit vote to Ethereum blockchain (ENHANCED with pre-check and retry)
 router.post('/cast-blockchain', async (req, res) => {
-  try {
-    console.log('🔗 Fully decentralized blockchain vote submission');
-    const { voterId, votes, timestamp, ballotId, emptyPositions } = req.body;
+  const MAX_RETRIES = 3;
+  let lastError = null;
 
-    if (!voterId) {
-      console.log('❌ Invalid vote data for blockchain submission');
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid vote data: voterId is required'
-      });
-    }
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      debug.log(`🔗 Vote submission attempt ${attempt}/${MAX_RETRIES}`);
+      const { voterId, votes, timestamp, ballotId, emptyPositions } = req.body;
 
-    // Validate votes if they exist (votes can be empty array or null)
-    if (votes && Array.isArray(votes)) {
-      for (const vote of votes) {
-        if (!vote.candidateId || !vote.position) {
-          console.error('❌ Vote missing required fields:', vote);
-          return res.status(400).json({
-            success: false,
-            error: `Vote missing candidateId or position`
-          });
+      if (!voterId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid vote data: voterId is required'
+        });
+      }
+
+      // Validate votes if they exist (votes can be empty array or null)
+      if (votes && Array.isArray(votes)) {
+        for (const vote of votes) {
+          if (!vote.candidateId || !vote.position) {
+            return res.status(400).json({
+              success: false,
+              error: `Vote missing candidateId or position`
+            });
+          }
         }
       }
-    }
 
-    // FIXED: Check if blockchain service is properly initialized
-    if (!ethereumService || typeof ethereumService.submitVoteToAllNodes !== 'function') {
-      console.error('❌ Blockchain service not properly initialized or method not found');
-      return res.status(500).json({
-        success: false,
-        error: 'Blockchain service unavailable. Please try again later.'
-      });
-    }
-
-    let blockchainInfo;
-    try {
-      blockchainInfo = await ethereumService.getBlockchainInfo();
-      console.log('📊 Blockchain Status:', {
-        isConnected: blockchainInfo.isConnected,
-        contractDeployed: blockchainInfo.contractDeployed,
-        contractAddress: blockchainInfo.contractAddress,
-        currentNode: blockchainInfo.currentNode,
-        blockNumber: blockchainInfo.blockNumber
-      });
-    } catch (blockchainError) {
-      console.error('❌ Failed to get blockchain info:', blockchainError);
-      return res.status(500).json({
-        success: false,
-        error: 'Blockchain network unavailable. Please try again later.'
-      });
-    }
-
-    if (!blockchainInfo.isConnected) {
-      console.log('❌ No blockchain nodes connected');
-      return res.status(500).json({
-        success: false,
-        error: 'Blockchain network unavailable. Please ensure nodes are running.'
-      });
-    }
-
-    console.log('✅ Blockchain network status:', {
-      currentNode: blockchainInfo.currentNode,
-      blockNumber: blockchainInfo.blockNumber,
-      connectedNodes: blockchainInfo.connectedNodes,
-      totalNodes: blockchainInfo.totalNodes,
-      contractDeployed: blockchainInfo.contractDeployed,
-      contractAddress: blockchainInfo.contractAddress
-    });
-
-    // Log blockchain configuration
-    if (blockchainInfo.contractDeployed && blockchainInfo.contractAddress) {
-      console.log('🎯 Using blockchain contract at:', blockchainInfo.contractAddress);
-    } else {
-      console.log('❌ No contract deployed on blockchain nodes');
-    }
-
-    // Prepare vote data for blockchain
-    const voteData = {
-      voterId: voterId,
-      votes: votes || [], // Can be empty array
-      timestamp: timestamp || new Date().toISOString(),
-      ballotId: ballotId,
-      emptyPositions: emptyPositions || [], // Track empty positions
-      voterHash: crypto.createHash('sha256')
-        .update(`${voterId}-${Date.now()}-${Math.random().toString(36)}`)
-        .digest('hex')
-    };
-
-    console.log('⛓️ Submitting to blockchain storage...');
-    
-    // Submit to blockchain nodes
-    const blockchainResult = await ethereumService.submitVoteToAllNodes(voteData);
-
-    if (!blockchainResult.success) {
-      console.log('❌ Blockchain submission failed:', blockchainResult.error);
-      return res.status(500).json({
-        success: false,
-        error: `Blockchain submission failed: ${blockchainResult.error}`
-      });
-    }
-
-    console.log('✅ Vote successfully recorded in blockchain storage:', {
-      results: blockchainResult.results,
-      submittedTo: blockchainResult.submittedTo,
-      totalNodes: blockchainResult.totalNodes,
-      emptyPositions: emptyPositions?.length || 0
-    });
-
-    // Get the first successful receipt for response
-    const firstReceipt = blockchainResult.results?.find(r => r.success)?.receipt;
-    if (!firstReceipt) {
-      console.error('❌ No successful receipt found in blockchain results');
-      return res.status(500).json({
-        success: false,
-        error: 'No successful transaction receipt available'
-      });
-    }
-
-    console.log('✅ Using receipt from node:', firstReceipt.node, {
-      transactionHash: firstReceipt.transactionHash,
-      blockNumber: firstReceipt.blockNumber
-    });
-
-    // If we have a real transaction hash, try to get the receipt
-    let receiptDetails = null;
-    if (firstReceipt.transactionHash &&
-      firstReceipt.transactionHash !== 'unknown' &&
-      !firstReceipt.simulated) {
-      try {
-        console.log('📋 Attempting to fetch transaction receipt...');
-        const activeNode = await ethereumService.getActiveNode();
-        receiptDetails = await waitForTransactionReceipt(
-          activeNode.web3,
-          firstReceipt.transactionHash,
-          {
-            maxAttempts: 20,
-            timeout: 30000,
-            showProgress: true
-          }
-        );
-        console.log('✅ Transaction receipt obtained:', {
-          blockNumber: receiptDetails.blockNumber,
-          gasUsed: receiptDetails.gasUsed,
-          status: receiptDetails.status
+      // Check if blockchain service is properly initialized
+      if (!ethereumService || typeof ethereumService.submitVoteToAllNodes !== 'function') {
+        return res.status(500).json({
+          success: false,
+          error: 'Blockchain service unavailable. Please try again later.'
         });
-      } catch (receiptError) {
-        console.log('⚠️ Could not get transaction receipt:', receiptError.message);
+      }
+
+      // ENHANCED: Pre-check if voter already voted on blockchain
+      try {
+        const hasVotedOnChain = await ethereumService.checkIfVoterHasVoted(voterId);
+        if (hasVotedOnChain) {
+          debug.warn(`⚠️ Voter ${voterId} already voted on blockchain`);
+          // Return success since the vote is already recorded
+          return res.json({
+            success: true,
+            message: 'Vote already recorded on blockchain',
+            alreadyVoted: true,
+            voterId: voterId
+          });
+        }
+      } catch (preCheckError) {
+        debug.warn('⚠️ Pre-check for existing vote failed:', preCheckError.message);
+        // Continue with submission attempt
+      }
+
+      let blockchainInfo;
+      try {
+        blockchainInfo = await ethereumService.getBlockchainInfo();
+      } catch (blockchainError) {
+        lastError = blockchainError;
+        if (attempt < MAX_RETRIES) {
+          debug.warn(`⚠️ Blockchain info failed, retrying... (${attempt}/${MAX_RETRIES})`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+        return res.status(500).json({
+          success: false,
+          error: 'Blockchain network unavailable. Please try again later.'
+        });
+      }
+
+      if (!blockchainInfo.isConnected) {
+        lastError = new Error('No blockchain nodes connected');
+        if (attempt < MAX_RETRIES) {
+          debug.warn(`⚠️ No nodes connected, retrying... (${attempt}/${MAX_RETRIES})`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+        return res.status(500).json({
+          success: false,
+          error: 'Blockchain network unavailable. Please ensure nodes are running.'
+        });
+      }
+
+      // Prepare vote data for blockchain
+      const voteData = {
+        voterId: voterId,
+        votes: votes || [],
+        timestamp: timestamp || new Date().toISOString(),
+        ballotId: ballotId || `ballot-${voterId}-${Date.now()}`,
+        emptyPositions: emptyPositions || [],
+        voterHash: crypto.createHash('sha256')
+          .update(`${voterId}-${Date.now()}-${Math.random().toString(36)}`)
+          .digest('hex')
+      };
+
+      debug.log(`⛓️ Submitting vote for ${voterId} (attempt ${attempt})...`);
+
+      // Submit to blockchain nodes with retry
+      let blockchainResult;
+      try {
+        blockchainResult = await ethereumService.submitVoteToAllNodes(voteData);
+      } catch (submissionError) {
+        lastError = submissionError;
+        debug.error(`❌ Submission attempt ${attempt} failed:`, submissionError.message);
+
+        if (attempt < MAX_RETRIES) {
+          debug.warn(`🔄 Retrying submission... (${attempt + 1}/${MAX_RETRIES})`);
+          await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+          continue;
+        }
+
+        return res.status(500).json({
+          success: false,
+          error: `Vote submission failed after ${MAX_RETRIES} attempts: ${submissionError.message}`,
+          details: submissionError.message
+        });
+      }
+
+      if (!blockchainResult.success) {
+        lastError = new Error(blockchainResult.error || 'Unknown blockchain error');
+        if (attempt < MAX_RETRIES) {
+          debug.warn(`⚠️ Blockchain returned failure, retrying... (${attempt}/${MAX_RETRIES})`);
+          await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+          continue;
+        }
+        return res.status(500).json({
+          success: false,
+          error: `Blockchain submission failed: ${blockchainResult.error}`
+        });
+      }
+
+      // Get the first successful receipt for response
+      const firstReceipt = blockchainResult.results?.find(r => r.success)?.receipt;
+      if (!firstReceipt) {
+        lastError = new Error('No successful transaction receipt');
+        if (attempt < MAX_RETRIES) {
+          debug.warn(`⚠️ No receipt found, retrying... (${attempt}/${MAX_RETRIES})`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+        return res.status(500).json({
+          success: false,
+          error: 'No successful transaction receipt available'
+        });
+      }
+
+      debug.log('✅ Vote recorded successfully:', {
+        transactionHash: firstReceipt.transactionHash,
+        node: firstReceipt.node
+      });
+
+      // Log the successful vote
+      await logAuditAction(voterId, 'voter', 'BLOCKCHAIN_VOTE_CAST',
+        `Vote cast. TX: ${firstReceipt.transactionHash} (Node: ${firstReceipt.node})`, req).catch(() => {});
+
+      // Return successful response
+      return res.json({
+        success: true,
+        receipt: firstReceipt,
+        node: firstReceipt.node,
+        message: `Vote successfully recorded on blockchain (Node: ${firstReceipt.node})`,
+        voteReceipt: {
+          ballotId: voteData.ballotId,
+          transactionHash: firstReceipt.transactionHash,
+          blockNumber: firstReceipt.blockNumber,
+          timestamp: voteData.timestamp,
+          voterHash: voteData.voterHash
+        },
+        nodesSubmitted: blockchainResult.submittedTo,
+        totalNodes: blockchainResult.totalNodes,
+        attempt: attempt
+      });
+
+    } catch (error) {
+      lastError = error;
+      debug.error(`❌ Attempt ${attempt} error:`, error.message);
+
+      if (attempt < MAX_RETRIES) {
+        debug.warn(`🔄 Retrying after error... (${attempt + 1}/${MAX_RETRIES})`);
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+      } else {
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to submit vote after multiple attempts: ' + error.message,
+          lastError: lastError?.message
+        });
       }
     }
-
-    await logAuditAction(voterId, 'voter', 'BLOCKCHAIN_VOTE_CAST',
-      `Vote cast in blockchain storage. TX: ${firstReceipt.transactionHash} (Node: ${firstReceipt.node}) - Empty positions: ${emptyPositions?.length || 0}`, req);
-
-    console.log('🎉 Blockchain vote process completed successfully for voter:', voterId);
-
-    const response = serializeBigInt({
-      success: true,
-      receipt: {
-        ...firstReceipt,
-        receiptDetails: receiptDetails,
-        emptyPositions: emptyPositions?.length || 0
-      },
-      node: firstReceipt.node,
-      simulated: firstReceipt.simulated,
-      message: `Vote successfully recorded in blockchain storage (Node: ${firstReceipt.node})`,
-      voteReceipt: {
-        ballotId: voteData.ballotId,
-        transactionHash: firstReceipt.transactionHash,
-        blockNumber: firstReceipt.blockNumber,
-        timestamp: voteData.timestamp,
-        voterHash: voteData.voterHash,
-        emptyPositions: emptyPositions?.length || 0,
-        receiptConfirmed: !!receiptDetails
-      },
-      // Enhanced dual-node information
-      nodesSubmitted: blockchainResult.submittedTo,
-      totalNodes: blockchainResult.totalNodes,
-      blockchainResults: blockchainResult.results
-    });
-
-    res.json(response);
-
-  } catch (error) {
-    console.error('❌ Blockchain vote submission error:', error);
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to submit vote to blockchain storage: ' + error.message
-    });
   }
 });
 
@@ -359,7 +365,7 @@ router.post('/cast-blockchain', async (req, res) => {
 router.get('/transaction-receipt/:txHash', async (req, res) => {
   try {
     const { txHash } = req.params;
-    console.log('📋 Fetching transaction receipt:', txHash);
+    debug.log('📋 Fetching transaction receipt:', txHash);
 
     const blockchainInfo = await ethereumService.getBlockchainInfo();
 
@@ -377,14 +383,14 @@ router.get('/transaction-receipt/:txHash', async (req, res) => {
     for (const node of ethereumService.nodes) {
       if (node.isConnected) {
         try {
-          console.log(`🔍 Checking receipt on node: ${node.name}`);
+          debug.log(`🔍 Checking receipt on node: ${node.name}`);
           receipt = await node.web3.eth.getTransactionReceipt(txHash);
           if (receipt) {
             nodeUsed = node.name;
             break;
           }
         } catch (error) {
-          console.log(`❌ Node ${node.name} failed:`, error.message);
+          debug.warn(`❌ Node ${node.name} failed:`, error.message);
         }
       }
     }
@@ -400,7 +406,7 @@ router.get('/transaction-receipt/:txHash', async (req, res) => {
         });
         nodeUsed = activeNode.name;
       } catch (waitError) {
-        console.log('❌ Could not get transaction receipt:', waitError.message);
+        debug.warn('❌ Could not get transaction receipt:', waitError.message);
       }
     }
 
@@ -423,7 +429,7 @@ router.get('/transaction-receipt/:txHash', async (req, res) => {
         timestamp: new Date().toISOString()
       });
 
-      console.log('✅ Transaction receipt fetched successfully');
+    debug.log('✅ Transaction receipt fetched successfully');
       return res.json(response);
     } else {
       // Check if transaction exists at all
@@ -465,7 +471,7 @@ router.get('/transaction-receipt/:txHash', async (req, res) => {
 router.get('/verify-vote-with-receipt/:ballotId', async (req, res) => {
   try {
     const { ballotId } = req.params;
-    console.log('🔍 Verifying vote with receipt:', ballotId);
+    debug.log('🔍 Verifying vote with receipt:', ballotId);
 
     const [voteData, blockchainInfo] = await Promise.all([
       ethereumService.getVoteFromBlockchain(ballotId),
@@ -494,7 +500,7 @@ router.get('/verify-vote-with-receipt/:ballotId', async (req, res) => {
           }
         }
       } catch (receiptError) {
-        console.log('⚠️ Could not fetch receipt details:', receiptError.message);
+        debug.warn('⚠️ Could not fetch receipt details:', receiptError.message);
       }
     }
 
@@ -538,7 +544,7 @@ router.get('/verify-vote-with-receipt/:ballotId', async (req, res) => {
 // Enhanced blockchain status with transaction monitoring
 router.get('/enhanced-blockchain-status', async (req, res) => {
   try {
-    console.log('🔍 Checking enhanced blockchain status...');
+    debug.log('🔍 Checking enhanced blockchain status...');
 
     const blockchainInfo = await ethereumService.getBlockchainInfo();
 
@@ -585,7 +591,7 @@ router.get('/enhanced-blockchain-status', async (req, res) => {
         }
 
       } catch (testError) {
-        console.log('⚠️ Transaction capability test failed:', testError.message);
+        debug.warn('⚠️ Transaction capability test failed:', testError.message);
       }
     }
 
@@ -676,18 +682,18 @@ async function getEmptyVotesStats() {
 // Poll results from blockchain votes + SQL candidates (UPDATED to handle empty votes)
 router.get('/results', async (req, res) => {
   try {
-    console.log('📊 Fetching poll results (Blockchain votes + SQL candidates)');
+    debug.log('📊 Fetching poll results (Blockchain votes + SQL candidates)');
 
     let blockchainResults;
     try {
       blockchainResults = await ethereumService.getElectionResults();
-      console.log('📊 Blockchain results:', {
+      debug.log('📊 Blockchain results:', {
         totalVotes: blockchainResults.totalVotes,
         voteCount: blockchainResults.voteData?.length || 0,
         hasResults: !!blockchainResults.results
       });
     } catch (error) {
-      console.log('⚠️ Blockchain results failed, using fallback:', error.message);
+      debug.warn('⚠️ Blockchain results failed, using fallback:', error.message);
       blockchainResults = {
         totalVotes: 0,
         voteData: [],
@@ -701,7 +707,7 @@ router.get('/results', async (req, res) => {
       getEmptyVotesStats()
     ]);
 
-    console.log('📋 Data retrieved:', {
+    debug.log('📋 Data retrieved:', {
       blockchainVotes: blockchainResults.totalVotes,
       sqlCandidates: sqlCandidates.length,
       uniquePositions: uniquePositions.length,
@@ -738,7 +744,7 @@ router.get('/results', async (req, res) => {
 
     // Count votes from blockchain results
     if (blockchainResults.results && Object.keys(blockchainResults.results).length > 0) {
-      console.log('🔢 Counting votes from blockchain results structure...');
+      debug.log('🔢 Counting votes from blockchain results structure...');
 
       Object.entries(blockchainResults.results).forEach(([position, candidates]) => {
         Object.entries(candidates).forEach(([candidateId, candidateData]) => {
@@ -758,7 +764,7 @@ router.get('/results', async (req, res) => {
     }
     // Fallback: Count from raw vote data
     else if (blockchainResults.voteData && Array.isArray(blockchainResults.voteData)) {
-      console.log('🔢 Counting votes from raw vote data...');
+      debug.log('🔢 Counting votes from raw vote data...');
 
       blockchainResults.voteData.forEach(vote => {
         if (vote.votes && Array.isArray(vote.votes)) {
@@ -827,7 +833,7 @@ router.get('/results', async (req, res) => {
       groupedCandidates[position].candidates.sort((a, b) => b.vote_count - a.vote_count);
     });
 
-    console.log('✅ Results calculated successfully:', {
+    debug.log('✅ Results calculated successfully:', {
       totalVotes,
       totalEmptyVotes,
       positions: Object.keys(groupedCandidates).length,
@@ -882,7 +888,7 @@ router.get('/results', async (req, res) => {
 // Get detailed empty votes report
 router.get('/empty-votes-report', async (req, res) => {
   try {
-    console.log('📊 Fetching empty votes report');
+    debug.log('📊 Fetching empty votes report');
 
     const [results] = await pool.execute(`
       SELECT 
@@ -933,7 +939,7 @@ router.get('/empty-votes-report', async (req, res) => {
 router.get('/voter-details/:voterId', async (req, res) => {
   try {
     const { voterId } = req.params;
-    console.log('🔍 Fetching voter details:', voterId);
+    debug.log('🔍 Fetching voter details:', voterId);
 
     // Get voter info
     const [voterRows] = await pool.execute(

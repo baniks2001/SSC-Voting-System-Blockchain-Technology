@@ -37,6 +37,7 @@ export interface Position {
   order: number;
   is_active?: boolean;
   allowed_courses?: string[]; // Array of course names that can vote for this position
+  allowed_years?: number[]; // Array of year levels that can vote for this position (1st year, 2nd year, etc.)
   created_at?: string;
   updated_at?: string;
   display_order?: number;
